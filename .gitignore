@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tsbuildinfo
+*\:Zone.Identifier
+*.db
+*.db-wal
+*.db-shm
