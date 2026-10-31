@@ -180,7 +180,7 @@ test("sidebar and validated shortcut preferences persist across daemon restart i
   assert.equal(result.showSidebar, false);
   assert.deepEqual(result.shortcuts, shortcuts);
   const db = new Database(join(env.XDG_DATA_HOME, "harnesshub/harnesshub.db"), { readonly: true });
-  assert.equal(db.pragma("user_version", { simple: true }), 5);
+  assert.equal(db.pragma("user_version", { simple: true }), 6);
   db.close();
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).includes("harnesshub.db"));
 });
@@ -218,7 +218,7 @@ test("Bun and Node clients reach only the local Daemon even with proxy environme
           timeout: 10000,
         },
       );
-      assert.equal(result.stdout.trim(), "0.4.1");
+      assert.equal(result.stdout.trim(), "0.5.0");
     }
     assert.equal(hits, 0);
   } finally {

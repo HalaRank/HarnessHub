@@ -2,7 +2,7 @@
 
 HarnessHub 是 Linux x64 / WSL2 的本地 TUI。全局命令是 **`hhu`**。
 
-当前实现 Phase 4 UI Refinement（0.4.1）：可收起的多项目树、全局命令面板、多行草稿、原生 Markdown/工具/计划/公开思考、原始事件详情与复制，以及真实 Git Changes。继续复用同一个 ACP Runtime、SQLite 和 WebSocket 补拉。真实 Codex / Grok 的聊天、工具、并发切换、关闭 TUI 后保活已验证；Windows Terminal / VS Code WSL 的物理键盘与剪贴板仍待人工验收。详见 [Refinement 验收记录](docs/acceptance/phase-4-refinement.md) 和 [Phase 4 验收记录](docs/acceptance/phase-4.md)；前三阶段记录保留。Handoff / Worktree 管理仍属于 Phase 5。
+当前实现 Phase 5（0.5.0，SQLite schema 6）：同一 Conversation 跨 Harness 延迟交接、可追溯的报告与失败降级确认、独立 Git Worktree 和安全清理。保留 Phase 1–4 与 UI Refinement 的原生输出、草稿、审批、取消和 WebSocket 补拉。真实 Codex → Grok → Codex 接力及 Linux PTY 后台保活已验证；Windows Terminal / VS Code WSL 的物理键盘、鼠标及系统剪贴板仍待人工验收。详见 [Phase 5 验收记录](docs/acceptance/phase-5.md)；已有阶段验收记录保留。未实施 Phase 6。
 
 ## 安装与运行
 
@@ -32,7 +32,7 @@ hhu daemon stop --cancel-active  # 明确请求原生取消；等待结束后才
 hhu --version
 ```
 
-无参数启动不会把 Shell cwd 注册为项目。在 TUI 中按 `p` 注册项目，目录默认从 `~/` 开始；按 Tab 补全目录，多个匹配时补齐共同前缀并显示候选，继续输入后可再次 Tab。支持绝对路径，`~` 和相对路径以 Home 展开，不会创建目录。按 `n` 创建会话。↑/↓ 浏览，选中 Conversation 后 `h` 选择 Harness、`m` 输入消息、Enter 发送、Shift+Enter 换行（终端不支持时用 Ctrl+J）、`a` 输入原生权限选项编号、`c` 正常取消。工具成功默认折叠，`t` 选择工具、`e` 手动展开/折叠。Esc 关闭输入，`q` 退出；Ctrl+C 优先复制有效选区并清除选区，否则清空非空输入框，再次 Ctrl+C 在空输入时退出。退出不停止 Daemon / Worker，取消 Turn 仍独立使用 `c`。Windows Terminal 和 VS Code WSL 的真实键码仍需人工验收。
+无参数启动不会把 Shell cwd 注册为项目。在 TUI 中按 `p` 注册项目，目录默认从 `~/` 开始；按 Tab 补全目录，多个匹配时补齐共同前缀并显示候选，继续输入后可再次 Tab。支持绝对路径，`~` 和相对路径以 Home 展开，不会创建目录。按 `n` 创建会话，标题框默认 shared；Ctrl+W 切换为独立 worktree，再 Enter 创建。↑/↓ 浏览，选中 Conversation 后 `h` 选择 Harness、`m` 输入消息、Enter 发送、Shift+Enter 换行（终端不支持时用 Ctrl+J）、`a` 输入原生权限选项编号、`c` 正常取消。工具成功默认折叠，`t` 选择工具、`e` 手动展开/折叠。Esc 关闭输入，`q` 退出；Ctrl+C 优先复制有效选区并清除选区，否则清空非空输入框，再次 Ctrl+C 在空输入时退出。退出不停止 Daemon / Worker，取消 Turn 仍独立使用 `c`。Windows Terminal 和 VS Code WSL 的真实键码仍需人工验收。
 
 Ctrl+P 打开命令面板，搜索 Project / Conversation 或执行常见操作；Ctrl+B 隐藏侧栏，少于 90 列自动收起，选择不受影响。输入框始终位于底部，`m` 聚焦编辑，Esc 返回浏览；Enter 发送、Shift+Enter 换行，默认备用 Ctrl+J。命令面板中的 `Configure Shortcuts` 接受 JSON 覆盖，例如 `{"palette":"ctrl+o","sidebar":"ctrl+s","newline":"meta+return"}`；空对象恢复默认。偏好保存在 HarnessHub SQLite，不修改终端或 Harness 原生配置。Enter、Shift+Enter、Esc 和退出键保留；终端可能拦截某些组合，需按实际环境选择。
 
@@ -46,7 +46,13 @@ Ctrl+D 切换 Changes / Chat；Changes 用 ↑/↓ 选择文件、PgUp/PgDn 滚�
 
 顶部模型只来自 ACP 实际返回值，没有暴露时明确显示。命令面板的 `ACP Native Session Options` 显示原生 mode/config 候选；只有用户选择并 Enter 才调用已有设置接口。权限审批仍只使用 Agent 原始选项，不增加自动审批。
 
-同一 Conversation 复用当前存活的原生会话。跨 Harness 提交需等待 Phase 5 Handoff；当前使用新的 Conversation 接入另一个 Harness。不同 Conversation 可以共享项目目录并行执行，界面会提示并发修改风险。
+同一 Harness 连续发送复用当前原生会话。按 `h` 选择下一个 Harness，顶部显示当前 Harness → 待切换目标；仅选择没有模型调用，`x` 或命令面板 Cancel Pending Harness Switch 可回到源 Harness。向目标发送第一条消息时才在源原生会话生成结构化报告、持久化，再创建目标会话并注入历史背景与独立用户新消息。源执行、审批或取消未结束时不能开始目标任务。A → B → A 的第三段使用全新 A 会话，Workspace 不变；聊天中 Handoff 项可用 `e` 展开，`y` 看完整原文，`r` 查来源。
+
+报告失败时目标任务保持预留，按 `f` 或命令面板 Handoff Failure 查看材料、重试、确认降级继续或取消。只有用户明确选择确认，才使用可能不完整的材料发送目标任务。报告要求源 Agent 不使用工具；HarnessHub 无法沙箱化 Agent 自有工具，仍显示其原生审批。若观察到摘要期间使用工具，会显示警示并要求检查 Changes、确认降级后再接管。已发出但结果不明的任务为 UNCERTAIN，不能自动重发。接管提交以实际目标最终 ACP 响应为边界，之后安全释放源 Worker。
+
+独立 Worktree 在私有数据目录 `worktrees/<UUID>`，使用新分支 `hhu/<UUID>`，只对有 HEAD 的有效 Git 仓库创建。删除 Conversation 不删除 Worktree 或分支。Ctrl+P → Manage Worktrees / Safe Cleanup 选择记录，核对完整路径和分支，再输入 **CLEAN**：必须没有绑定的 Conversation（包括子目录会话）、脏文件、未跟踪/忽略文件、Git 锁或归属变化；只调用普通 `git worktree remove`，保留分支。创建部分失败的记录为 ERROR，须检查后独立清理；不删除未登记目录。
+
+不同 Conversation 可以在共享目录或独立 Worktree 并行执行。共享目录只有冲突提醒，没有全局工作区互斥或 Agent 修改归属推断。
 
 TUI 顶部汇总所有 Project 的活动 Conversation、待审批会话/请求及异常；树中每个 Conversation 显示真实状态。Running 包含准备、执行、等待审批和取消中的会话，与 Approval 数量有重叠。Ctrl+G 切换汇总显示，偏好和最近选择持久化；显式 `hhu /path` 优先打开该 Project。多个 TUI 各自保留当前选择，最近选择按最后一次保存生效。
 
@@ -94,11 +100,14 @@ Worker 继承 Daemon 启动时的原生进程环境，并使用 Conversation 工
 
 可用 `node scripts/verify-phase4.mjs` 显式验证真实 Codex / Grok，或传两个 Harness ID。它创建隔离 XDG 数据和两个临时项目，从 Home 打开三个真实 `hhu` PTY，提交无害读取/测试任务，检查并发、退出保活、同会话重连、键码、命令面板切换及每任务一次 Prompt，并以真实持久化事件检查 Markdown/代码/工具原文复制。遇原生审批会停下并报告，绝不自动选择；结束时尝试正常取消/停止隔离 Daemon，保留证据文件。
 
+可用 `node scripts/verify-phase5.mjs` 显式运行真实 Codex → Grok → Codex；脚本在临时 Git 项目的独立 Worktree 中依次更新无害 progress.txt，检查同一 Conversation、三段原生会话、零调用选择、5 次原生 Prompt、交接决策、TUI 退出保活和真实报告渲染/复制。遇原生审批不会自动选择。证据与工作目录保留，测试 Daemon 尝试正常停止。
+
 ## 开发与数据
 
 - `apps/cli`：Bun CLI；`apps/tui`：OpenTUI/Solid 聊天、原生内容、Changes 与命令面板。
 - `apps/daemon`：纯 Node Hono HTTP/WS；`packages/acp`：共享 ACP SDK Client / Worker / 内置 Profile。
 - `packages/shared`：DTO、校验、客户端、独立 Conversation 补拉；`packages/core`：项目和 Runtime 状态机；`packages/storage`：Drizzle schema / migrations / SQLite。
+- Phase 5 新增 `PUT /v1/conversations/:id/harness`、`GET /v1/conversations/:id/handoffs`、`POST /v1/conversations/:id/handoff/action`（`{handoffId, action: retry|confirm|cancel}`）、`GET /v1/worktrees`、`POST /v1/worktrees/:id/cleanup`（`{confirmed:true}`）；创建 Conversation 支持 `workspaceMode`。
 - Phase 4 新增 `GET /v1/conversations/:id/changes`，可通过编码的 `?path=` 查询同一 Git 状态中的文件 Diff；偏好增加侧栏与快捷键。
 - Phase 3 新增 `GET/PUT /v1/conversations/:id/draft`（版本检查）、`GET/PATCH /v1/preferences`、只读 `GET /v1/requests/:requestId`；`GET /v1/snapshot` 增加 activity 汇总。草稿最多 100,000 个 UTF-16 单元，HTTP 请求体限制为 1 MiB。
 - `tests/fixtures/mock-acp`、`tests/integration`：真实子进程 Mock、Daemon、SQLite、HTTP/WS、故障和生命周期；`tests/e2e`：Solid 操作及双 Linux PTY。PTY 测试需要 Python 3。

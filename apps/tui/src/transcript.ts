@@ -9,7 +9,7 @@ export type NativeTool = {
 };
 export type TerminalContent = { output: string; info: unknown; exit: unknown };
 export type RowData = {
-  kind: "text" | "tool" | "raw";
+  kind: "text" | "tool" | "raw" | "handoff";
   label: string;
   text: string;
   tool: NativeTool | null;
@@ -34,6 +34,7 @@ export function pretty(value: unknown): string {
 }
 
 const controlEvents = new Set([
+  "handoff.selection",
   "initialize",
   "initialized",
   "authenticate",
@@ -67,6 +68,11 @@ const controlEvents = new Set([
 
 // Keep wire/control traffic in the debug stream, never discard the persisted source.
 export function chatVisible(event: ConversationEvent) {
+  if (
+    event.purpose === "handoff_internal" ||
+    (event.purpose === "handoff_delivery" && event.kind === "user_message_chunk")
+  )
+    return false;
   const payload = object(event.payload),
     raw = object(event.raw);
   if (
@@ -85,6 +91,7 @@ export class Transcript {
   readonly rows: TranscriptRow[] = [];
   readonly events: ConversationEvent[] = [];
   readonly tools = new Map<string, TranscriptRow>();
+  private handoffs = new Map<string, TranscriptRow>();
   private approvals = new Map<string, TranscriptRow>();
   private tail: TranscriptRow | undefined;
   private seen = 0;
@@ -160,6 +167,23 @@ export class Transcript {
   private add(event: ConversationEvent) {
     if (!chatVisible(event)) return;
     const p = object(event.payload);
+    if (event.kind === "handoff.record") {
+      const value: RowData = {
+        kind: "handoff",
+        label: `Handoff · ${p.sourceHarness} → ${p.targetHarness} · ${p.status}${p.degraded ? " · Context may be incomplete" : ""}`,
+        text: `${p.reportText ?? p.fallbackText ?? "Report pending"}\n\nGenerated: ${p.generatedAt ? new Date(Number(p.generatedAt)).toISOString() : "pending"}\nSource events: #${p.sourceEventStart}–#${p.sourceEventEnd}\nSource NativeSession: ${p.sourceNativeSessionId}\nTarget NativeSession: ${p.targetNativeSessionId ?? "pending"}\nHandoff: ${p.id}\n${p.error ?? ""}`,
+        tool: null,
+        waiting: p.status === "FAILED",
+        streaming: false,
+        terminals: {},
+      };
+      const existing = this.handoffs.get(String(p.id));
+      if (existing) {
+        existing.sources.push(event);
+        existing.update(value);
+      } else this.handoffs.set(String(p.id), this.row(event, value));
+      return;
+    }
     const chunk = ["agent_message_chunk", "agent_thought_chunk", "user_message_chunk"].includes(
       event.kind,
     );

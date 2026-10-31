@@ -169,6 +169,11 @@ async function main() {
   app.put("/v1/conversations/:id/draft", async (c) =>
     c.json(store.saveDraft(c.req.param("id"), draftInput.parse(await c.req.json()))),
   );
+  app.get("/v1/worktrees", (c) => c.json(projects.worktrees.data.worktrees()));
+  app.post("/v1/worktrees/:id/cleanup", async (c) => {
+    const input = conversationDeleteInput.parse(await c.req.json());
+    return c.json(projects.worktrees.cleanup(c.req.param("id"), input.confirmed));
+  });
   app.get("/v1/projects", (c) => c.json(store.listProjects()));
   app.post("/v1/projects", async (c) => {
     const data = projectInput.parse(await c.req.json());
@@ -192,7 +197,7 @@ async function main() {
   });
   app.post("/v1/projects/:id/conversations", async (c) => {
     const data = conversationInput.parse(await c.req.json());
-    const result = projects.createConversation(c.req.param("id"), data.title);
+    const result = projects.createConversation(c.req.param("id"), data.title, data.workspaceMode);
     publish(result.event);
     return c.json(result.value, 201);
   });

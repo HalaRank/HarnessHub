@@ -1,4 +1,11 @@
-import type { Approval, Conversation, NativeSession, Shortcuts, Turn } from "@harnesshub/shared";
+import type {
+  Approval,
+  Conversation,
+  Handoff,
+  NativeSession,
+  Shortcuts,
+  Turn,
+} from "@harnesshub/shared";
 import { connect, HttpError, watchConversation } from "@harnesshub/shared/client";
 import type { TextareaRenderable } from "@opentui/core";
 import { useKeyboard, useRenderer } from "@opentui/solid";
@@ -9,6 +16,7 @@ import { DraftSession } from "./draft-session";
 import { NativeEvents } from "./native-events";
 import { RawEvents } from "./raw-events";
 import { binding, matches, shortcuts } from "./shortcuts";
+import { SourceViewer } from "./source-viewer";
 import { object, Transcript, type ViewState } from "./transcript";
 
 type Permission = {
@@ -39,6 +47,21 @@ export function AgentPane(props: {
 }) {
   const transcript = new Transcript(),
     renderer = useRenderer();
+  const [handoffs, setHandoffs] = createSignal<Handoff[]>([]);
+  const [handoffMenu, setHandoffMenu] = createSignal(false),
+    [materials, setMaterials] = createSignal<Handoff | null>(null);
+  const [activeSessionId, setActiveSessionId] = createSignal<string | null>(
+    props.conversation.activeNativeSessionId ?? null,
+  );
+  const activeSession = () => sessions().find((s) => s.id === activeSessionId());
+  const openHandoffRecord = () =>
+    handoffs().find((h) => !["COMMITTED", "CANCELLED"].includes(h.status));
+  const executionSession = () =>
+    openHandoffRecord()?.status === "DELIVERING"
+      ? (sessions().find((s) => s.id === openHandoffRecord()?.targetNativeSessionId) ??
+        activeSession())
+      : activeSession();
+  const failedHandoff = () => handoffs().find((h) => h.status === "FAILED");
   const [debug, setDebug] = createSignal(false);
   const [profiles, setProfiles] = createSignal<{ id: string; name: string }[]>([]);
   const [harness, setHarness] = createSignal("codex"),
@@ -57,6 +80,9 @@ export function AgentPane(props: {
     () => setDraftState((n) => n + 1),
     (e) => props.onDraftError(e instanceof Error ? e.message : "Draft save failed"),
   );
+  let selectionQueue = Promise.resolve(),
+    selectionPending = 0,
+    selectionFailure = "";
   let disposed = false,
     textarea: TextareaRenderable | undefined;
   const copyText = useClipboard();
@@ -94,7 +120,21 @@ export function AgentPane(props: {
   };
   const refreshSessions = async () => {
     const result = await request<NativeSession[]>(`/v1/conversations/${conversationId}/sessions`);
-    if (!disposed) setSessions(result);
+    const conversation = await request<Conversation>(`/v1/conversations/${conversationId}`);
+    if (!disposed) {
+      setSessions(result);
+      setActiveSessionId(conversation.activeNativeSessionId ?? null);
+      if (!selectionPending)
+        setHarness(
+          conversation.selectedHarnessId ??
+            result.find((s) => s.id === conversation.activeNativeSessionId)?.harnessId ??
+            "codex",
+        );
+    }
+  };
+  const refreshHandoffs = async () => {
+    const result = await request<Handoff[]>(`/v1/conversations/${conversationId}/handoffs`);
+    if (!disposed) setHandoffs(result);
   };
   onMount(() => {
     const measureInput = () => {
@@ -112,7 +152,7 @@ export function AgentPane(props: {
       setDraftReady(true);
       setProfiles(await request("/v1/harness-profiles"));
       await refreshSessions();
-      if (sessions().length) setHarness(sessions().at(-1)?.harnessId ?? "codex");
+      await refreshHandoffs();
       if (draft.value.pendingSubmission) setHarness(draft.value.pendingSubmission.harnessId);
       await refreshApprovals();
     });
@@ -126,8 +166,15 @@ export function AgentPane(props: {
         transcript.append(batch);
         for (const event of batch) {
           if (event.kind === "user.message") setTurnId(event.turnId);
-          if (event.kind === "runtime.turn_finished" || event.kind === "runtime.interrupted")
+          if (
+            (event.kind === "runtime.turn_finished" && event.purpose !== "handoff_internal") ||
+            event.kind === "runtime.interrupted"
+          )
             setTurnId(null);
+        }
+        if (batch.some((e) => e.kind.startsWith("handoff."))) {
+          void refreshHandoffs().catch(() => {});
+          void refreshSessions().catch(() => {});
         }
         if (
           batch.some(
@@ -167,16 +214,35 @@ export function AgentPane(props: {
         await request(`/v1/turns/${turnId()}/cancel`, "POST");
       });
   };
+  const selectHarness = (id: string) => {
+    setHarness(id);
+    selectionPending++;
+    selectionFailure = "";
+    selectionQueue = selectionQueue.then(async () => {
+      try {
+        await request(`/v1/conversations/${conversationId}/harness`, "PUT", { harnessId: id });
+      } catch (e) {
+        selectionFailure = e instanceof Error ? e.message : "Harness selection failed";
+        if (!disposed) setError(selectionFailure);
+      } finally {
+        selectionPending--;
+        if (!disposed && !selectionPending && selectionFailure) await refreshSessions();
+      }
+    });
+    return selectionQueue;
+  };
+  const cancelSwitch = () => {
+    const source = activeSession();
+    if (source) void selectHarness(source.harnessId);
+  };
   const nextHarness = () => {
-    if (sessions().length) {
-      setError(
-        "This Conversation is bound to its native Harness. Create a new Conversation; Handoff is Phase 5.",
-      );
-      return;
-    }
     const list = profiles(),
       index = list.findIndex((p) => p.id === harness());
-    setHarness(list[(index + 1) % list.length]?.id ?? "codex");
+    void selectHarness(list[(index + 1) % list.length]?.id ?? "codex");
+  };
+  const openHandoff = () => {
+    setHandoffMenu(true);
+    props.setForm("details");
   };
   let lastAction = props.action?.id ?? 0;
   createEffect(() => {
@@ -184,6 +250,7 @@ export function AgentPane(props: {
     if (!action || action.id === lastAction) return;
     lastAction = action.id;
     if (action.name === "raw") {
+      setHandoffMenu(false);
       setDebug(true);
       props.setForm("details");
     }
@@ -194,6 +261,8 @@ export function AgentPane(props: {
     }
     if (action.name === "cancel") cancel();
     if (action.name === "harness") nextHarness();
+    if (action.name === "cancel_switch") cancelSwitch();
+    if (action.name === "handoff") openHandoff();
     if (action.name === "changes") setChanges((v) => !v);
   });
   useKeyboard((key) => {
@@ -225,9 +294,13 @@ export function AgentPane(props: {
     }
     if (key.name === "h") nextHarness();
     if (key.name === "c") cancel();
+    if (key.name === "x") cancelSwitch();
+    if (key.name === "f" && failedHandoff()) openHandoff();
   });
   const send = () =>
     run(async () => {
+      await selectionQueue;
+      if (selectionFailure) throw new Error(selectionFailure);
       const message = textarea?.plainText ?? "";
       if (!message.trim()) return;
       draft.update(message);
@@ -251,7 +324,7 @@ export function AgentPane(props: {
       }
     });
   const sessionChoices = createMemo(() => {
-    const native = object(object(sessions().at(-1)?.capabilities).session);
+    const native = object(object(activeSession()?.capabilities).session);
     const choices: { name: string; value: unknown; description: string }[] = [];
     for (const mode of Array.isArray(object(native.modes).availableModes)
       ? (object(native.modes).availableModes as unknown[])
@@ -292,7 +365,19 @@ export function AgentPane(props: {
         fg="#80cbc4"
         height={1}
         flexShrink={0}
-      >{`ACP · ${harness()} · ${props.conversation.runtimeStatus} · Model (ACP): ${actualModel(sessions().at(-1))} · ${connection()}`}</text>
+      >{`ACP · ${executionSession()?.harnessId ?? harness()}${openHandoffRecord() ? ` · Handoff ${openHandoffRecord()?.sourceHarness} → ${openHandoffRecord()?.targetHarness} · ${openHandoffRecord()?.status}` : activeSession() && activeSession()?.harnessId !== harness() ? ` → ${harness()} (PENDING_SWITCH; x cancel)` : ""} · ${props.conversation.runtimeStatus} · Model (ACP): ${actualModel(executionSession())} · ${connection()}`}</text>
+      <Show when={activeSession() && activeSession()?.harnessId !== harness()}>
+        <text fg="#ffcc80">
+          First target message starts Handoff. Wait for source execution/approval/cancellation to
+          finish before sending.
+        </text>
+      </Show>
+      <Show when={failedHandoff()}>
+        <text fg="#ffcc80">
+          Context may be incomplete / 上下文可能不完整 · f: materials / confirm degraded / retry /
+          cancel. Target task has NOT been sent.
+        </text>
+      </Show>
       <Show when={["INTERRUPTED", "UNCERTAIN"].includes(props.conversation.runtimeStatus)}>
         <text fg="#ffcc80">
           {props.conversation.runtimeStatus === "UNCERTAIN"
@@ -414,7 +499,94 @@ export function AgentPane(props: {
           ? "ACP operation pending"
           : "m Message · a Approval · c Cancel Turn"}
       </text>
-      <Show when={debug() && props.form === "details"}>
+      <Show when={handoffMenu() && props.form === "details"}>
+        <box
+          position="absolute"
+          top={1}
+          left={1}
+          width="94%"
+          height="70%"
+          border
+          backgroundColor="#10151c"
+          padding={1}
+          flexDirection="column"
+          title="Handoff failed · Context may be incomplete · Esc close"
+        >
+          <text>
+            Report generation may use native tools; HarnessHub cannot sandbox Agent-owned tools.
+            Native permissions always require your choice.
+          </text>
+          <Show
+            when={failedHandoff()}
+            fallback={
+              <text>
+                No settled failed Handoff. Inspect the history; UNCERTAIN tasks cannot be resent.
+              </text>
+            }
+          >
+            {(h) => (
+              <select
+                focused={!busy()}
+                flexGrow={1}
+                showDescription={false}
+                options={[
+                  {
+                    name: "View saved context and source evidence",
+                    description: "",
+                    value: "view",
+                  },
+                  {
+                    name: "Confirm degraded context and send reserved target task",
+                    description: "",
+                    value: "confirm",
+                  },
+                  {
+                    name: "Retry report / target preparation (no duplicate user message)",
+                    description: "",
+                    value: "retry",
+                  },
+                  {
+                    name: "Cancel switch; do not send target task",
+                    description: "",
+                    value: "cancel",
+                  },
+                ]}
+                onSelect={(_index, option) => {
+                  if (!option) return;
+                  if (option.value === "view") {
+                    setMaterials(h());
+                    return;
+                  }
+                  void run(async () => {
+                    await request(`/v1/conversations/${conversationId}/handoff/action`, "POST", {
+                      handoffId: h().id,
+                      action: option.value,
+                    });
+                    await refreshHandoffs();
+                    await refreshSessions();
+                    if (!disposed) {
+                      setHandoffMenu(false);
+                      props.setForm(null);
+                    }
+                  });
+                }}
+              />
+            )}
+          </Show>
+        </box>
+      </Show>
+      <Show when={materials() && props.form === "details"}>
+        <SourceViewer
+          parts={[
+            {
+              name: "Saved Handoff materials (may be incomplete)",
+              text: `${materials()?.reportText ?? "No generated report"}\n\n${materials()?.fallbackText ?? "No fallback"}\n\n${JSON.stringify(materials(), null, 2)}`,
+            },
+          ]}
+          onClose={() => setMaterials(null)}
+        />
+      </Show>
+      <Show when={debug() && props.form === "details" && !handoffMenu()}>
         <RawEvents
           events={transcript.events}
           count={transcript.eventCount()}

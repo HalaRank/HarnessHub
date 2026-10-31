@@ -172,6 +172,12 @@ export function NativeEvents(props: {
                 <Show when={row.value().kind === "text"}>
                   <Markdown text={row.value().text} streaming={row.value().streaming} />
                 </Show>
+                <Show when={row.value().kind === "handoff"}>
+                  <text fg="#80cbc4">e expand/collapse · y complete report · r source events</text>
+                  <Show when={manual()[row.id] ?? row.value().waiting}>
+                    <Markdown text={row.value().text.slice(0, 24000)} />
+                  </Show>
+                </Show>
                 <Show when={row.value().kind === "tool"}>
                   <box flexDirection="column" border borderColor="#36404b" paddingX={1}>
                     <text>{`${row.value().waiting ? "WAITING_APPROVAL · " : ""}${row.value().tool?.status ?? "pending"} · e expand/collapse`}</text>

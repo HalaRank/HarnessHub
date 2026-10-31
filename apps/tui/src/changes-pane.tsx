@@ -104,7 +104,7 @@ export function ChangesPane(props: {
   return (
     <box flexGrow={1} flexDirection="column" gap={1}>
       <text fg="#ffcc80">
-        Changes · Shared workspace · No Agent attribution · g refresh · y copy diff
+        Changes · Conversation workspace · No Agent attribution · g refresh · y copy diff
       </text>
       <Show when={state()}>
         {(s) => (

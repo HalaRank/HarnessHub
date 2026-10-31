@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-export const VERSION = "0.4.1";
+export const VERSION = "0.5.0";
 export * from "./changes";
+export * from "./handoff";
 export * from "./runtime";
 export * from "./session-state";
 
@@ -20,8 +21,14 @@ export const projectPatch = z
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0);
-export const conversationInput = z.object({ title: z.string().trim().min(1).max(200) }).strict();
+export const conversationInput = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    workspaceMode: z.enum(["shared", "worktree"]).optional(),
+  })
+  .strict();
 export const conversationPatch = conversationInput
+  .omit({ workspaceMode: true })
   .partial()
   .extend({ archived: z.boolean().optional() })
   .strict()
@@ -39,7 +46,10 @@ export type Conversation = {
   projectId: string;
   title: string;
   archivedAt: number | null;
-  workspaceMode: "shared";
+  workspaceMode: "shared" | "worktree";
+  activeNativeSessionId?: string | null;
+  selectedHarnessId?: string | null;
+  worktreeId?: string | null;
   workspacePath: string;
   runtimeStatus: RuntimeStatus;
   createdAt: number;

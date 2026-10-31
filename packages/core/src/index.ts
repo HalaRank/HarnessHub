@@ -2,6 +2,7 @@ import { accessSync, constants, realpathSync, statSync } from "node:fs";
 import { basename, isAbsolute } from "node:path";
 import { AppError } from "@harnesshub/shared";
 import type { Store } from "@harnesshub/storage";
+import { Worktrees } from "./worktrees";
 
 export function projectRoot(input: string) {
   if (!isAbsolute(input)) throw new AppError(400, "Project root must be an absolute Linux path");
@@ -18,7 +19,10 @@ export function projectRoot(input: string) {
   }
 }
 export class Projects {
-  constructor(readonly store: Store) {}
+  readonly worktrees: Worktrees;
+  constructor(readonly store: Store) {
+    this.worktrees = new Worktrees(store);
+  }
   create(rootPath: string, name?: string) {
     const root = projectRoot(rootPath);
     return this.store.addProject(root, name ?? (basename(root) || root));
@@ -29,9 +33,24 @@ export class Projects {
       ...(patch.rootPath ? { rootPath: projectRoot(patch.rootPath) } : {}),
     });
   }
-  createConversation(projectId: string, title: string) {
+  createConversation(
+    projectId: string,
+    title: string,
+    workspaceMode: "shared" | "worktree" = "shared",
+  ) {
     projectRoot(this.store.getProject(projectId).rootPath);
-    return this.store.addConversation(projectId, title);
+    const workspace = workspaceMode === "worktree" ? this.worktrees.create(projectId) : undefined;
+    try {
+      return this.store.addConversation(projectId, title, workspace);
+    } catch (error) {
+      if (workspace)
+        this.worktrees.data.updateWorktree(workspace.id, {
+          status: "ERROR",
+          error:
+            "Worktree created but Conversation binding failed; inspect and explicitly clean up",
+        });
+      throw error;
+    }
   }
 }
 

@@ -20,9 +20,10 @@ import {
 } from "@harnesshub/shared";
 import { RuntimeStore, type Store } from "@harnesshub/storage";
 import type { z } from "zod";
+import { Handoffs } from "./handoff";
 import { projectRoot } from "./index";
 
-type Live = {
+export type Live = {
   id: string;
   conversationId: string;
   harnessId: string;
@@ -35,6 +36,7 @@ type Live = {
 type Pending = { live: Live; resolve: (result: RequestPermissionResponse) => void };
 export class Runtime {
   readonly data: RuntimeStore;
+  readonly handoffs: Handoffs;
   readonly epoch = randomUUID();
   readonly live = new Map<string, Live>();
   readonly pending = new Map<string, Pending>();
@@ -46,6 +48,11 @@ export class Runtime {
   async deleteConversation(id: string) {
     this.assertAvailable(id);
     this.store.assertConversationDeletable(id);
+    if (
+      [...this.handoffs.operations].some((h) => this.handoffs.data.get(h).conversationId === id) ||
+      [...this.handoffs.sources.values()].some((l) => l.conversationId === id)
+    )
+      throw new AppError(409, "Wait for Handoff Worker cleanup before deleting Conversation");
     const live = this.live.get(id);
     if (live && (!live.session || live.configuring))
       throw new AppError(409, "Wait for session operation to finish");
@@ -64,6 +71,7 @@ export class Runtime {
   ) {
     this.data = new RuntimeStore(store);
     this.data.recover();
+    this.handoffs = new Handoffs(this);
   }
   profiles() {
     return [
@@ -114,6 +122,13 @@ export class Runtime {
       payload,
       raw,
       origin,
+      purpose:
+        live?.turnId && this.data.turn(live.turnId).origin === "handoff_internal"
+          ? "handoff_internal"
+          : kind === "user_message_chunk" &&
+              this.handoffs.data.open(conversationId)?.userTurnId === turnId
+            ? "handoff_delivery"
+            : "user",
     });
     this.publish(event);
     return event;
@@ -168,7 +183,16 @@ export class Runtime {
         this.capabilities(live);
     } else if (origin === "agent" && raw.method && raw.method !== "session/request_permission")
       kind = "custom";
-    this.event(live, live.conversationId, kind, payload, raw, origin);
+    const event = this.event(live, live.conversationId, kind, payload, raw, origin);
+    if (kind === "tool_call" && event.purpose === "handoff_internal")
+      this.event(null, live.conversationId, "handoff.report_tool_warning", {
+        message:
+          "Source used native tools during report generation. Inspect Changes and source events; degraded confirmation is required before target execution.",
+        sourceNativeSessionId: live.id,
+        sourceTurnId: live.turnId,
+        sourceEventSeq: event.seq,
+        tool: payload,
+      });
   }
   capabilities(live: Live) {
     const snapshot = {
@@ -187,16 +211,27 @@ export class Runtime {
     const existing = this.live.get(conversationId);
     if (existing) {
       if (existing.harnessId !== harnessId)
-        throw new AppError(
-          409,
-          "Cross-Harness handoff is a Phase 5 operation; use a new Conversation",
-        );
+        throw new AppError(409, "Submit a message to perform Context Handoff");
       if (existing.worker?.closed || !existing.session)
         throw new AppError(409, "Native session is not usable");
       return existing;
     }
-    if (this.data.sessions(conversationId).some((s) => s.harnessId !== harnessId))
-      throw new AppError(409, "Cross-Harness handoff is not available in Phase 2");
+    const conversation = this.store.getConversation(conversationId);
+    if (
+      conversation.activeNativeSessionId &&
+      this.data.session(conversation.activeNativeSessionId).harnessId !== harnessId
+    )
+      throw new AppError(409, "Submit a message to perform Context Handoff");
+    if (this.handoffs.data.open(conversationId))
+      throw new AppError(409, "Handoff operation in progress");
+    return this.createLive(conversationId, harnessId, true);
+  }
+  async createLive(
+    conversationId: string,
+    harnessId: string,
+    activate: boolean,
+    handoffId?: string,
+  ): Promise<Live> {
     const conversation = this.store.getConversation(conversationId);
     const cwd = projectRoot(conversation.workspacePath);
     const row = this.data.addSession(conversationId, harnessId, cwd, this.epoch);
@@ -204,10 +239,13 @@ export class Runtime {
       id: row.id,
       conversationId,
       harnessId,
-      turnId: this.data.active(conversationId)[0]?.id ?? null,
+      turnId: activate
+        ? (this.data.active(conversationId).find((t) => t.origin === "user")?.id ?? null)
+        : null,
       configuring: false,
     };
-    this.live.set(conversationId, live);
+    if (activate) this.live.set(conversationId, live);
+    if (handoffId) this.handoffs.data.patch(handoffId, { targetNativeSessionId: live.id });
     try {
       const worker = new Worker(this.profile(harnessId), cwd, {
         wire: (direction, message) => this.wire(live, direction, message),
@@ -223,7 +261,13 @@ export class Runtime {
       if (worker.closed) throw new AppError(503, "Worker disconnected during preparation");
       this.data.updateSession(live.id, { status: "READY", agentSessionId: live.session.sessionId });
       this.capabilities(live);
-      this.event(live, conversationId, "runtime.session_ready", { cwd, harnessId });
+      if (activate)
+        this.metadata(this.handoffs.data.bind(conversationId, { activeNativeSessionId: live.id }));
+      this.event(live, conversationId, "runtime.session_ready", {
+        cwd,
+        harnessId,
+        handoffId: handoffId ?? null,
+      });
       return live;
     } catch (error) {
       let exited = !live.worker;
@@ -237,6 +281,7 @@ export class Runtime {
       }
       this.data.updateSession(live.id, { status: "ERROR", endedAt: exited ? Date.now() : null });
       this.event(live, conversationId, "runtime.session_error", {
+        handoffId: handoffId ?? null,
         reason:
           error instanceof AppError
             ? error.message
@@ -245,7 +290,8 @@ export class Runtime {
         exitCode: live.worker?.child.exitCode ?? null,
         signal: live.worker?.child.signalCode ?? null,
       });
-      if (exited) this.live.delete(conversationId);
+      if (exited && this.live.get(conversationId) === live) this.live.delete(conversationId);
+      if (!exited && !activate) this.handoffs.sources.set(live.id, live);
       throw error;
     }
   }
@@ -270,16 +316,31 @@ export class Runtime {
       );
     if (this.data.active(conversationId).length || this.live.get(conversationId)?.configuring)
       throw new AppError(409, "Conversation already has an active operation");
-    const known = this.data.sessions(conversationId);
-    if (known.some((s) => s.harnessId !== input.harnessId))
-      throw new AppError(409, "Cross-Harness handoff is not available in Phase 2");
+    if (this.handoffs.data.open(conversationId))
+      throw new AppError(409, "Resolve the existing Handoff first");
+    const sourceId = conversation.activeNativeSessionId;
+    const switching = !!sourceId && this.data.session(sourceId).harnessId !== input.harnessId;
+    const current = this.live.get(conversationId);
+    if (
+      current &&
+      (!current.session || current.worker?.closed) &&
+      !(
+        switching &&
+        current.worker?.closed &&
+        (current.worker.child.exitCode !== null || current.worker.child.signalCode !== null)
+      )
+    )
+      throw new AppError(
+        409,
+        "Native session is not usable; inspect process state before continuing",
+      );
     this.profile(input.harnessId);
     projectRoot(conversation.workspacePath);
     const turn = this.data.addTurn(conversationId, input.harnessId, input.requestId, requestHash);
     const live = this.live.get(conversationId) ?? null;
-    if (live) live.turnId = turn.id;
+    if (live && !switching) live.turnId = turn.id;
     const event = this.event(
-      live,
+      switching ? null : live,
       conversationId,
       "user.message",
       { text: input.message, requestId: input.requestId },
@@ -314,7 +375,12 @@ export class Runtime {
       );
     }
     this.status(conversationId, "PREPARING");
-    void this.run(turn.id, input.message);
+    this.metadata(this.handoffs.data.bind(conversationId, { selectedHarnessId: input.harnessId }));
+    if (switching && sourceId) {
+      const h = this.handoffs.reserve(turn.id, input.message, sourceId);
+      this.handoffs.data.patch(h.id, { sourceEventEnd: event.seq - 1 });
+      void this.handoffs.generate(h.id);
+    } else void this.run(turn.id, input.message);
     return this.data.turn(turn.id);
   }
   async run(turnId: string, message: string) {
@@ -402,7 +468,8 @@ export class Runtime {
     this.expire(live, "EXPIRED");
     if (live.turnId && this.data.turn(live.turnId).state !== "PREPARING")
       this.finish(live, "UNCERTAIN", "worker_connection_lost");
-    else if (!live.turnId) this.status(live.conversationId, "INTERRUPTED");
+    else if (!live.turnId && this.live.get(live.conversationId) === live)
+      this.status(live.conversationId, "INTERRUPTED");
     this.event(live, live.conversationId, "runtime.worker_lost", { state: "INTERRUPTED" });
     // Retain the handle until child exit is confirmed; a lost stream is not proof of process exit.
   }
@@ -486,8 +553,15 @@ export class Runtime {
     if (turn.endedAt !== null || turn.state === "CANCELLING") return turn;
     this.data.updateTurn(turnId, { state: "CANCELLING" });
     this.status(turn.conversationId, "CANCELLING");
+    const h = this.handoffs.data.open(turn.conversationId);
+    if (h?.userTurnId === turnId && h.status === "FAILED") {
+      this.handoffs.action(turn.conversationId, h.id, "cancel");
+      return this.data.turn(turnId);
+    }
     const live = this.live.get(turn.conversationId);
     if (live) {
+      if (h?.userTurnId === turnId && live.turnId && live.turnId !== turnId)
+        this.data.updateTurn(live.turnId, { state: "CANCELLING" });
       this.event(live, turn.conversationId, "runtime.cancel_requested", { turnId });
       this.expire(live, "CANCELLED");
       if (live.session && live.worker)
@@ -569,6 +643,10 @@ export class Runtime {
     this.expire(live, "EXPIRED");
     if (live.configuring && !force)
       throw new AppError(409, "Session has an active configuration or stop operation");
+    await this.disposeLive(live, force);
+  }
+  async disposeLive(live: Live, force = false) {
+    if (live.configuring) throw new AppError(409, "Worker operation already in progress");
     live.configuring = true;
     live.worker?.beginStop();
     this.data.updateSession(live.id, { status: "CLOSING" });
@@ -590,7 +668,7 @@ export class Runtime {
       }
       await live.worker?.stop(force);
       this.data.updateSession(live.id, { status: "CLOSED", endedAt: Date.now() });
-      this.live.delete(conversationId);
+      if (this.live.get(live.conversationId) === live) this.live.delete(live.conversationId);
     } finally {
       live.configuring = false;
     }
@@ -618,6 +696,10 @@ export class Runtime {
       );
       const failed = results.find((r) => r.status === "rejected");
       if (failed?.status === "rejected") throw failed.reason;
+      for (const [id, source] of this.handoffs.sources) {
+        await this.disposeLive(source);
+        this.handoffs.sources.delete(id);
+      }
     } catch (error) {
       this.closing = false;
       throw error;

@@ -1,6 +1,7 @@
 import {
   activeStates,
   type Conversation,
+  type ManagedWorktree,
   type Preferences,
   type Project,
   type Shortcuts,
@@ -44,10 +45,15 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     | "details"
     | "settings"
     | "delete"
+    | "worktrees"
+    | "cleanup"
     | null
   >(null);
   const renderer = useRenderer();
   const copyText = useClipboard();
+  const [workspaceMode, setWorkspaceMode] = createSignal<"shared" | "worktree">("shared");
+  const [worktrees, setWorktrees] = createSignal<ManagedWorktree[]>([]);
+  const [cleanupTarget, setCleanupTarget] = createSignal<ManagedWorktree | null>(null);
   const [notice, setNotice] = createSignal("");
   const [showArchived, setShowArchived] = createSignal(false);
   let clearInput: (() => boolean) | undefined;
@@ -233,6 +239,12 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       setError("");
       return;
     }
+    if (form() === "conversation" && key.ctrl && key.name === "w") {
+      key.preventDefault();
+      key.stopPropagation();
+      setWorkspaceMode((v) => (v === "shared" ? "worktree" : "shared"));
+      return;
+    }
     if (form()) return;
     if (key.ctrl && key.name === "g") {
       setShowActivity((value) => !value);
@@ -253,6 +265,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     if (key.name === "n" && row()) {
       key.preventDefault();
       setError("");
+      setWorkspaceMode("shared");
       setForm("conversation");
     }
   });
@@ -314,7 +327,26 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       id: "new",
       name: "New Conversation",
       run: () => {
-        if (row()) setForm("conversation");
+        if (row()) {
+          setWorkspaceMode("shared");
+          setForm("conversation");
+        }
+      },
+    },
+    {
+      id: "worktrees",
+      name: "Manage Worktrees / Safe Cleanup…",
+      run: () => {
+        void (async () => {
+          try {
+            const client = await connect();
+            if (!client) throw new Error("Daemon disconnected");
+            setWorktrees(await client.request<ManagedWorktree[]>("/v1/worktrees"));
+            setForm("worktrees");
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Worktree query failed");
+          }
+        })();
       },
     },
     { id: "sidebar", name: "Toggle Sidebar", run: () => setShowSidebar((v) => !v) },
@@ -367,8 +399,18 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           { id: "cancel", name: "Cancel Current Turn (ACP)", run: () => dispatch("cancel") },
           {
             id: "harness",
-            name: "Select Next Harness (before first session)",
+            name: "Select Next Harness (Handoff on first message)",
             run: () => dispatch("harness"),
+          },
+          {
+            id: "cancel_switch",
+            name: "Cancel Pending Harness Switch",
+            run: () => dispatch("cancel_switch"),
+          },
+          {
+            id: "handoff",
+            name: "Handoff Failure / Saved Context / Degraded Confirmation",
+            run: () => dispatch("handoff"),
           },
           { id: "settings", name: "ACP Native Session Options", run: () => setForm("settings") },
         ]
@@ -386,6 +428,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       else if (form() === "conversation" && row())
         await client.request(`/v1/projects/${row()?.value.project.id}/conversations`, "POST", {
           title: value,
+          workspaceMode: workspaceMode(),
         });
       setForm(null);
     } catch (error) {
@@ -477,7 +520,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         <ProjectPathInput busy={busy()} onSubmit={(value) => void submit(value)} />
       </Show>
       <Show when={form() === "conversation"}>
-        <box border title="New conversation title" height={3}>
+        <box
+          border
+          title={`New conversation title · ${workspaceMode()} · Ctrl+W choose shared / worktree`}
+          height={3}
+        >
           <input
             focused={!busy()}
             placeholder="Conversation title"
@@ -487,6 +534,89 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             width="100%"
           />
         </box>
+      </Show>
+      <Show when={form() === "worktrees"}>
+        <box
+          position="absolute"
+          top={2}
+          left={2}
+          width="94%"
+          height="80%"
+          border
+          backgroundColor="#10151c"
+          flexDirection="column"
+          padding={1}
+          title="Managed Worktrees · Enter inspect cleanup · Esc cancel"
+        >
+          <text>
+            Conversation deletion preserves worktrees. Cleanup requires no bound Conversation, clean
+            files and matching ownership. Branches are preserved.
+          </text>
+          <select
+            focused
+            flexGrow={1}
+            showDescription
+            options={worktrees()
+              .filter((w) => w.status !== "REMOVED")
+              .map((w) => ({ name: `${w.status} · ${w.branch}`, description: w.path, value: w }))}
+            onSelect={(_index, option) => {
+              if (option) {
+                setCleanupTarget(option.value as ManagedWorktree);
+                setForm("cleanup");
+              }
+            }}
+          />
+        </box>
+      </Show>
+      <Show when={form() === "cleanup" && cleanupTarget()}>
+        {(w) => (
+          <box
+            position="absolute"
+            top={3}
+            left={3}
+            width="92%"
+            height={10}
+            border
+            backgroundColor="#10151c"
+            padding={1}
+            flexDirection="column"
+            title="Confirm safe Worktree cleanup · Esc cancel"
+          >
+            <text>{`Remove managed directory: ${(w() as ManagedWorktree).path}`}</text>
+            <text>{`Preserve branch: ${(w() as ManagedWorktree).branch}`}</text>
+            <text>
+              Dirty, ignored, bound, locked or mismatched worktrees are refused. No force removal.
+            </text>
+            <input
+              focused={!busy()}
+              placeholder="Type CLEAN to confirm removal"
+              onSubmit={(value) => {
+                if (value !== "CLEAN") {
+                  setError("Type CLEAN to confirm, or Esc to cancel");
+                  return;
+                }
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    const client = await connect();
+                    if (!client) throw new Error("Daemon disconnected");
+                    await client.request(
+                      `/v1/worktrees/${(w() as ManagedWorktree).id}/cleanup`,
+                      "POST",
+                      { confirmed: true },
+                    );
+                    setForm(null);
+                    setNotice("Managed Worktree removed; branch preserved");
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Cleanup failed");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+            />
+          </box>
+        )}
       </Show>
       <Show when={form() === "palette"}>
         <CommandPalette commands={commands()} onClose={() => setForm(null)} />

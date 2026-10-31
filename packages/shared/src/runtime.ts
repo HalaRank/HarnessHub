@@ -58,8 +58,10 @@ export type ConversationEvent = {
   payload: unknown;
   origin: "agent" | "client" | "runtime";
   createdAt: number;
+  purpose?: "user" | "handoff_internal" | "handoff_delivery";
 };
 export type Turn = {
+  origin?: "user" | "handoff_internal";
   id: string;
   conversationId: string;
   nativeSessionId: string | null;

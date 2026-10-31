@@ -2,6 +2,8 @@ import { changes, patch, type Runtime } from "@harnesshub/core";
 import {
   AppError,
   decisionInput,
+  handoffAction,
+  harnessSelection,
   profileInput,
   sensitiveEnvKeys,
   settingInput,
@@ -11,6 +13,22 @@ import type { Hono } from "hono";
 import { z } from "zod";
 
 export function runtimeRoutes(app: Hono, runtime: Runtime) {
+  app.put("/v1/conversations/:id/harness", async (c) =>
+    c.json(
+      runtime.handoffs.select(
+        c.req.param("id"),
+        harnessSelection.parse(await c.req.json()).harnessId,
+      ),
+    ),
+  );
+  app.get("/v1/conversations/:id/handoffs", (c) => {
+    runtime.store.getConversation(c.req.param("id"));
+    return c.json(runtime.handoffs.data.list(c.req.param("id")));
+  });
+  app.post("/v1/conversations/:id/handoff/action", async (c) => {
+    const input = handoffAction.parse(await c.req.json());
+    return c.json(runtime.handoffs.action(c.req.param("id"), input.handoffId, input.action));
+  });
   app.get("/v1/conversations/:id/changes", async (c) => {
     const workspace = runtime.store.getConversation(c.req.param("id")).workspacePath;
     const path = c.req.query("path");

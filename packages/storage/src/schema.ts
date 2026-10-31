@@ -15,10 +15,13 @@ export const conversations = sqliteTable("conversations", {
     .references(() => projects.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   archivedAt: integer("archived_at"),
-  workspaceMode: text("workspace_mode", { enum: ["shared"] })
+  workspaceMode: text("workspace_mode", { enum: ["shared", "worktree"] })
     .notNull()
     .default("shared"),
   workspacePath: text("workspace_path").notNull(),
+  activeNativeSessionId: text("active_native_session_id"),
+  selectedHarnessId: text("selected_harness_id"),
+  worktreeId: text("worktree_id"),
   runtimeStatus: text("runtime_status")
     .$type<import("@harnesshub/shared").RuntimeStatus>()
     .notNull()
@@ -92,6 +95,9 @@ export const turns = sqliteTable(
     requestId: text("request_id").notNull().unique(),
     requestHash: text("request_hash").notNull(),
     harnessId: text("harness_id").notNull(),
+    origin: text("origin", { enum: ["user", "handoff_internal"] })
+      .notNull()
+      .default("user"),
     state: text("state").notNull(),
     stopReason: text("stop_reason"),
     startEventSeq: integer("start_event_seq"),
@@ -99,7 +105,11 @@ export const turns = sqliteTable(
     createdAt: integer("created_at").notNull(),
     endedAt: integer("ended_at"),
   },
-  (t) => [uniqueIndex("one_active_turn").on(t.conversationId).where(sql`ended_at is null`)],
+  (t) => [
+    uniqueIndex("one_active_turn")
+      .on(t.conversationId)
+      .where(sql`ended_at is null AND origin = 'user'`),
+  ],
 );
 export const conversationEvents = sqliteTable(
   "conversation_events",
@@ -117,6 +127,9 @@ export const conversationEvents = sqliteTable(
     kind: text("normalized_kind").notNull(),
     payload: text("normalized_payload_json", { mode: "json" }).$type<unknown>(),
     origin: text("origin", { enum: ["agent", "client", "runtime"] }).notNull(),
+    purpose: text("purpose", { enum: ["user", "handoff_internal", "handoff_delivery"] })
+      .notNull()
+      .default("user"),
     createdAt: integer("created_at").notNull(),
   },
   (t) => [uniqueIndex("conversation_event_seq").on(t.conversationId, t.seq)],
@@ -143,3 +156,57 @@ export const approvals = sqliteTable(
   },
   (t) => [uniqueIndex("approval_request").on(t.nativeSessionId, t.acpRequestId)],
 );
+
+export const handoffs = sqliteTable(
+  "handoffs",
+  {
+    id: text("id").primaryKey(),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    sourceHarness: text("source_harness").notNull(),
+    targetHarness: text("target_harness").notNull(),
+    sourceNativeSessionId: text("source_native_session_id")
+      .notNull()
+      .references(() => nativeSessions.id, { onDelete: "cascade" }),
+    targetNativeSessionId: text("target_native_session_id").references(() => nativeSessions.id, {
+      onDelete: "cascade",
+    }),
+    sourceEventStart: integer("source_event_start").notNull(),
+    sourceEventEnd: integer("source_event_end").notNull(),
+    reportText: text("report_text"),
+    fallbackText: text("fallback_text"),
+    fallbackSources: text("fallback_sources", { mode: "json" }).$type<unknown>(),
+    status: text("status").$type<import("@harnesshub/shared").HandoffStatus>().notNull(),
+    firstTargetRequestId: text("first_target_request_id").notNull().unique(),
+    userTurnId: text("user_turn_id")
+      .notNull()
+      .references(() => turns.id, { onDelete: "cascade" }),
+    internalTurnId: text("internal_turn_id").references(() => turns.id, { onDelete: "cascade" }),
+    userMessage: text("user_message").notNull(),
+    degraded: integer("degraded", { mode: "boolean" }).notNull().default(false),
+    confirmedAt: integer("confirmed_at"),
+    error: text("error"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    generatedAt: integer("generated_at"),
+    committedAt: integer("committed_at"),
+  },
+  (t) => [
+    uniqueIndex("one_open_handoff")
+      .on(t.conversationId)
+      .where(sql`status NOT IN ('COMMITTED', 'CANCELLED')`),
+  ],
+);
+export const managedWorktrees = sqliteTable("managed_worktrees", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id"),
+  repositoryPath: text("repository_path").notNull(),
+  path: text("path").notNull().unique(),
+  branch: text("branch").notNull(),
+  ownerRoot: text("owner_root").notNull(),
+  status: text("status").notNull(),
+  error: text("error"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});

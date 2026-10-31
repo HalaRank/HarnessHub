@@ -135,7 +135,7 @@ test("incremental Phase 2 migration preserves history and privately stored legac
   assert.equal((await api(`/v1/conversations/${c.id}`)).title, c.title);
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).some((f) => f.includes(".backup-")));
   const db = new Database(dbFile);
-  assert.equal(db.pragma("user_version", { simple: true }), 5);
+  assert.equal(db.pragma("user_version", { simple: true }), 6);
   db.close();
   for (const name of ["first project", "第二项目"]) mkdirSync(join(temp, name));
   first = await api("/v1/projects", "POST", { rootPath: join(temp, "first project") });

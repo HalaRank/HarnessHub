@@ -145,7 +145,7 @@ export class Store {
     if (!value) throw new AppError(404, "Conversation not found");
     return value;
   }
-  addConversation(projectId: string, title: string) {
+  addConversation(projectId: string, title: string, workspace?: { id: string; path: string }) {
     const project = this.getProject(projectId);
     const now = Date.now();
     const value = {
@@ -153,8 +153,11 @@ export class Store {
       projectId,
       title,
       archivedAt: null,
-      workspaceMode: "shared" as const,
-      workspacePath: project.rootPath,
+      workspaceMode: workspace ? ("worktree" as const) : ("shared" as const),
+      worktreeId: workspace?.id ?? null,
+      activeNativeSessionId: null,
+      selectedHarnessId: null,
+      workspacePath: workspace?.path ?? project.rootPath,
       runtimeStatus: "IDLE" as const,
       createdAt: now,
       updatedAt: now,
@@ -194,6 +197,13 @@ export class Store {
         and(eq(schema.turns.conversationId, id), sql`(ended_at is null OR state = 'UNCERTAIN')`),
       )
       .get();
+    const handoff = this.db
+      .select()
+      .from(schema.handoffs)
+      .where(
+        and(eq(schema.handoffs.conversationId, id), sql`status NOT IN ('COMMITTED', 'CANCELLED')`),
+      )
+      .get();
     const pending = this.db
       .select()
       .from(schema.approvals)
@@ -203,6 +213,7 @@ export class Store {
       activeStates.has(conversation.runtimeStatus) ||
       conversation.runtimeStatus === "UNCERTAIN" ||
       active ||
+      handoff ||
       pending
     )
       throw new AppError(
@@ -349,4 +360,5 @@ export class Store {
   }
 }
 
+export { HandoffStore } from "./handoff";
 export { RuntimeStore } from "./runtime";

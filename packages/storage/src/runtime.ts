@@ -6,12 +6,13 @@ import {
   type RuntimeStatus,
   redact,
 } from "@harnesshub/shared";
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import type { Store } from "./index";
 import {
   approvals,
   conversationEvents,
   conversations,
+  handoffs,
   harnessProfiles,
   nativeSessions,
   turns,
@@ -95,7 +96,13 @@ export class RuntimeStore {
       )
       .all();
   }
-  addTurn(conversationId: string, harnessId: string, requestId: string, requestHash: string) {
+  addTurn(
+    conversationId: string,
+    harnessId: string,
+    requestId: string,
+    requestHash: string,
+    origin: "user" | "handoff_internal" = "user",
+  ) {
     return this.db
       .insert(turns)
       .values({
@@ -104,6 +111,7 @@ export class RuntimeStore {
         harnessId,
         requestId,
         requestHash,
+        origin,
         state: "PREPARING",
         createdAt: Date.now(),
       })
@@ -138,6 +146,15 @@ export class RuntimeStore {
         .get();
     });
   }
+  sessionStart(nativeSessionId: string) {
+    return (
+      this.db
+        .select({ seq: sql<number>`coalesce(min(seq), 1)` })
+        .from(conversationEvents)
+        .where(eq(conversationEvents.nativeSessionId, nativeSessionId))
+        .get()?.seq ?? 1
+    );
+  }
   cursor(conversationId: string) {
     return (
       this.db
@@ -160,6 +177,22 @@ export class RuntimeStore {
       .orderBy(conversationEvents.seq)
       .limit(limit)
       .all();
+  }
+  recentUsers(conversationId: string, boundary: number) {
+    return this.db
+      .select()
+      .from(conversationEvents)
+      .where(
+        and(
+          eq(conversationEvents.conversationId, conversationId),
+          eq(conversationEvents.kind, "user.message"),
+          lte(conversationEvents.seq, boundary),
+        ),
+      )
+      .orderBy(desc(conversationEvents.seq))
+      .limit(20)
+      .all()
+      .reverse();
   }
   pending(conversationId: string) {
     return this.db
@@ -205,8 +238,41 @@ export class RuntimeStore {
   }
   recover() {
     this.db.transaction(() => {
+      for (const h of this.db.select().from(handoffs).all()) {
+        if (["PENDING", "READY", "GENERATING", "DELIVERING"].includes(h.status)) {
+          const status = ["GENERATING", "DELIVERING"].includes(h.status) ? "UNCERTAIN" : "FAILED";
+          this.db
+            .update(handoffs)
+            .set({ status, error: "daemon_restart; no automatic replay", updatedAt: Date.now() })
+            .where(eq(handoffs.id, h.id))
+            .run();
+          this.append({
+            conversationId: h.conversationId,
+            nativeSessionId: null,
+            turnId: h.userTurnId,
+            raw: null,
+            kind: "handoff.record",
+            payload: {
+              ...h,
+              status,
+              error: "daemon_restart; no automatic replay",
+              updatedAt: Date.now(),
+            },
+            origin: "runtime",
+          });
+        }
+      }
       // Stored worker/session identifiers are history, never proof of a live ACP connection.
       for (const turn of this.active()) {
+        const h = this.db.select().from(handoffs).where(eq(handoffs.userTurnId, turn.id)).get();
+        if (h?.status === "FAILED") {
+          this.updateTurn(turn.id, {
+            state: turn.state === "CANCELLING" ? "CANCELLING" : "PREPARING",
+            nativeSessionId: null,
+          });
+          this.status(turn.conversationId, "ERROR");
+          continue;
+        }
         this.updateTurn(turn.id, { state: "UNCERTAIN", endedAt: Date.now() });
         this.status(turn.conversationId, "UNCERTAIN");
         const event = this.append({

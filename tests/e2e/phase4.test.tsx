@@ -557,7 +557,7 @@ test("Changes panel reads actual workspace Git state and exposes an inline patch
   try {
     await frame(screen, "m Message");
     screen.mockInput.pressKey("d", { ctrl: true });
-    await frame(screen, "Changes · Shared workspace");
+    await frame(screen, "Changes · Conversation workspace");
     await frame(screen, "hello.ts");
     await frame(screen, "export const hello");
     expect(screen.captureCharFrame()).toContain("Untracked");

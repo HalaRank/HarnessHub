@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+// Test-only concurrent conflicts and partial Git success, with real argv and a real repository.
+import { spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+const args = process.argv.slice(2), real = process.env.HHU_REAL_GIT;
+if (!real) process.exit(99);
+if (args.includes("worktree") && args.includes("add")) {
+  const path = args[args.indexOf("--") + 1], branch = args[args.indexOf("-b") + 1];
+  if (process.env.HHU_TEST_GIT_FAILURE === "path") { mkdirSync(path); writeFileSync(join(path, "user.txt"), "preserve concurrent path\n"); }
+  if (process.env.HHU_TEST_GIT_FAILURE === "branch") spawnSync(real, ["branch", branch], { stdio: "inherit" });
+  const result = spawnSync(real, args, { stdio: "inherit" });
+  process.exit(process.env.HHU_TEST_GIT_FAILURE === "partial" && result.status === 0 ? 17 : result.status ?? 1);
+}
+process.exit(spawnSync(real, args, { stdio: "inherit" }).status ?? 1);

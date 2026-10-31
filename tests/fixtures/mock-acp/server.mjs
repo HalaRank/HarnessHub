@@ -36,6 +36,7 @@ const app = new AgentApp()
     };
   })
   .onRequest("session/new", ({ params }) => {
+    if (process.env.HHU_MOCK_NEW_FAIL) throw new Error("mock new failed");
     if (params.cwd !== process.cwd() || !params.cwd.startsWith("/"))
       throw new Error("Incorrect cwd");
     return {
@@ -61,7 +62,57 @@ const app = new AgentApp()
   .onRequest("session/prompt", async ({ params, client }) => {
     prompts++;
     cancelled = false;
-    const message = params.prompt[0].text;
+    let message = params.prompt[0].text;
+    if (message.startsWith("[HarnessHub internal context handoff")) {
+      if (process.env.HHU_MOCK_REPORT_DELAY)
+        await new Promise((r) => setTimeout(r, Number(process.env.HHU_MOCK_REPORT_DELAY)));
+      if (process.env.HHU_MOCK_REPORT_CRASH) {
+        process.stdout.end();
+        await new Promise(() => {});
+      }
+      if (process.env.HHU_MOCK_REPORT_FAIL) {
+        await text(client, "incomplete report");
+        return { stopReason: "end_turn" };
+      }
+      if (process.env.HHU_MOCK_REPORT_PERMISSION) {
+        await client.request("session/request_permission", {
+          sessionId,
+          toolCall: { toolCallId: "report-tool", title: "Native report tool (risk)" },
+          options: [{ optionId: "reject", name: "Reject", kind: "reject_once" }],
+        });
+      }
+      if (process.env.HHU_MOCK_REPORT_TOOL) {
+        await update(client, {
+          sessionUpdate: "tool_call",
+          toolCallId: "report-tool",
+          title: "Exact native report tool",
+          status: "completed",
+          rawOutput: "Mock observable operation",
+        });
+      }
+      if (cancelled) return { stopReason: "cancelled" };
+      await text(
+        client,
+        [
+          "Current Objective",
+          "User Requirements",
+          "Decisions",
+          "Completed Work",
+          "Remaining Work",
+          "Relevant Files",
+          "Validation Results",
+          "Known Issues",
+          "Latest State",
+        ]
+          .map((h) => `## ${h}\nExact source ${process.cwd()} prompt count ${prompts}\n`)
+          .join("\n"),
+      );
+      return { stopReason: "end_turn" };
+    }
+    if (message.startsWith("[Historical background")) {
+      if (process.env.HHU_MOCK_TARGET_REJECT) throw new Error("target rejection");
+      message = message.split("[New user message]\n")[1];
+    }
     if (message === "long-history" || message === "timed") {
       const count = message === "long-history" ? 2505 : 35;
       for (let i = 0; i < count; i++) {
