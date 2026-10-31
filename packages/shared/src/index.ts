@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const VERSION = "0.3.0";
+export const VERSION = "0.4.0";
+export * from "./changes";
 export * from "./runtime";
 export * from "./session-state";
 

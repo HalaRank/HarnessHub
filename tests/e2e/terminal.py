@@ -3,6 +3,7 @@ import fcntl
 import json
 import os
 import pty
+import re
 import select
 import signal
 import struct
@@ -36,7 +37,8 @@ def read_until(child, needle, timeout=12):
             if not data:
                 break
             output += data
-            if needle in output:
+            visible = re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", output)
+            if needle.replace(b" ", b"") in visible.replace(b" ", b""):
                 return output
     raise AssertionError("PTY did not display expected content: " + repr(output[-3000:]))
 

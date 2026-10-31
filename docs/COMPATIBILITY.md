@@ -55,3 +55,13 @@ Codex 本次原生输出包含“自定义模型缺少 metadata、使用 fallbac
 - 本机 `grok --version`、`grok agent --help` 和真实 stdio 握手；`opencode --version`、`opencode acp --help` 和真实握手。没有用文档中可能过期的命令替代安装版本验证。
 
 详细事件边界、测试命令、能力限制和人工验收见 [Phase 2 记录](acceptance/phase-2.md)。以上不替代 Windows Terminal / VS Code WSL 的人工验证。
+
+## Phase 4：TUI、终端与 Git（2026-10-31）
+
+版本 0.4.0，数据库 schema 4；没有升级 OpenTUI、ACP SDK 或 Adapter 依赖。实现使用锁定 OpenTUI 0.8.0 自带的 `MarkdownRenderable`、`DiffRenderable`、`ScrollBoxRenderable`、`SyntaxStyle`、`copyToClipboardOSC52`，API 以本机安装包的 `.d.ts` 和实际 renderer 测试为准。参考 [OpenTUI 官方仓库](https://github.com/anomalyco/opentui/tree/main/packages/core/src/renderables)、[Solid binding](https://github.com/anomalyco/opentui/tree/main/packages/solid)。原生 Markdown 流式解析与代码高亮由现有 OpenTUI 实现负责，没有另建 Web 渲染器。
+
+真实 Codex 的工具终端内容除常规 `content` 外，还通过 `_meta.terminal_info`、`_meta.terminal_output_delta`、`_meta.terminal_exit` 暴露；本阶段根据真实存储事件补齐只读展示、分块累加与原文复制。对照的官方实现证据：[Codex 工具生命周期](https://github.com/agentclientprotocol/codex-acp/blob/main/src/CodexSessionToolCalls.ts)、[终端输出测试](https://github.com/agentclientprotocol/codex-acp/blob/main/src/__tests__/CodexACPAgent/terminal-output-events.test.ts)。这些是 Agent 扩展元数据，不能据此宣称通用 ACP Client terminal 回调已经实现；Client fs/terminal 能力继续为 false。没有伪造未暴露的输出或把其他扩展默认为已支持。
+
+Git 2.53.0 的真实 `status --porcelain=v1 -z`、`diff --cached`、工作区 diff 和未跟踪文件 `diff --no-index` 已测试。使用 argv、`--literal-pathspecs`、`--`、`--no-ext-diff`、`--no-textconv`；不经 Shell，不暂存或改写文件。格式依据：[git-status porcelain](https://git-scm.com/docs/git-status#_porcelain_format_version_1)、[git-diff](https://git-scm.com/docs/git-diff)。
+
+Linux PTY 已验证 Kitty `CSI 13;2u` 的 Shift+Enter 解码、Ctrl+J 备用换行、Enter 仅一次提交、命令面板切换和 resize。Solid 测试另覆盖可配置 Meta+Enter。**Windows Terminal / VS Code WSL 的实际物理键盘、窗口视觉与系统剪贴板仍未验证**；PTY 注入键码不等同于目标终端会发出该键码。OSC52 测试证明发送的是原文，系统剪贴板是否接受由终端策略控制。完整证据与手动步骤见 [Phase 4 验收记录](acceptance/phase-4.md)。

@@ -1,4 +1,4 @@
-import type { Runtime } from "@harnesshub/core";
+import { changes, patch, type Runtime } from "@harnesshub/core";
 import {
   AppError,
   decisionInput,
@@ -11,6 +11,11 @@ import type { Hono } from "hono";
 import { z } from "zod";
 
 export function runtimeRoutes(app: Hono, runtime: Runtime) {
+  app.get("/v1/conversations/:id/changes", async (c) => {
+    const workspace = runtime.store.getConversation(c.req.param("id")).workspacePath;
+    const path = c.req.query("path");
+    return c.json(path === undefined ? await changes(workspace) : await patch(workspace, path));
+  });
   const sessionInput = z.object({ harnessId: z.string().min(1) }).strict();
   const closeInput = z
     .object({ force: z.boolean().default(false), confirmed: z.boolean().default(false) })

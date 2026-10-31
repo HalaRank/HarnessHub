@@ -243,8 +243,16 @@ export class Store {
           lastProjectId: row.lastProjectId,
           lastConversationId: row.lastConversationId,
           showActivity: row.showActivity,
+          showSidebar: row.showSidebar,
+          shortcuts: row.shortcuts,
         }
-      : { lastProjectId: null, lastConversationId: null, showActivity: true };
+      : {
+          lastProjectId: null,
+          lastConversationId: null,
+          showActivity: true,
+          showSidebar: true,
+          shortcuts: {},
+        };
   }
   savePreferences(patch: Partial<Preferences>) {
     return this.db.transaction(() => {

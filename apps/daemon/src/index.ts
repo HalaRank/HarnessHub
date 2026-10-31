@@ -158,6 +158,8 @@ async function main() {
           ? {}
           : { lastConversationId: data.lastConversationId }),
         ...(data.showActivity === undefined ? {} : { showActivity: data.showActivity }),
+        ...(data.showSidebar === undefined ? {} : { showSidebar: data.showSidebar }),
+        ...(data.shortcuts === undefined ? {} : { shortcuts: data.shortcuts }),
       }),
     );
   });

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { Agent, request as httpRequest } from "node:http";
 import WebSocket from "ws";
 import { z } from "zod";
 import { type Instance, PROTOCOL_VERSION, type Snapshot, VERSION } from "./index";
@@ -27,28 +28,57 @@ export class HttpError extends Error {
     super(message);
   }
 }
+// Always connect directly to the local Daemon, including when the shell configures an HTTP proxy.
+const localAgent = new Agent({ keepAlive: true });
 export class Client {
   constructor(readonly instance: Instance) {}
   get base() {
     return `http://127.0.0.1:${this.instance.port}`;
   }
   async request<T>(path: string, method = "GET", body?: unknown, timeoutMs = 4000): Promise<T> {
-    const response = await fetch(`${this.base}${path}`, {
-      method,
-      headers: {
-        authorization: `Bearer ${this.instance.token}`,
-        ...(body === undefined ? {} : { "content-type": "application/json" }),
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    const result = await response.json();
-    if (!response.ok)
-      throw new HttpError(
-        response.status,
-        (result as { error?: string }).error ?? `HTTP ${response.status}`,
+    const serialized = body === undefined ? undefined : JSON.stringify(body);
+    return new Promise<T>((resolve, reject) => {
+      const req = httpRequest(
+        {
+          hostname: "127.0.0.1",
+          port: this.instance.port,
+          path,
+          method,
+          agent: localAgent,
+          headers: {
+            authorization: `Bearer ${this.instance.token}`,
+            ...(serialized === undefined
+              ? {}
+              : {
+                  "content-type": "application/json",
+                  "content-length": Buffer.byteLength(serialized),
+                }),
+          },
+          signal: AbortSignal.timeout(timeoutMs),
+        },
+        (response) => {
+          const chunks: string[] = [];
+          response.setEncoding("utf8");
+          response.on("data", (chunk: string) => chunks.push(chunk));
+          response.on("error", reject);
+          response.on("end", () => {
+            try {
+              const result = JSON.parse(chunks.join("")) as T;
+              const status = response.statusCode ?? 503;
+              if (status < 200 || status >= 300)
+                reject(
+                  new HttpError(status, (result as { error?: string }).error ?? `HTTP ${status}`),
+                );
+              else resolve(result);
+            } catch (error) {
+              reject(error);
+            }
+          });
+        },
       );
-    return result as T;
+      req.on("error", reject);
+      req.end(serialized);
+    });
   }
   async health() {
     const health = await this.request<{

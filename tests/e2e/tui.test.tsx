@@ -337,7 +337,7 @@ test("drafts stay isolated when switching Conversations and restore with recent 
     screen.mockInput.pressEscape();
     await new Promise((r) => setTimeout(r, 60));
     screen.mockInput.pressArrow("down");
-    await waitFrame(screen, "│ Draft Beta");
+    await waitFrame(screen, "Conversation · Draft Beta");
     await waitFrame(screen, "m Message");
     screen.mockInput.pressKey("m");
     await waitFrame(screen, "Enter send");
@@ -345,7 +345,7 @@ test("drafts stay isolated when switching Conversations and restore with recent 
     screen.mockInput.pressEscape();
     await new Promise((r) => setTimeout(r, 60));
     screen.mockInput.pressArrow("up");
-    await waitFrame(screen, "│ Draft Alpha");
+    await waitFrame(screen, "Conversation · Draft Alpha");
     await waitFrame(screen, "m Message");
     screen.mockInput.pressKey("m");
     await waitFrame(screen, "Alpha 草稿");

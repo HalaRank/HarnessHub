@@ -3,6 +3,7 @@ import type { Draft, Turn } from "@harnesshub/shared";
 import { connect, HttpError } from "@harnesshub/shared/client";
 
 const savers = new Set<() => Promise<void>>();
+const departing = new Map<string, DraftSession>();
 export async function flushDrafts() {
   await Promise.all([...savers].map((save) => save()));
 }
@@ -17,7 +18,10 @@ export class DraftSession {
   private disposed = false;
   private readonly saveOnExit = async () => {
     await this.flush();
-    if (this.disposed) savers.delete(this.saveOnExit);
+    if (this.disposed) {
+      savers.delete(this.saveOnExit);
+      if (departing.get(this.conversationId) === this) departing.delete(this.conversationId);
+    }
   };
   constructor(
     readonly conversationId: string,
@@ -32,6 +36,10 @@ export class DraftSession {
     return client.request<T>(path, method, body);
   }
   async load() {
+    // Rapidly returning to a pane must wait for its prior editor's queued CAS save.
+    // A failed save is retried explicitly by reopening; its local text stays registered.
+    const previous = departing.get(this.conversationId);
+    if (previous && previous !== this) await previous.saveOnExit();
     this.value = await this.request<Draft>(`/v1/conversations/${this.conversationId}/draft`);
     this.text = this.value.text;
     // Recover an ACK lost after the Turn was committed. Reads do not dispatch tasks.
@@ -116,6 +124,7 @@ export class DraftSession {
   }
   async dispose() {
     this.disposed = true;
+    departing.set(this.conversationId, this);
     // Keep a failed save registered so leaving the Conversation cannot silently drop its text.
     await this.saveOnExit();
   }

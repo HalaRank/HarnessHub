@@ -50,6 +50,11 @@ export const uiPreferences = sqliteTable("ui_preferences", {
     onDelete: "set null",
   }),
   showActivity: integer("show_activity", { mode: "boolean" }).notNull().default(true),
+  showSidebar: integer("show_sidebar", { mode: "boolean" }).notNull().default(true),
+  shortcuts: text("shortcuts", { mode: "json" })
+    .$type<import("@harnesshub/shared").Shortcuts>()
+    .notNull()
+    .default(sql`'{}'`),
 });
 
 export const harnessProfiles = sqliteTable("harness_profiles", {

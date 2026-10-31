@@ -35,4 +35,5 @@ export class Projects {
   }
 }
 
+export { changes, patch } from "./changes";
 export { Runtime } from "./runtime";

@@ -10,9 +10,14 @@ const integration = spawnSync(
     "tests/integration/phase1.test.mjs",
     "tests/integration/phase2.test.mjs",
     "tests/integration/phase3.test.mjs",
+    "tests/integration/phase4.test.mjs",
   ],
   { stdio: "inherit", env: { ...process.env, HARNESSHUB_BUN: process.execPath } },
 );
 if (integration.status !== 0) process.exit(integration.status ?? 1);
-const ui = spawnSync(process.execPath, ["test", "tests/e2e/tui.test.tsx"], { stdio: "inherit" });
+const ui = spawnSync(
+  process.execPath,
+  ["test", "tests/e2e/tui.test.tsx", "tests/e2e/phase4.test.tsx"],
+  { stdio: "inherit" },
+);
 process.exitCode = ui.status ?? 1;

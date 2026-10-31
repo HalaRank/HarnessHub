@@ -30,7 +30,7 @@
     },
     "apps/cli": {
       "name": "@harnesshub/cli",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@harnesshub/shared": "workspace:*",
         "@harnesshub/tui": "workspace:*",
@@ -38,7 +38,7 @@
     },
     "apps/daemon": {
       "name": "@harnesshub/daemon",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@harnesshub/core": "workspace:*",
         "@harnesshub/shared": "workspace:*",
@@ -47,14 +47,14 @@
     },
     "apps/tui": {
       "name": "@harnesshub/tui",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@harnesshub/shared": "workspace:*",
       },
     },
     "packages/acp": {
       "name": "@harnesshub/acp",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@agentclientprotocol/sdk": "2.2.0",
         "@harnesshub/shared": "workspace:*",
@@ -62,7 +62,7 @@
     },
     "packages/core": {
       "name": "@harnesshub/core",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@harnesshub/acp": "workspace:*",
         "@harnesshub/shared": "workspace:*",
@@ -71,11 +71,11 @@
     },
     "packages/shared": {
       "name": "@harnesshub/shared",
-      "version": "0.3.0",
+      "version": "0.4.0",
     },
     "packages/storage": {
       "name": "@harnesshub/storage",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@harnesshub/shared": "workspace:*",
       },
