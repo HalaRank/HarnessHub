@@ -1,6 +1,6 @@
 {
   "name": "harnesshub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "packageManager": "bun@1.4.4",
@@ -22,6 +22,9 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@agentclientprotocol/claude-agent-acp": "0.99.1",
+    "@agentclientprotocol/codex-acp": "2.5.0",
+    "@agentclientprotocol/sdk": "2.2.0",
     "@hono/node-server": "2.1.5",
     "@opentui/core": "0.8.0",
     "@opentui/solid": "0.8.0",

@@ -19,6 +19,14 @@ export function readInstance(): Instance | null {
     return null;
   }
 }
+export class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
 export class Client {
   constructor(readonly instance: Instance) {}
   get base() {
@@ -36,7 +44,10 @@ export class Client {
     });
     const result = await response.json();
     if (!response.ok)
-      throw new Error((result as { error?: string }).error ?? `HTTP ${response.status}`);
+      throw new HttpError(
+        response.status,
+        (result as { error?: string }).error ?? `HTTP ${response.status}`,
+      );
     return result as T;
   }
   async health() {
@@ -117,7 +128,9 @@ export function watchSnapshot(
       headers: { Authorization: `Bearer ${client.instance.token}` },
     });
     socket = ws;
-    ws.onmessage = () => {
+    ws.onmessage = (packet) => {
+      const message = JSON.parse(String(packet.data));
+      if (message.type !== "hello" && message.type !== "change") return;
       onState("Connected");
       void refresh(epoch);
     };
@@ -129,6 +142,95 @@ export function watchSnapshot(
     disposed = true;
     generation++;
     if (retry) clearTimeout(retry);
+    socket?.close();
+  };
+}
+
+// Subscribe first, then page committed events. WS is an invalidation hint; SQLite is authoritative.
+// Reconnect only reads history. It never replays prompt/approval commands.
+export function watchConversation(
+  conversationId: string,
+  onEvent: (event: import("./runtime").ConversationEvent) => void,
+  onState: (state: string) => void,
+  afterSeq = 0,
+) {
+  let cursor = afterSeq;
+  let disposed = false;
+  let socket: WebSocket | undefined;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+  let generation = 0;
+  let reading = false;
+  let dirty = false;
+  let current: Client;
+  const refresh = async (epoch: number) => {
+    dirty = true;
+    if (reading) return;
+    reading = true;
+    try {
+      while (dirty && !disposed && epoch === generation) {
+        dirty = false;
+        const page = await current.request<{
+          events: import("./runtime").ConversationEvent[];
+          cursor: number;
+        }>(`/v1/conversations/${conversationId}/events?after_seq=${cursor}&limit=200`);
+        if (disposed || epoch !== generation) break;
+        for (const event of page.events) {
+          if (event.seq <= cursor) continue;
+          if (event.seq !== cursor + 1) throw new Error("Conversation history has a sequence gap");
+          onEvent(event);
+          cursor = event.seq;
+        }
+        if (cursor < page.cursor) {
+          if (!page.events.length) throw new Error("Conversation history is incomplete");
+          dirty = true;
+        }
+      }
+    } catch {
+      socket?.close();
+    } finally {
+      reading = false;
+      if (dirty && !disposed) void refresh(generation);
+    }
+  };
+  const reconnect = () => {
+    if (disposed || retry) return;
+    onState("Disconnected · reconnecting");
+    retry = setTimeout(() => {
+      retry = undefined;
+      void open();
+    }, 500);
+  };
+  const open = async () => {
+    const client = await connect();
+    if (disposed) return;
+    if (!client) {
+      reconnect();
+      return;
+    }
+    current = client;
+    const epoch = ++generation;
+    const ws = new WebSocket(`${client.base.replace("http:", "ws:")}/v1/ws`, {
+      headers: { Authorization: `Bearer ${client.instance.token}` },
+    });
+    socket = ws;
+    ws.onmessage = (packet) => {
+      const message = JSON.parse(String(packet.data));
+      if (
+        message.type === "hello" ||
+        (message.type === "conversation.event" && message.event.conversationId === conversationId)
+      ) {
+        onState("Connected");
+        void refresh(epoch);
+      }
+    };
+    ws.onclose = reconnect;
+    ws.onerror = () => ws.close();
+  };
+  void open();
+  return () => {
+    disposed = true;
+    generation++;
+    clearTimeout(retry);
     socket?.close();
   };
 }

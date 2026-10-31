@@ -66,8 +66,8 @@ test("Solid view registers real workspace and empty conversation through authent
     screen.mockInput.pressEnter();
     await waitFor("└ Real empty");
     screen.mockInput.pressArrow("down");
-    await waitFor("Empty conversation");
-    expect(screen.captureCharFrame()).toContain("not implemented in phase 1");
+    await waitFor("Conversation · IDLE");
+    expect(screen.captureCharFrame()).toContain("No Agent output yet");
     const client = await connect();
     const snapshot = await client?.request<{
       projects: { rootPath: string }[];
@@ -82,3 +82,119 @@ test("Solid view registers real workspace and empty conversation through authent
   }
   expect(await connect()).not.toBeNull();
 }, 15000);
+
+test("minimal ACP view sends once, preserves native choices and waits for a user decision", async () => {
+  const client = await connect();
+  if (!client) throw new Error("Daemon not running");
+  await client.request("/v1/harness-profiles", "POST", {
+    id: "mock",
+    name: "Mock ACP",
+    command: "node",
+    args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+  });
+  const project = await client.request<{ id: string }>("/v1/projects", "POST", { rootPath: temp });
+  const c = await client.request<{ id: string }>(
+    `/v1/projects/${project.id}/conversations`,
+    "POST",
+    { title: "UI ACP permission" },
+  );
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 120, height: 42 });
+  const waitFor = async (text: string) => {
+    for (let i = 0; i < 150; i++) {
+      await screen.renderOnce();
+      if (screen.captureCharFrame().includes(text)) return;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    }
+    throw new Error(`Missing ${text}:\n${screen.captureCharFrame()}`);
+  };
+  try {
+    await waitFor("UI ACP permission");
+    screen.mockInput.pressArrow("down");
+    screen.mockInput.pressArrow("down");
+    await waitFor("No Agent output yet");
+    await waitFor("m Message");
+    for (let i = 0; i < 4; i++) screen.mockInput.pressKey("h");
+    await waitFor("ACP · mock");
+    screen.mockInput.pressKey("m");
+    await waitFor("Enter send");
+    await screen.mockInput.typeText("permission");
+    screen.mockInput.pressEnter();
+    await waitFor("Native permission");
+    await waitFor("Reject (native)");
+    expect((await client.request<unknown[]>(`/v1/conversations/${c.id}/approvals`)).length).toBe(1);
+    screen.mockInput.pressKey("a");
+    await waitFor("Option number");
+    await screen.mockInput.typeText("2");
+    screen.mockInput.pressEnter();
+    await waitFor('"outcome":"selected"');
+    expect((await client.request<unknown[]>(`/v1/conversations/${c.id}/approvals`)).length).toBe(0);
+    const page = await client.request<{ events: { raw?: { method?: string }; origin: string }[] }>(
+      `/v1/conversations/${c.id}/events?limit=1000`,
+    );
+    expect(
+      page.events.filter((e) => e.origin === "client" && e.raw?.method === "session/prompt").length,
+    ).toBe(1);
+  } finally {
+    await screen.dispose();
+    await client.request(`/v1/conversations/${c.id}/session/stop`, "POST", {
+      force: true,
+      confirmed: true,
+    });
+  }
+}, 20000);
+
+test("native tool success collapses by default and manual expansion survives updates", async () => {
+  const { createSignal } = await import("solid-js");
+  const { NativeEvents } = await import("../../apps/tui/src/native-events");
+  const [events, setEvents] = createSignal<
+    import("../../packages/shared/src/runtime").ConversationEvent[]
+  >([]);
+  const event = (
+    payload: unknown,
+    seq: number,
+  ): import("../../packages/shared/src/runtime").ConversationEvent => ({
+    id: String(seq),
+    conversationId: "ui",
+    nativeSessionId: "native",
+    turnId: "turn",
+    seq,
+    raw: null,
+    payload,
+    kind: seq === 1 ? "tool_call" : "tool_call_update",
+    origin: "agent",
+    createdAt: seq,
+  });
+  const screen = await testRender(() => <NativeEvents events={events()} disabled={false} />, {
+    width: 100,
+    height: 20,
+  });
+  try {
+    setEvents([
+      event(
+        {
+          toolCallId: "tool",
+          title: "Native Exact Tool",
+          status: "in_progress",
+          rawOutput: "RUNNING_NATIVE_CONTENT",
+        },
+        1,
+      ),
+    ]);
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).toContain("RUNNING_NATIVE_CONTENT");
+    setEvents((e) => [
+      ...e,
+      event({ toolCallId: "tool", status: "completed", rawOutput: "SUCCESS_NATIVE_CONTENT" }, 2),
+    ]);
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).not.toContain("SUCCESS_NATIVE_CONTENT");
+    screen.mockInput.pressKey("e");
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).toContain("SUCCESS_NATIVE_CONTENT");
+    setEvents((e) => [...e, event({ toolCallId: "tool", rawOutput: "UPDATED_NATIVE_CONTENT" }, 3)]);
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).toContain("UPDATED_NATIVE_CONTENT");
+  } finally {
+    await screen.dispose();
+  }
+});

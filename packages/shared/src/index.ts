@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.2.0";
+export * from "./runtime";
+
+import type { RuntimeStatus } from "./runtime";
 export const PROTOCOL_VERSION = 1;
 export const projectInput = z
   .object({
@@ -29,7 +32,7 @@ export type Conversation = {
   title: string;
   workspaceMode: "shared";
   workspacePath: string;
-  runtimeStatus: "IDLE";
+  runtimeStatus: RuntimeStatus;
   createdAt: number;
   updatedAt: number;
 };

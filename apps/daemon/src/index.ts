@@ -13,7 +13,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Projects } from "@harnesshub/core";
+import { Projects, Runtime } from "@harnesshub/core";
 import {
   AppError,
   type ChangeEvent,
@@ -31,7 +31,8 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { WSContext } from "hono/ws";
 import { WebSocketServer } from "ws";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
+import { runtimeRoutes } from "./runtime-routes";
 
 process.umask(0o077);
 const p = paths();
@@ -109,6 +110,20 @@ async function main() {
       }
     }
   };
+  const runtime = new Runtime(
+    store,
+    (event) => {
+      for (const peer of peers) {
+        try {
+          peer.send(JSON.stringify({ type: "conversation.event", event }));
+        } catch {
+          peers.delete(peer);
+        }
+      }
+    },
+    publish,
+  );
+  runtimeRoutes(app, runtime);
   app.get("/v1/health", (c) =>
     c.json({
       product: "HarnessHub",
@@ -121,7 +136,13 @@ async function main() {
     }),
   );
   app.get("/v1/capabilities", (c) =>
-    c.json({ projects: true, conversations: true, metadataEvents: true, acp: false }),
+    c.json({
+      projects: true,
+      conversations: true,
+      metadataEvents: true,
+      acp: true,
+      conversationEvents: true,
+    }),
   );
   app.get("/v1/snapshot", (c) => c.json(store.snapshot()));
   app.get("/v1/projects", (c) => c.json(store.listProjects()));
@@ -192,10 +213,16 @@ async function main() {
       },
     })),
   );
-  app.post("/v1/daemon/stop", (c) => {
-    // Phase 1 has no Workers or active Turns. Future runtime must add a stop guard here.
+  app.post("/v1/daemon/stop", async (c) => {
+    const text = await c.req.text();
+    const input = z
+      .object({ cancelActive: z.boolean().default(false) })
+      .strict()
+      .parse(text ? JSON.parse(text) : {});
+    await runtime.shutdown(input.cancelActive);
+    stopping = true;
     setTimeout(() => {
-      void shutdown();
+      void shutdown(true);
     }, 25);
     return c.json({ stopping: true });
   });
@@ -224,8 +251,19 @@ async function main() {
   };
   privateWrite(p.instance, JSON.stringify(instance));
   log("started");
-  async function shutdown() {
-    if (stopping) return;
+  let shutdownStarted = false;
+  async function shutdown(prepared = false) {
+    if (shutdownStarted) return;
+    shutdownStarted = true;
+    if (!prepared) {
+      try {
+        await runtime.shutdown(true);
+      } catch {
+        shutdownStarted = false;
+        log("shutdown_refused_active_or_unconfirmed_worker");
+        return;
+      }
+    }
     stopping = true;
     for (const peer of wss.clients) peer.close(1001, "Daemon stopping");
     const timer = setTimeout(() => {

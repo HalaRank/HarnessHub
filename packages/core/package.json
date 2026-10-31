@@ -1,11 +1,12 @@
 {
   "name": "@harnesshub/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
     "@harnesshub/shared": "workspace:*",
-    "@harnesshub/storage": "workspace:*"
+    "@harnesshub/storage": "workspace:*",
+    "@harnesshub/acp": "workspace:*"
   }
 }

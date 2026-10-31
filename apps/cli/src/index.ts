@@ -24,7 +24,7 @@ async function main(args: string[]) {
   }
   if (command === "--help" || command === "-h") {
     console.log(
-      "HarnessHub\n  hhu [project-path]\n  hhu doctor\n  hhu daemon start|stop|status|logs\n  hhu --version",
+      "HarnessHub\n  hhu [project-path]\n  hhu doctor\n  hhu daemon start|stop [--cancel-active]|status|logs\n  hhu agent --help\n  hhu --version",
     );
     return;
   }
@@ -32,8 +32,17 @@ async function main(args: string[]) {
     await doctor();
     return;
   }
+  if (command === "agent") {
+    const { agentCommand } = await import("./agent");
+    await agentCommand(args.slice(1));
+    return;
+  }
   if (command === "daemon") {
-    if (args.length !== 2) throw new Error("Usage: hhu daemon start|stop|status|logs");
+    if (
+      args.length !== 2 &&
+      !(action === "stop" && args.length === 3 && args[2] === "--cancel-active")
+    )
+      throw new Error("Usage: hhu daemon start|stop|status|logs");
     switch (action) {
       case "start": {
         const client = await ensureDaemon();
@@ -44,7 +53,9 @@ async function main(args: string[]) {
       }
       case "stop":
         console.log(
-          (await stopDaemon()) ? "HarnessHub Daemon stopped" : "HarnessHub Daemon is not running",
+          (await stopDaemon(args.includes("--cancel-active")))
+            ? "HarnessHub Daemon stopped"
+            : "HarnessHub Daemon is not running",
         );
         return;
       case "status": {
@@ -127,7 +138,7 @@ async function doctor() {
   }
   const p = paths();
   console.log(
-    `Data: ${p.db}\nState: ${p.state}\nConfig: ${join(p.config, "config.json")} (optional; not created in phase 1)`,
+    `Data: ${p.db}\nState: ${p.state}\nConfig: ${join(p.config, "config.json")} (optional HarnessHub settings)`,
   );
   const client = await connect();
   console.log(
@@ -135,6 +146,8 @@ async function doctor() {
       ? `Daemon: connected, pid=${client.instance.pid}, port=${client.instance.port}, runtime=Node ${(await client.health()).nodeVersion}`
       : `Daemon: ${readInstance() ? "unreachable/stale/incompatible instance metadata" : "not running"}`,
   );
-  console.log("ACP: not implemented in phase 1; no Agent configuration was read.");
+  console.log(
+    "ACP: Generic SDK runtime; use hhu agent list for executable diagnostics and hhu agent session for an explicit handshake.",
+  );
   if (failed) process.exitCode = 1;
 }

@@ -72,9 +72,29 @@ export class Store {
       return { value, event: this.record("project.created", value.id) };
     });
   }
+  assertWorkspaceMutable(conversationIds: string[]) {
+    for (const id of conversationIds) {
+      const live = this.db
+        .select()
+        .from(schema.nativeSessions)
+        .where(and(eq(schema.nativeSessions.conversationId, id), sql`ended_at is null`))
+        .get();
+      const active = this.db
+        .select()
+        .from(schema.turns)
+        .where(and(eq(schema.turns.conversationId, id), sql`ended_at is null`))
+        .get();
+      if (live || active)
+        throw new AppError(
+          409,
+          "Conversation has a live Worker or Turn; stop it before deleting or rebinding its workspace",
+        );
+    }
+  }
   updateProject(id: string, patch: { rootPath?: string | undefined; name?: string | undefined }) {
     this.getProject(id);
     if (patch.rootPath) {
+      this.assertWorkspaceMutable(this.listConversations(id).map((c) => c.id));
       const duplicate = this.projectByRoot(patch.rootPath);
       if (duplicate && duplicate.id !== id)
         throw new AppError(409, "Project root already registered");
@@ -102,6 +122,7 @@ export class Store {
   }
   deleteProject(id: string) {
     this.getProject(id);
+    this.assertWorkspaceMutable(this.listConversations(id).map((c) => c.id));
     return this.db.transaction(() => {
       this.db.delete(schema.projects).where(eq(schema.projects.id, id)).run();
       return this.record("project.deleted", id);
@@ -155,6 +176,7 @@ export class Store {
   }
   deleteConversation(id: string) {
     this.getConversation(id);
+    this.assertWorkspaceMutable([id]);
     return this.db.transaction(() => {
       this.db.delete(schema.conversations).where(eq(schema.conversations.id, id)).run();
       return this.record("conversation.deleted", id);
@@ -186,3 +208,5 @@ export class Store {
     }));
   }
 }
+
+export { RuntimeStore } from "./runtime";

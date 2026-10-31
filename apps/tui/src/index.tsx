@@ -3,6 +3,7 @@ import { connect, watchSnapshot } from "@harnesshub/shared/client";
 import { createCliRenderer } from "@opentui/core";
 import { render, useKeyboard } from "@opentui/solid";
 import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { AgentPane } from "./agent-pane";
 
 type Row = {
   name: string;
@@ -17,7 +18,9 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   });
   const [state, setState] = createSignal("Connecting");
   const [selected, setSelected] = createSignal(0);
-  const [form, setForm] = createSignal<"project" | "conversation" | null>(null);
+  const [form, setForm] = createSignal<"project" | "conversation" | "message" | "approval" | null>(
+    null,
+  );
   const [error, setError] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const rows = createMemo<Row[]>(() =>
@@ -27,7 +30,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         .conversations.filter((c) => c.projectId === project.id)
         .map((conversation) => ({
           name: `  └ ${conversation.title}`,
-          description: "IDLE · Agent unavailable",
+          description: conversation.runtimeStatus,
           value: { project, conversation },
         })),
     ]),
@@ -102,7 +105,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   };
   return (
     <box flexDirection="column" width="100%" height="100%" padding={1} gap={1}>
-      <text fg="#80cbc4">HarnessHub · Phase 1 · {state()}</text>
+      <text fg="#80cbc4">HarnessHub · Phase 2 · {state()}</text>
       <box flexGrow={1} flexDirection="row" gap={1}>
         <box width="40%" border title="Projects → Conversations" flexDirection="column">
           <Show
@@ -140,18 +143,28 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             </text>
             <text>
               {row()?.value.conversation
-                ? "Empty conversation · IDLE"
+                ? `Conversation · ${row()?.value.conversation?.runtimeStatus}`
                 : "Press n to create a conversation in this project."}
             </text>
           </Show>
-          <text fg="#ffcc80">ACP Agents and message sending are not implemented in phase 1.</text>
+          <Show when={row()?.value.conversation?.id} keyed>
+            {(conversationId) => (
+              <AgentPane
+                conversation={
+                  snapshot().conversations.find((c) => c.id === conversationId) as Conversation
+                }
+                form={form()}
+                setForm={setForm}
+              />
+            )}
+          </Show>
           <text>
             Projects and conversations are stored in SQLite. Closing this TUI keeps the Daemon
             running.
           </text>
         </box>
       </box>
-      <Show when={form()}>
+      <Show when={form() === "project" || form() === "conversation"}>
         <box
           border
           title={

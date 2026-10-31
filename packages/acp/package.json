@@ -1,0 +1,11 @@
+{
+  "name": "@harnesshub/acp",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@harnesshub/shared": "workspace:*",
+    "@agentclientprotocol/sdk": "2.2.0"
+  }
+}

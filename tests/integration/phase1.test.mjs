@@ -190,7 +190,7 @@ test("SQLite uses WAL, foreign keys, schema version, and private permissions", a
     assert.equal(statSync(file).mode & 0o777, 0o600);
   const db = new Database(join(data, "harnesshub.db"));
   assert.equal(db.pragma("journal_mode", { simple: true }), "wal");
-  assert.equal(db.pragma("user_version", { simple: true }), 1);
+  assert.equal(db.pragma("user_version", { simple: true }), 2);
   db.pragma("foreign_keys = ON");
   assert.throws(() =>
     db
@@ -225,14 +225,14 @@ test("doctor reports real runtime and native binding; CLI errors are explicit", 
   const { stdout } = await cliRun("doctor");
   assert.match(stdout, /OK SQLite native \/ Node/);
   assert.match(stdout, /runtime=Node/);
-  assert.match(stdout, /ACP: not implemented/);
+  assert.match(stdout, /ACP: Generic SDK runtime/);
   const buildTime = statSync(cli).mtimeMs;
   await assert.rejects(
     run(bun, [resolve("scripts/install-local.ts")], { env, cwd: resolve("."), timeout: 10000 }),
     /Stop the running HarnessHub Daemon/,
   );
   assert.equal(statSync(cli).mtimeMs, buildTime, "installation guard must run before build");
-  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.1.0");
+  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.2.0");
   await assert.rejects(cliRun("daemon", "bogus"), /Usage/);
   await assert.rejects(cliRun(), /interactive terminal/);
 });
