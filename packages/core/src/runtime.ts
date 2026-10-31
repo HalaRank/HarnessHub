@@ -14,6 +14,7 @@ import {
   type ConversationEvent,
   type HarnessProfile,
   type RuntimeStatus,
+  sensitiveEnvKeys,
   type settingInput,
   type turnInput,
 } from "@harnesshub/shared";
@@ -58,6 +59,11 @@ export class Runtime {
     return profile;
   }
   saveProfile(profile: HarnessProfile) {
+    if (sensitiveEnvKeys(profile).length)
+      throw new AppError(
+        400,
+        "Credential environment overrides cannot be stored in a Profile; inherit the native process environment instead",
+      );
     if ([...this.live.values()].some((l) => l.harnessId === profile.id))
       throw new AppError(409, "Stop the profile's Workers before editing it");
     this.data.saveProfile(profile);
@@ -232,6 +238,7 @@ export class Runtime {
     if (previous) {
       if (previous.requestHash !== requestHash)
         throw new AppError(409, "requestId already used for different content");
+      this.store.consumeDraft(conversationId, input.requestId);
       return previous;
     }
     const conversation = this.store.getConversation(conversationId);
@@ -261,6 +268,7 @@ export class Runtime {
       turn.id,
     );
     this.data.updateTurn(turn.id, { startEventSeq: event.seq });
+    this.store.consumeDraft(conversationId, input.requestId);
     if (
       this.data
         .active()

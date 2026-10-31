@@ -21,6 +21,14 @@ export const profileInput = z
   })
   .strict();
 export type HarnessProfile = z.infer<typeof profileInput>;
+// Overrides are private launch metadata, never a credential store. Workers inherit process.env.
+export function sensitiveEnvKeys(profile: HarnessProfile) {
+  return Object.keys(profile.envOverrides).filter((key) =>
+    /api_?key|(?:^|_)(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIALS?|AUTHORIZATION|COOKIE|PRIVATE_KEY)(?:_|$)/i.test(
+      key,
+    ),
+  );
+}
 export const turnInput = z
   .object({
     requestId: z.string().uuid(),

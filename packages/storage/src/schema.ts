@@ -33,6 +33,25 @@ export const changes = sqliteTable("metadata_changes", {
   createdAt: integer("created_at").notNull(),
 });
 
+export const drafts = sqliteTable("conversation_drafts", {
+  conversationId: text("conversation_id")
+    .primaryKey()
+    .references(() => conversations.id, { onDelete: "cascade" }),
+  text: text("text").notNull().default(""),
+  revision: integer("revision").notNull().default(0),
+  pendingSubmission: text("pending_submission", { mode: "json" }).$type<
+    import("@harnesshub/shared").Draft["pendingSubmission"]
+  >(),
+});
+export const uiPreferences = sqliteTable("ui_preferences", {
+  id: integer("id").primaryKey(),
+  lastProjectId: text("last_project_id").references(() => projects.id, { onDelete: "set null" }),
+  lastConversationId: text("last_conversation_id").references(() => conversations.id, {
+    onDelete: "set null",
+  }),
+  showActivity: integer("show_activity", { mode: "boolean" }).notNull().default(true),
+});
+
 export const harnessProfiles = sqliteTable("harness_profiles", {
   id: text("id").primaryKey(),
   profile: text("profile", { mode: "json" })

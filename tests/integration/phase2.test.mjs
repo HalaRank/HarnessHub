@@ -97,14 +97,14 @@ test("migration upgrades a real Phase-1 database without losing projects/convers
   assert.equal((await api("/v1/projects"))[0].name, project.name);
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).some((p) => p.includes(".backup-")));
   const db = new Database(dbFile);
-  assert.equal(db.pragma("user_version", { simple: true }), 2);
+  assert.equal(db.pragma("user_version", { simple: true }), 3);
   db.close();
   await api("/v1/harness-profiles", "POST", {
     id: "mock",
     name: "Mock ACP",
     command: process.execPath,
     args: [resolve("tests/fixtures/mock-acp/server.mjs")],
-    envOverrides: { HHU_TEST_ONLY: "test", TOKEN: "not-a-secret" },
+    envOverrides: { HHU_TEST_ONLY: "test" },
   });
   const listed = await api("/v1/harness-profiles");
   assert.equal(listed.length, 5);

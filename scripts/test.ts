@@ -9,6 +9,7 @@ const integration = spawnSync(
     "--test-concurrency=1",
     "tests/integration/phase1.test.mjs",
     "tests/integration/phase2.test.mjs",
+    "tests/integration/phase3.test.mjs",
   ],
   { stdio: "inherit", env: { ...process.env, HARNESSHUB_BUN: process.execPath } },
 );

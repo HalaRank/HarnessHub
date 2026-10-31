@@ -75,7 +75,12 @@ test("simultaneous CLI starts share one authenticated Node Daemon, with empty gl
   const health = await api("/v1/health");
   assert.equal(health.runtime, "node");
   assert.equal(health.nodeVersion, process.versions.node);
-  assert.deepEqual(await api("/v1/snapshot"), { projects: [], conversations: [], cursor: 0 });
+  assert.deepEqual(await api("/v1/snapshot"), {
+    projects: [],
+    conversations: [],
+    cursor: 0,
+    activity: { running: 0, waitingApproval: 0, pendingApprovals: 0, problems: 0, items: [] },
+  });
   assert.equal((await request("/v1/health", "GET", undefined, { authorization: "" })).status, 401);
   assert.equal(
     (await request("/v1/health", "GET", undefined, { origin: "http://evil.invalid" })).status,
@@ -190,7 +195,7 @@ test("SQLite uses WAL, foreign keys, schema version, and private permissions", a
     assert.equal(statSync(file).mode & 0o777, 0o600);
   const db = new Database(join(data, "harnesshub.db"));
   assert.equal(db.pragma("journal_mode", { simple: true }), "wal");
-  assert.equal(db.pragma("user_version", { simple: true }), 2);
+  assert.equal(db.pragma("user_version", { simple: true }), 3);
   db.pragma("foreign_keys = ON");
   assert.throws(() =>
     db
@@ -232,7 +237,7 @@ test("doctor reports real runtime and native binding; CLI errors are explicit", 
     /Stop the running HarnessHub Daemon/,
   );
   assert.equal(statSync(cli).mtimeMs, buildTime, "installation guard must run before build");
-  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.2.0");
+  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.3.0");
   await assert.rejects(cliRun("daemon", "bogus"), /Usage/);
   await assert.rejects(cliRun(), /interactive terminal/);
 });

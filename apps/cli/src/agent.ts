@@ -7,7 +7,7 @@ import { ensureDaemon } from "./lifecycle";
 export async function agentCommand(args: string[]) {
   const [action, id, value, message, requestId] = args;
   if (!action || action === "--help") {
-    console.log(`HarnessHub ACP (Phase 2)
+    console.log(`HarnessHub ACP (Phase 3)
   hhu agent list
   hhu agent register <profile.json>   # command/args/envOverrides; no shell expansion
   hhu agent session <conversationId> <harnessId>

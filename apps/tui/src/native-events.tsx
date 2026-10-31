@@ -16,6 +16,9 @@ export function NativeEvents(props: { events: ConversationEvent[]; disabled: boo
     for (const event of props.events) {
       if (
         event.kind === "runtime.workspace_warning" ||
+        event.kind === "runtime.interrupted" ||
+        event.kind === "runtime.worker_lost" ||
+        event.kind === "runtime.session_ready" ||
         event.kind === "runtime.session_error" ||
         event.kind === "runtime.turn_finished"
       ) {

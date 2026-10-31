@@ -42,7 +42,7 @@ const app = new AgentApp()
       sessionId,
       configOptions,
       modes: { currentModeId: "ask", availableModes: [{ id: "ask", name: "Native ask" }] },
-      _meta: { workerCwd: process.cwd() },
+      _meta: { workerCwd: process.cwd(), inheritedCredential: !!process.env.HHU_TEST_API_KEY },
     };
   })
   .onRequest("session/set_config_option", ({ params }) => ({
@@ -62,6 +62,14 @@ const app = new AgentApp()
     prompts++;
     cancelled = false;
     const message = params.prompt[0].text;
+    if (message === "long-history" || message === "timed") {
+      const count = message === "long-history" ? 2505 : 35;
+      for (let i = 0; i < count; i++) {
+        await text(client, `native-${i} 世界\n`);
+        if (message === "timed") await new Promise((r) => setTimeout(r, 35));
+      }
+      return { stopReason: "end_turn" };
+    }
     if (message === "crash") {
       await text(client, "before crash");
       setTimeout(() => process.exit(17), 30);

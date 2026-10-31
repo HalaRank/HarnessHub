@@ -101,7 +101,10 @@ export function watchSnapshot(
         if (!disposed && epoch === generation) onSnapshot(snapshot);
       }
     } catch {
-      socket?.close();
+      if (epoch === generation) {
+        dirty = false;
+        socket?.terminate();
+      }
     } finally {
       refreshing = false;
       if (dirty && !disposed) void refresh(generation);
@@ -126,6 +129,7 @@ export function watchSnapshot(
     const epoch = ++generation;
     const ws = new WebSocket(`${client.base.replace("http:", "ws:")}/v1/ws`, {
       headers: { Authorization: `Bearer ${client.instance.token}` },
+      handshakeTimeout: 4000,
     });
     socket = ws;
     ws.onmessage = (packet) => {
@@ -137,11 +141,15 @@ export function watchSnapshot(
     ws.onclose = () => retryLater();
     ws.onerror = () => ws.close();
   };
+  const poll = setInterval(() => {
+    if (socket?.readyState === WebSocket.OPEN) void refresh(generation);
+  }, 3000);
   void open();
   return () => {
     disposed = true;
     generation++;
     if (retry) clearTimeout(retry);
+    clearInterval(poll);
     socket?.close();
   };
 }
@@ -153,6 +161,7 @@ export function watchConversation(
   onEvent: (event: import("./runtime").ConversationEvent) => void,
   onState: (state: string) => void,
   afterSeq = 0,
+  onBatch?: (events: import("./runtime").ConversationEvent[]) => void,
 ) {
   let cursor = afterSeq;
   let disposed = false;
@@ -174,19 +183,29 @@ export function watchConversation(
           cursor: number;
         }>(`/v1/conversations/${conversationId}/events?after_seq=${cursor}&limit=200`);
         if (disposed || epoch !== generation) break;
+        let nextCursor = cursor;
+        const batch = [];
         for (const event of page.events) {
-          if (event.seq <= cursor) continue;
-          if (event.seq !== cursor + 1) throw new Error("Conversation history has a sequence gap");
-          onEvent(event);
-          cursor = event.seq;
+          if (event.seq <= nextCursor) continue;
+          if (event.conversationId !== conversationId || event.seq !== nextCursor + 1)
+            throw new Error("Conversation history has a sequence gap");
+          batch.push(event);
+          nextCursor = event.seq;
         }
+        if (onBatch) onBatch(batch);
+        else for (const event of batch) onEvent(event);
+        cursor = nextCursor;
+        onState("Connected");
         if (cursor < page.cursor) {
           if (!page.events.length) throw new Error("Conversation history is incomplete");
           dirty = true;
         }
       }
     } catch {
-      socket?.close();
+      if (epoch === generation) {
+        dirty = false;
+        socket?.terminate();
+      }
     } finally {
       reading = false;
       if (dirty && !disposed) void refresh(generation);
@@ -211,6 +230,7 @@ export function watchConversation(
     const epoch = ++generation;
     const ws = new WebSocket(`${client.base.replace("http:", "ws:")}/v1/ws`, {
       headers: { Authorization: `Bearer ${client.instance.token}` },
+      handshakeTimeout: 4000,
     });
     socket = ws;
     ws.onmessage = (packet) => {
@@ -219,18 +239,21 @@ export function watchConversation(
         message.type === "hello" ||
         (message.type === "conversation.event" && message.event.conversationId === conversationId)
       ) {
-        onState("Connected");
         void refresh(epoch);
       }
     };
     ws.onclose = reconnect;
     ws.onerror = () => ws.close();
   };
+  const poll = setInterval(() => {
+    if (socket?.readyState === WebSocket.OPEN) void refresh(generation);
+  }, 3000);
   void open();
   return () => {
     disposed = true;
     generation++;
     clearTimeout(retry);
+    clearInterval(poll);
     socket?.close();
   };
 }

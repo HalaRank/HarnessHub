@@ -220,6 +220,29 @@ export class RuntimeStore {
         });
         this.updateTurn(turn.id, { finishEventSeq: event.seq });
       }
+      const interrupted = this.db
+        .select()
+        .from(nativeSessions)
+        .where(isNull(nativeSessions.endedAt))
+        .all();
+      for (const session of interrupted) {
+        if (this.store.getConversation(session.conversationId).runtimeStatus === "UNCERTAIN")
+          continue;
+        this.status(session.conversationId, "INTERRUPTED");
+        this.append({
+          conversationId: session.conversationId,
+          nativeSessionId: session.id,
+          turnId: null,
+          raw: null,
+          kind: "runtime.interrupted",
+          origin: "runtime",
+          payload: {
+            state: "INTERRUPTED",
+            reason: "daemon_restart",
+            nativeSessionRecovered: false,
+          },
+        });
+      }
       this.db
         .update(nativeSessions)
         .set({ status: "INTERRUPTED", endedAt: Date.now() })

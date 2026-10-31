@@ -1,5 +1,12 @@
 import type { Runtime } from "@harnesshub/core";
-import { AppError, decisionInput, profileInput, settingInput, turnInput } from "@harnesshub/shared";
+import {
+  AppError,
+  decisionInput,
+  profileInput,
+  sensitiveEnvKeys,
+  settingInput,
+  turnInput,
+} from "@harnesshub/shared";
 import type { Hono } from "hono";
 import { z } from "zod";
 
@@ -13,6 +20,7 @@ export function runtimeRoutes(app: Hono, runtime: Runtime) {
       runtime.profiles().map(({ envOverrides, ...profile }) => ({
         ...profile,
         envOverrideKeys: Object.keys(envOverrides),
+        sensitiveEnvOverrideKeys: sensitiveEnvKeys({ ...profile, envOverrides }),
       })),
     ),
   );
@@ -60,6 +68,12 @@ export function runtimeRoutes(app: Hono, runtime: Runtime) {
     c.json(runtime.submit(c.req.param("id"), turnInput.parse(await c.req.json())), 202),
   );
   app.get("/v1/turns/:id", (c) => c.json(runtime.data.turn(c.req.param("id"))));
+  app.get("/v1/requests/:requestId", (c) => {
+    const requestId = z.string().uuid().parse(c.req.param("requestId"));
+    const turn = runtime.data.byRequest(requestId);
+    if (!turn) throw new AppError(404, "Request has not been recorded; it was not resent");
+    return c.json(turn);
+  });
   app.post("/v1/turns/:id/cancel", async (c) => c.json(await runtime.cancel(c.req.param("id"))));
   app.get("/v1/conversations/:id/approvals", (c) => {
     runtime.store.getConversation(c.req.param("id"));

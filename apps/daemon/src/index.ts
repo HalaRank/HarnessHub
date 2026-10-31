@@ -18,8 +18,10 @@ import {
   AppError,
   type ChangeEvent,
   conversationInput,
+  draftInput,
   type Instance,
   PROTOCOL_VERSION,
+  preferencesPatch,
   projectInput,
   projectPatch,
   VERSION,
@@ -79,7 +81,8 @@ async function main() {
   let stopping = false;
   let instance: Instance;
   const app = new Hono();
-  app.use("*", bodyLimit({ maxSize: 64 * 1024 }));
+  // A reserved draft carries text plus the same pending message; allow schema-sized UTF-8 text.
+  app.use("*", bodyLimit({ maxSize: 1024 * 1024 }));
   app.use("*", async (c, next) => {
     // CLI clients have no browser Origin. Reject browser access, including WS upgrades.
     if (c.req.header("origin")) return c.json({ error: "Browser origins are not allowed" }, 403);
@@ -145,6 +148,23 @@ async function main() {
     }),
   );
   app.get("/v1/snapshot", (c) => c.json(store.snapshot()));
+  app.get("/v1/preferences", (c) => c.json(store.preferences()));
+  app.patch("/v1/preferences", async (c) => {
+    const data = preferencesPatch.parse(await c.req.json());
+    return c.json(
+      store.savePreferences({
+        ...(data.lastProjectId === undefined ? {} : { lastProjectId: data.lastProjectId }),
+        ...(data.lastConversationId === undefined
+          ? {}
+          : { lastConversationId: data.lastConversationId }),
+        ...(data.showActivity === undefined ? {} : { showActivity: data.showActivity }),
+      }),
+    );
+  });
+  app.get("/v1/conversations/:id/draft", (c) => c.json(store.draft(c.req.param("id"))));
+  app.put("/v1/conversations/:id/draft", async (c) =>
+    c.json(store.saveDraft(c.req.param("id"), draftInput.parse(await c.req.json()))),
+  );
   app.get("/v1/projects", (c) => c.json(store.listProjects()));
   app.post("/v1/projects", async (c) => {
     const data = projectInput.parse(await c.req.json());
@@ -227,6 +247,21 @@ async function main() {
     return c.json({ stopping: true });
   });
   const wss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
+  const alive = new WeakSet<import("ws").WebSocket>();
+  wss.on("connection", (ws) => {
+    alive.add(ws);
+    ws.on("pong", () => alive.add(ws));
+  });
+  const heartbeat = setInterval(() => {
+    for (const ws of wss.clients) {
+      if (!alive.has(ws)) ws.terminate();
+      else {
+        alive.delete(ws);
+        ws.ping();
+      }
+    }
+  }, 15000);
+  heartbeat.unref();
   // Hono structural ws types and @types/ws differ under exactOptionalPropertyTypes.
   // This is the official noServer adapter integration; wire behavior is tested below.
   const server = serve({
@@ -265,6 +300,7 @@ async function main() {
       }
     }
     stopping = true;
+    clearInterval(heartbeat);
     for (const peer of wss.clients) peer.close(1001, "Daemon stopping");
     const timer = setTimeout(() => {
       for (const peer of wss.clients) peer.terminate();

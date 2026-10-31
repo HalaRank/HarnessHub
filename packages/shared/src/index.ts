@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 export * from "./runtime";
+export * from "./session-state";
 
 import type { RuntimeStatus } from "./runtime";
 export const PROTOCOL_VERSION = 1;
@@ -37,7 +38,12 @@ export type Conversation = {
   updatedAt: number;
 };
 export type ChangeEvent = { seq: number; type: string; entityId: string; createdAt: number };
-export type Snapshot = { projects: Project[]; conversations: Conversation[]; cursor: number };
+export type Snapshot = {
+  projects: Project[];
+  conversations: Conversation[];
+  cursor: number;
+  activity: import("./session-state").Activity;
+};
 export type Instance = {
   pid: number;
   port: number;

@@ -1,9 +1,9 @@
-import { randomUUID } from "node:crypto";
 import type { Approval, Conversation, ConversationEvent, Turn } from "@harnesshub/shared";
 import { connect, HttpError, watchConversation } from "@harnesshub/shared/client";
 import type { TextareaRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/solid";
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { DraftSession } from "./draft-session";
 import { NativeEvents } from "./native-events";
 
 type Permission = {
@@ -14,6 +14,7 @@ export function AgentPane(props: {
   conversation: Conversation;
   form: string | null;
   setForm: (value: "message" | "approval" | null) => void;
+  onDraftError: (message: string) => void;
 }) {
   const [events, setEvents] = createSignal<ConversationEvent[]>([]);
   const [profiles, setProfiles] = createSignal<{ id: string; name: string }[]>([]);
@@ -23,9 +24,16 @@ export function AgentPane(props: {
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");
   const [connection, setConnection] = createSignal("Connecting");
-  let draft = "";
+  const conversationId = props.conversation.id;
+  const [draftReady, setDraftReady] = createSignal(false);
+  const [draftState, setDraftState] = createSignal(0);
+  const draft = new DraftSession(
+    conversationId,
+    () => setDraftState((n) => n + 1),
+    (e) => props.onDraftError(e instanceof Error ? e.message : "Draft save failed"),
+  );
+  let disposed = false;
   let textarea: TextareaRenderable | undefined;
-  let submission: { requestId: string; message: string; harnessId: string } | undefined;
   const request = async <T,>(path: string, method = "GET", body?: unknown) => {
     const client = await connect();
     if (!client) throw new Error("Daemon disconnected");
@@ -44,34 +52,60 @@ export function AgentPane(props: {
     }
   };
   const refreshApprovals = async () => {
-    setApprovals(await request<Approval[]>(`/v1/conversations/${props.conversation.id}/approvals`));
+    setApprovals(await request<Approval[]>(`/v1/conversations/${conversationId}/approvals`));
   };
   onMount(() => {
     void run(async () => {
+      await draft.load();
+      if (disposed) {
+        await draft.dispose();
+        return;
+      }
+      setDraftReady(true);
       setProfiles(await request("/v1/harness-profiles"));
       const sessions = await request<{ harnessId: string }[]>(
-        `/v1/conversations/${props.conversation.id}/sessions`,
+        `/v1/conversations/${conversationId}/sessions`,
       );
       if (sessions.length) setHarness(sessions[sessions.length - 1]?.harnessId ?? "codex");
+      if (draft.value.pendingSubmission) setHarness(draft.value.pendingSubmission.harnessId);
       await refreshApprovals();
     });
     const stop = watchConversation(
       props.conversation.id,
-      (event) => {
-        setEvents((previous) => [...previous, event]);
-        if (event.kind === "user.message") setTurnId(event.turnId);
-        if (event.kind === "runtime.turn_finished" || event.kind === "runtime.interrupted")
-          setTurnId(null);
-        if (event.kind.startsWith("approval.") || event.kind === "runtime.turn_finished")
+      () => {},
+      setConnection,
+      0,
+      (batch) => {
+        if (!batch.length) return;
+        setEvents((previous) => [...previous, ...batch]);
+        for (const event of batch) {
+          if (event.kind === "user.message") setTurnId(event.turnId);
+          if (event.kind === "runtime.turn_finished" || event.kind === "runtime.interrupted")
+            setTurnId(null);
+        }
+        if (
+          batch.some(
+            (e) =>
+              e.kind.startsWith("approval.") ||
+              e.kind === "runtime.turn_finished" ||
+              e.kind === "runtime.interrupted",
+          )
+        )
           void refreshApprovals().catch(() => {});
       },
-      setConnection,
     );
-    onCleanup(stop);
+    onCleanup(() => {
+      disposed = true;
+      stop();
+      void draft
+        .dispose()
+        .catch((e) => props.onDraftError(e instanceof Error ? e.message : "Draft save failed"));
+      if (props.form === "message" || props.form === "approval") props.setForm(null);
+    });
   });
   useKeyboard((key) => {
     if (props.form || busy()) return;
-    if (key.name === "m") {
+    if (key.name === "m" && draftReady()) {
       key.preventDefault();
       props.setForm("message");
     }
@@ -93,32 +127,40 @@ export function AgentPane(props: {
     run(async () => {
       const message = textarea?.plainText ?? "";
       if (!message.trim()) return;
-      if (submission && (submission.message !== message || submission.harnessId !== harness()))
-        throw new Error(
-          `Unconfirmed request ${submission.requestId}; retry its original message before submitting another`,
-        );
-      submission ??= { requestId: randomUUID(), message, harnessId: harness() };
+      draft.update(message);
+      const submission = await draft.prepare(harness());
       try {
         const turn = await request<Turn>(
-          `/v1/conversations/${props.conversation.id}/turns`,
+          `/v1/conversations/${conversationId}/turns`,
           "POST",
           submission,
         );
-        submission = undefined;
-        draft = "";
         setTurnId(turn.endedAt ? null : turn.id);
       } catch (error) {
         if (error instanceof HttpError && [400, 404, 409].includes(error.status))
-          submission = undefined;
+          await draft.rejected();
         throw error;
       }
-      props.setForm(null);
+      await draft.accepted();
+      if (!disposed) props.setForm(null);
     });
   return (
     <box flexDirection="column" flexGrow={1} gap={1}>
       <text>
         ACP · {harness()} · {props.conversation.runtimeStatus} · {connection()}
       </text>
+      <Show
+        when={
+          props.conversation.runtimeStatus === "INTERRUPTED" ||
+          props.conversation.runtimeStatus === "UNCERTAIN"
+        }
+      >
+        <text fg="#ffcc80">
+          {props.conversation.runtimeStatus === "UNCERTAIN"
+            ? "Execution result unknown. Inspect history and workspace; no task will be replayed."
+            : "Previous native session interrupted. The next message starts a new native session."}
+        </text>
+      </Show>
       <scrollbox flexGrow={1} minHeight={3} border title="Native ACP output">
         <NativeEvents events={events()} disabled={!!props.form} />
       </scrollbox>
@@ -155,7 +197,7 @@ export function AgentPane(props: {
                     await request(`/v1/approvals/${approval().id}/decision`, "POST", {
                       optionId: option.optionId,
                     });
-                    props.setForm(null);
+                    if (!disposed) props.setForm(null);
                     await refreshApprovals();
                   });
                 }}
@@ -172,9 +214,10 @@ export function AgentPane(props: {
           title="Enter send · Shift+Enter / Ctrl+J newline · Esc close"
         >
           <textarea
-            initialValue={draft}
+            id="message-draft"
+            initialValue={draft.text}
             onContentChange={() => {
-              draft = textarea?.plainText ?? draft;
+              draft.update(textarea?.plainText ?? draft.text);
             }}
             ref={(element) => {
               textarea = element;
@@ -195,8 +238,14 @@ export function AgentPane(props: {
       <Show when={error()}>
         <text fg="#ef9a9a">{error()}</text>
       </Show>
+      <Show when={draftState() >= 0 && draft.value.pendingSubmission}>
+        <text fg="#ffcc80">
+          Unconfirmed request {draft.value.pendingSubmission?.requestId}. Enter explicitly retries
+          this same request; reconnect never sends it.
+        </text>
+      </Show>
       <text>
-        {busy()
+        {busy() || !draftReady()
           ? "ACP operation pending"
           : "m Message · h Select Harness · a Native approval · c Cancel Turn"}
       </text>

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ChangeEvent } from "@harnesshub/shared";
-import { AppError } from "@harnesshub/shared";
+import type { Activity, ChangeEvent, Draft, Preferences } from "@harnesshub/shared";
+import { AppError, activeStates, problemStates } from "@harnesshub/shared";
 import { privateDir } from "@harnesshub/shared/paths";
 import Database from "better-sqlite3";
 import { and, eq, gt, sql } from "drizzle-orm";
@@ -198,10 +198,106 @@ export class Store {
       .limit(limit)
       .all();
   }
+  draft(conversationId: string): Draft {
+    this.getConversation(conversationId);
+    const row = this.db
+      .select()
+      .from(schema.drafts)
+      .where(eq(schema.drafts.conversationId, conversationId))
+      .get();
+    return row
+      ? { ...row, pendingSubmission: row.pendingSubmission ?? null }
+      : { conversationId, text: "", revision: 0, pendingSubmission: null };
+  }
+  saveDraft(conversationId: string, input: Omit<Draft, "conversationId">): Draft {
+    return this.db.transaction(() => {
+      const current = this.draft(conversationId);
+      if (current.revision !== input.revision)
+        throw new AppError(409, "Draft changed in another client; local text was not overwritten");
+      const row = { ...input, conversationId, revision: current.revision + 1 };
+      this.db
+        .insert(schema.drafts)
+        .values(row)
+        .onConflictDoUpdate({ target: schema.drafts.conversationId, set: row })
+        .run();
+      return row;
+    });
+  }
+  consumeDraft(conversationId: string, requestId: string) {
+    const draft = this.draft(conversationId);
+    if (draft.pendingSubmission?.requestId === requestId)
+      this.saveDraft(conversationId, {
+        text: "",
+        revision: draft.revision,
+        pendingSubmission: null,
+      });
+  }
+  preferences(): Preferences {
+    const row = this.db
+      .select()
+      .from(schema.uiPreferences)
+      .where(eq(schema.uiPreferences.id, 1))
+      .get();
+    return row
+      ? {
+          lastProjectId: row.lastProjectId,
+          lastConversationId: row.lastConversationId,
+          showActivity: row.showActivity,
+        }
+      : { lastProjectId: null, lastConversationId: null, showActivity: true };
+  }
+  savePreferences(patch: Partial<Preferences>) {
+    return this.db.transaction(() => {
+      const next = { ...this.preferences(), ...patch };
+      if (next.lastConversationId) {
+        const conversation = this.getConversation(next.lastConversationId);
+        if (patch.lastProjectId !== undefined && patch.lastProjectId !== conversation.projectId) {
+          if (patch.lastConversationId !== undefined)
+            throw new AppError(400, "Recent Conversation does not belong to Project");
+          next.lastConversationId = null;
+        } else next.lastProjectId = conversation.projectId;
+      }
+      if (next.lastProjectId) this.getProject(next.lastProjectId);
+      this.db
+        .insert(schema.uiPreferences)
+        .values({ id: 1, ...next })
+        .onConflictDoUpdate({ target: schema.uiPreferences.id, set: next })
+        .run();
+      return next;
+    });
+  }
+  activity(): Activity {
+    const pending = this.db
+      .select({ conversationId: schema.approvals.conversationId, count: sql<number>`count(*)` })
+      .from(schema.approvals)
+      .where(eq(schema.approvals.status, "PENDING"))
+      .groupBy(schema.approvals.conversationId)
+      .all();
+    const active = this.db.select().from(schema.turns).where(sql`ended_at is null`).all();
+    const pendingById = new Map(pending.map((p) => [p.conversationId, p.count]));
+    const activeById = new Map(active.map((t) => [t.conversationId, t.id]));
+    const items = this.listConversations()
+      .filter((c) => c.runtimeStatus !== "IDLE")
+      .map((c) => ({
+        conversationId: c.id,
+        projectId: c.projectId,
+        status: c.runtimeStatus,
+        activeTurnId: activeById.get(c.id) ?? null,
+        pendingApprovals: pendingById.get(c.id) ?? 0,
+      }));
+    return {
+      items,
+      running: items.filter((i) => activeStates.has(i.status)).length,
+      waitingApproval: pending.length,
+      pendingApprovals: pending.reduce((n, p) => n + p.count, 0),
+      problems: items.filter((i) => problemStates.has(i.status)).length,
+    };
+  }
   snapshot() {
     return this.db.transaction(() => ({
       projects: this.listProjects(),
       conversations: this.listConversations(),
+      activity: this.activity(),
       cursor:
         this.db.select({ seq: sql<number>`coalesce(max(seq), 0)` }).from(schema.changes).get()
           ?.seq ?? 0,
