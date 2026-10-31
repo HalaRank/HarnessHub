@@ -1,10 +1,13 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { join, relative, resolve } from "node:path";
+import type { InputRenderable } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
+import { expandProjectPath } from "../../apps/tui/src/project-path";
+import { ProjectPathInput } from "../../apps/tui/src/project-path-input";
 import { connect } from "../../packages/shared/src/client";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-tui-"));
@@ -57,7 +60,10 @@ test("Solid view registers real workspace and empty conversation through authent
     await waitFor("No projects");
     screen.mockInput.pressKey("p");
     await waitFor("Existing project");
-    await screen.mockInput.typeText(temp);
+    expect(screen.captureCharFrame()).toContain("~/");
+    await screen.mockInput.typeText(relative(homedir(), temp).slice(0, -1));
+    screen.mockInput.pressTab();
+    await waitFor(`${temp.split("/").at(-1)}/`);
     screen.mockInput.pressEnter();
     await waitFor("Press n to create");
     screen.mockInput.pressKey("n");
@@ -82,6 +88,89 @@ test("Solid view registers real workspace and empty conversation through authent
   }
   expect(await connect()).not.toBeNull();
 }, 15000);
+
+test("project directory Tab completes common prefixes, spaces, Unicode and symlinks without submitting", async () => {
+  const root = join(temp, "completion");
+  for (const name of ["project alpha", "project alpine", "项目", ".hidden"])
+    mkdirSync(join(root, name), { recursive: true });
+  writeFileSync(join(root, "project file"), "not a directory");
+  symlinkSync(join(root, "项目"), join(root, "linked"));
+  symlinkSync(join(root, "missing"), join(root, "broken"));
+  let submitted = "";
+  const screen = await testRender(
+    () => (
+      <ProjectPathInput
+        busy={false}
+        onSubmit={(value) => {
+          submitted = value;
+        }}
+      />
+    ),
+    { width: 120, height: 15 },
+  );
+  const input = screen.renderer.root.findDescendantById("project-path") as InputRenderable;
+  const waitFor = async (predicate: () => boolean) => {
+    for (let i = 0; i < 100; i++) {
+      await screen.renderOnce();
+      if (predicate()) return;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error(`Completion did not settle: ${screen.captureCharFrame()}`);
+  };
+  try {
+    expect(input.value).toBe("~/");
+    input.value = `${root}/project `;
+    screen.mockInput.pressTab();
+    await waitFor(() => input.value === `${root}/project alp`);
+    expect(screen.captureCharFrame()).toContain("project alpha/");
+    expect(screen.captureCharFrame()).toContain("project alpine/");
+    expect(screen.captureCharFrame()).not.toContain("project file");
+    await screen.mockInput.typeText("h");
+    screen.mockInput.pressTab();
+    await waitFor(() => input.value === `${root}/project alpha/`);
+    expect(submitted).toBe("");
+    screen.mockInput.pressEnter();
+    expect(submitted).toBe(`${root}/project alpha/`);
+
+    for (const [prefix, expected] of [
+      ["项", "项目/"],
+      ["link", "linked/"],
+      [".h", ".hidden/"],
+    ]) {
+      input.value = `${root}/${prefix}`;
+      screen.mockInput.pressTab();
+      await waitFor(() => input.value === `${root}/${expected}`);
+    }
+    input.value = `${root}/`;
+    screen.mockInput.pressTab();
+    await waitFor(() => screen.captureCharFrame().includes("linked/"));
+    expect(screen.captureCharFrame()).not.toContain(".hidden/");
+    expect(screen.captureCharFrame()).not.toContain("broken/");
+
+    input.value = `${root}/missing`;
+    screen.mockInput.pressTab();
+    await waitFor(() => screen.captureCharFrame().includes("No matching directories"));
+    expect(input.value).toBe(`${root}/missing`);
+    input.value = `${root}/missing/`;
+    screen.mockInput.pressTab();
+    await waitFor(() => screen.captureCharFrame().includes("Cannot read this directory"));
+    input.value = `${root}/project alph/suffix`;
+    input.cursorOffset = `${root}/project alph`.length;
+    screen.mockInput.pressTab();
+    await waitFor(() => input.value === `${root}/project alpha/suffix`);
+
+    input.value = `${root}/link`;
+    screen.mockInput.pressTab();
+    await screen.mockInput.typeText("x");
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(input.value).toBe(`${root}/linkx`);
+    expect(expandProjectPath("~")).toBe(homedir());
+    expect(expandProjectPath(`~/${relative(homedir(), temp)}`)).toBe(temp);
+    expect(expandProjectPath(relative(homedir(), temp))).toBe(temp);
+  } finally {
+    await screen.dispose();
+  }
+});
 
 test("minimal ACP view sends once, preserves native choices and waits for a user decision", async () => {
   const client = await connect();

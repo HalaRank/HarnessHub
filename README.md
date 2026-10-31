@@ -32,7 +32,7 @@ hhu daemon stop --cancel-active  # 明确请求原生取消；等待结束后才
 hhu --version
 ```
 
-无参数启动不会把 Shell cwd 注册为项目。在 TUI 中按 `p` 注册项目，按 `n` 创建会话。↑/↓ 浏览，选中 Conversation 后 `h` 选择 Harness、`m` 输入消息、Enter 发送、Shift+Enter 换行（终端不支持时用 Ctrl+J）、`a` 输入原生权限选项编号、`c` 正常取消。工具成功默认折叠，`t` 选择工具、`e` 手动展开/折叠。Esc 关闭输入，`q` / Ctrl+C 退出 TUI；退出不停止 Daemon / Worker。Windows Terminal 和 VS Code WSL 的真实键码仍需人工验收。
+无参数启动不会把 Shell cwd 注册为项目。在 TUI 中按 `p` 注册项目，目录默认从 `~/` 开始；按 Tab 补全目录，多个匹配时补齐共同前缀并显示候选，继续输入后可再次 Tab。支持绝对路径，`~` 和相对路径以 Home 展开，不会创建目录。按 `n` 创建会话。↑/↓ 浏览，选中 Conversation 后 `h` 选择 Harness、`m` 输入消息、Enter 发送、Shift+Enter 换行（终端不支持时用 Ctrl+J）、`a` 输入原生权限选项编号、`c` 正常取消。工具成功默认折叠，`t` 选择工具、`e` 手动展开/折叠。Esc 关闭输入，`q` / Ctrl+C 退出 TUI；退出不停止 Daemon / Worker。Windows Terminal 和 VS Code WSL 的真实键码仍需人工验收。
 
 同一 Conversation 复用当前存活的原生会话。跨 Harness 提交需等待 Phase 5 Handoff；Phase 2 使用新的 Conversation 接入另一个 Harness。不同 Conversation 可以共享项目目录并行执行，界面会提示并发修改风险。
 

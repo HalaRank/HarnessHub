@@ -4,6 +4,8 @@ import { createCliRenderer } from "@opentui/core";
 import { render, useKeyboard } from "@opentui/solid";
 import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { AgentPane } from "./agent-pane";
+import { expandProjectPath } from "./project-path";
+import { ProjectPathInput } from "./project-path-input";
 
 type Row = {
   name: string;
@@ -91,7 +93,8 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     try {
       const client = await connect();
       if (!client) throw new Error("Daemon disconnected; reconnect before saving");
-      if (form() === "project") await client.request("/v1/projects", "POST", { rootPath: value });
+      if (form() === "project")
+        await client.request("/v1/projects", "POST", { rootPath: expandProjectPath(value) });
       else if (form() === "conversation" && row())
         await client.request(`/v1/projects/${row()?.value.project.id}/conversations`, "POST", {
           title: value,
@@ -164,21 +167,14 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           </text>
         </box>
       </box>
-      <Show when={form() === "project" || form() === "conversation"}>
-        <box
-          border
-          title={
-            form() === "project"
-              ? "Existing project: absolute Linux directory"
-              : "New conversation title"
-          }
-          height={3}
-        >
+      <Show when={form() === "project"}>
+        <ProjectPathInput busy={busy()} onSubmit={(value) => void submit(value)} />
+      </Show>
+      <Show when={form() === "conversation"}>
+        <box border title="New conversation title" height={3}>
           <input
             focused={!busy()}
-            placeholder={
-              form() === "project" ? "/home/user/projects/example" : "Conversation title"
-            }
+            placeholder="Conversation title"
             onSubmit={(value) => {
               if (typeof value === "string") void submit(value);
             }}

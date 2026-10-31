@@ -270,6 +270,7 @@ test("built hhu cold-starts from home in two real PTYs; closing clients keeps th
     timeout: 45000,
   });
   assert.equal(JSON.parse(stdout).twoConcurrent, true);
+  assert.equal(JSON.parse(stdout).tabCompletedRegistration, true);
   assert.notEqual(instance().instanceId, before);
   assert.equal((await api("/v1/projects")).length, 1);
 });

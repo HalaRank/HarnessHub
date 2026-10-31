@@ -128,3 +128,17 @@
 6. `hhu agent register /absolute/profile.json` 接入自定义 ACP Agent；验证真实握手，未知事件可读 raw。仅执行入口存在不能当作成功。
 7. 只删除应用元数据不会删除项目文件；存活 Worker 会阻止删除/路径重绑。查看 `hhu daemon logs` 不应有完整 Prompt、Token 或全部工具输出；按 README 核对数据与备份权限。
 8. 分别在 Windows Terminal / VS Code WSL 完成上述操作并记录结果。本阶段到此等待验收，不自动进入 Phase 3。
+
+## 阶段内修正：项目目录默认 Home 与 Tab 补全
+
+日期：2026-10-31。按用户要求调整已有项目注册交互，未进入下一阶段。
+
+- `apps/tui/src/project-path-input.tsx`：项目目录默认 `~/`；Tab 补全光标前的目录，共同前缀补齐并显示多候选，唯一匹配追加 `/`；Enter 才注册。补全异步读取真实文件系统，输入变化或退出表单后忽略过期结果。
+- `apps/tui/src/project-path.ts`、`index.tsx`：提交时将 `~` / `~/` 和相对路径展开到 Home，不依赖启动 Shell cwd；绝对路径继续可用。支持空格、中文、目录符号链接，默认隐藏点目录，输入 `.` 后可补全；普通文件和失效符号链接不进入目录候选。Daemon 继续校验实际目录并 canonicalize，不创建目录。
+- `tests/e2e/tui.test.tsx`：4 项界面测试通过，包含 Home 默认值、Tab 后经真实 HTTP 注册项目，以及多候选、空格/中文、符号链接、无匹配、读取失败、光标中部补全和编辑时丢弃过期结果。
+- `tests/e2e/terminal.py`、`tests/integration/phase1.test.mjs`：构建后真实 Linux PTY 从 Home 输入相对路径前缀、Tab 补全、Enter 注册已存在的项目，确认路径去重且可以重新打开表单。
+- `README.md`：补充目录输入和补全使用方式。
+
+验证：`bun run typecheck`、`bun run lint`、`bun run test`（含 build、23 项 Node 集成测试、4 项 Bun/Solid 测试）通过；增加 PTY 补全断言后单独重跑 Phase 1 的 10 项集成测试全部通过（`HARNESSHUB_BUN="$(command -v bun)" node --test --test-concurrency=1 tests/integration/phase1.test.mjs`）。`git diff --check` 通过。证据目录：`/tmp/hhu-phase1-HU1Jul`、`/tmp/hhu-phase2-rQBChn`、PTY 加强后 `/tmp/hhu-phase1-DAidO9`。
+
+人工待验收：重新打开 `hhu`，按 `p` 确认目录为 `~/`，输入目录前缀后按 Tab，多个候选时继续输入并再次 Tab，Enter 注册并核对项目路径。Windows Terminal / VS Code WSL 的人工体验仍为**未验证**；本次已验证 Linux PTY 和 OpenTUI renderer。补全范围为当前用户 Home、相对/绝对目录，不提供 Shell 命令、环境变量或 `~其他用户` 展开。

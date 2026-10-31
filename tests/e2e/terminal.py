@@ -65,6 +65,18 @@ try:
     quit_child(first)
     # The remaining TUI still processes input after the first one closes.
     os.write(second[1], b"p")
+    read_until(second, b"~/")
+    # Complete the actual project from Home and register its canonical duplicate.
+    project_path = os.environ["HARNESSHUB_PTY_PROJECT"]
+    relative_path = os.path.relpath(project_path, os.path.expanduser("~"))
+    os.write(second[1], relative_path[:-1].encode())
+    time.sleep(0.15)
+    os.write(second[1], b"\t")
+    time.sleep(0.2)
+    os.write(second[1], b"\r")
+    time.sleep(0.3)
+    # This shortcut opens a fresh form only if registration closed the first one.
+    os.write(second[1], b"p")
     read_until(second, b"Existing project")
     os.write(second[1], b"\x1b")
     time.sleep(0.15)
@@ -73,7 +85,7 @@ try:
     third = launch(os.environ["HARNESSHUB_PTY_PROJECT"])
     read_until(third, b"Workspace:")
     quit_child(third)
-    print(json.dumps({"ptyClients": 3, "twoConcurrent": True, "quitExitCode": 0, "cwd": os.path.expanduser("~")}))
+    print(json.dumps({"ptyClients": 3, "twoConcurrent": True, "tabCompletedRegistration": True, "quitExitCode": 0, "cwd": os.path.expanduser("~")}))
 finally:
     for pid, fd, done in children:
         if not done:
