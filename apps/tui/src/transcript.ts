@@ -33,6 +33,52 @@ export function pretty(value: unknown): string {
   return typeof value === "string" ? value : (JSON.stringify(value, null, 2) ?? "null");
 }
 
+const controlEvents = new Set([
+  "initialize",
+  "initialized",
+  "authenticate",
+  "acp.response",
+  "$/cancel_request",
+  "session/new",
+  "session/load",
+  "session/resume",
+  "session/list",
+  "session/close",
+  "session/prompt",
+  "session/cancel",
+  "session/set_mode",
+  "session/set_model",
+  "session/set_config_option",
+  "session/request_permission",
+  "fs/read_text_file",
+  "fs/write_text_file",
+  "terminal/create",
+  "terminal/output",
+  "terminal/wait_for_exit",
+  "terminal/kill",
+  "terminal/release",
+  "available_commands_update",
+  "current_mode_update",
+  "config_option_update",
+  "session_info_update",
+  "usage_update",
+  "runtime.session_ready",
+]);
+
+// Keep wire/control traffic in the debug stream, never discard the persisted source.
+export function chatVisible(event: ConversationEvent) {
+  const payload = object(event.payload),
+    raw = object(event.raw);
+  if (
+    raw.error != null ||
+    payload.error != null ||
+    /error|fail|interrupt|lost/i.test(event.kind) ||
+    ["error", "fatal"].includes(String(payload.level ?? payload.severity))
+  )
+    return true;
+  return !controlEvents.has(event.kind);
+}
+
 // Stable row identities and per-row signals: a streaming chunk updates its row, not the history.
 // Display segments are bounded; source events remain intact and linked by seq/id.
 export class Transcript {
@@ -46,6 +92,8 @@ export class Transcript {
   private conversationId = "";
   private readonly sizeSignal = createSignal(0);
   readonly size = this.sizeSignal[0];
+  private readonly eventSignal = createSignal(0);
+  readonly eventCount = this.eventSignal[0];
   append(events: ConversationEvent[]) {
     batch(() => {
       for (const event of events) {
@@ -59,6 +107,7 @@ export class Transcript {
         this.add(event);
       }
       this.sizeSignal[1](this.rows.length);
+      this.eventSignal[1](this.events.length);
     });
   }
   private row(event: ConversationEvent, value: RowData, group = event.id) {
@@ -109,6 +158,7 @@ export class Transcript {
     return row;
   }
   private add(event: ConversationEvent) {
+    if (!chatVisible(event)) return;
     const p = object(event.payload);
     const chunk = ["agent_message_chunk", "agent_thought_chunk", "user_message_chunk"].includes(
       event.kind,

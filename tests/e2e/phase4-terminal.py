@@ -65,7 +65,7 @@ def read_until(child, needle, timeout=20):
 
 
 def quit_child(child):
-    os.write(child[1], b"q")
+    os.write(child[1], b"\x03")
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
         pid, status = os.waitpid(child[0], os.WNOHANG)
@@ -78,7 +78,7 @@ def quit_child(child):
                 os.read(child[1], 65536)
             except OSError:
                 pass
-    raise AssertionError("hhu did not exit cleanly")
+    raise AssertionError("hhu did not exit cleanly after empty-input Ctrl+C")
 
 
 def all_events(conversation_id):

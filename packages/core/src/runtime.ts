@@ -39,6 +39,24 @@ export class Runtime {
   readonly live = new Map<string, Live>();
   readonly pending = new Map<string, Pending>();
   closing = false;
+  readonly deleting = new Set<string>();
+  assertAvailable(id: string) {
+    if (this.deleting.has(id)) throw new AppError(409, "Conversation deletion is in progress");
+  }
+  async deleteConversation(id: string) {
+    this.assertAvailable(id);
+    this.store.assertConversationDeletable(id);
+    const live = this.live.get(id);
+    if (live && (!live.session || live.configuring))
+      throw new AppError(409, "Wait for session operation to finish");
+    this.deleting.add(id);
+    try {
+      await this.closeSession(id, false);
+      return this.store.deleteConversation(id);
+    } finally {
+      this.deleting.delete(id);
+    }
+  }
   constructor(
     readonly store: Store,
     readonly publish: (event: ConversationEvent) => void,
@@ -162,6 +180,7 @@ export class Runtime {
     return snapshot;
   }
   async ensure(conversationId: string, harnessId: string): Promise<Live> {
+    this.assertAvailable(conversationId);
     if (this.closing) throw new AppError(503, "Runtime is stopping");
     this.store.getConversation(conversationId);
     this.profile(harnessId);
@@ -241,6 +260,7 @@ export class Runtime {
       this.store.consumeDraft(conversationId, input.requestId);
       return previous;
     }
+    this.assertAvailable(conversationId);
     const conversation = this.store.getConversation(conversationId);
     if (this.closing) throw new AppError(503, "Runtime is stopping");
     if (conversation.runtimeStatus === "UNCERTAIN")
@@ -480,6 +500,7 @@ export class Runtime {
     return this.data.turn(turnId);
   }
   async settings(conversationId: string, input: z.infer<typeof settingInput>) {
+    this.assertAvailable(conversationId);
     const live = this.live.get(conversationId);
     if (!live?.session || !live.worker || live.worker.closed)
       throw new AppError(409, "Create a live session first");

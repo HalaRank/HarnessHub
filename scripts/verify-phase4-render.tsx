@@ -66,6 +66,10 @@ for (const item of setup.conversations) {
     () => <NativeEvents model={transcript} view={view} disabled={false} />,
     { width: 180, height: 55 },
   );
+  Object.defineProperty(exact.renderer, "capabilities", {
+    get: () => ({ remote: true, osc52_support: "supported" }),
+    configurable: true,
+  });
   exact.renderer.copyToClipboardOSC52 = (value) => {
     copy.push(value);
     return true;
@@ -78,7 +82,14 @@ for (const item of setup.conversations) {
     history.scrollChildIntoView(`native-${row.id}`, { align: "start" });
     for (let n = 0; n < 4; n++) await exact.renderOnce();
     assert.ok(
-      exact.captureCharFrame().includes(String(tool.title ?? tool.toolCallId).slice(0, 50)),
+      exact
+        .captureCharFrame()
+        .replace(/\s+/g, " ")
+        .includes(
+          String(tool.title ?? tool.toolCallId)
+            .slice(0, 50)
+            .replace(/\s+/g, " "),
+        ),
       "Native tool title missing from real transcript render",
     );
     writeFileSync(
@@ -91,6 +102,7 @@ for (const item of setup.conversations) {
     for (let n = 0; n < outputIndex; n++) exact.mockInput.pressArrow("down");
     exact.mockInput.pressEnter();
     await exact.renderOnce();
+    await waitCopy(() => copy.at(-1) === parts[outputIndex]?.text);
     assert.equal(copy.at(-1), parts[outputIndex]?.text, "TUI copy changed real native tool output");
     writeFileSync(
       join(setup.evidence, `${item.harnessId}-source-frame.txt`),
@@ -130,6 +142,10 @@ for (const item of setup.conversations) {
     () => <NativeEvents model={transcript} view={messageView} disabled={false} />,
     { width: 180, height: 55 },
   );
+  Object.defineProperty(chat.renderer, "capabilities", {
+    get: () => ({ remote: true, osc52_support: "supported" }),
+    configurable: true,
+  });
   chat.renderer.copyToClipboardOSC52 = (value) => {
     copy.push(value);
     return true;
@@ -157,12 +173,14 @@ for (const item of setup.conversations) {
     for (let n = 0; n < 4; n++) await chat.renderOnce();
     chat.mockInput.pressEnter();
     await chat.renderOnce();
+    await waitCopy(() => copy.at(-1) === markdown);
     assert.equal(copy.at(-1), markdown);
     const codeIndex = source.findIndex((part) => part.name.startsWith("Code "));
     assert.ok(codeIndex >= 0);
     for (let n = 0; n < codeIndex; n++) chat.mockInput.pressArrow("down");
     chat.mockInput.pressEnter();
     await chat.renderOnce();
+    await waitCopy(() => copy.at(-1) === source[codeIndex]?.text);
     assert.equal(copy.at(-1), source[codeIndex]?.text);
     console.log(
       JSON.stringify({
@@ -176,4 +194,12 @@ for (const item of setup.conversations) {
   } finally {
     await chat.dispose();
   }
+}
+
+async function waitCopy(check: () => boolean) {
+  for (let i = 0; i < 200; i++) {
+    if (check()) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error("Clipboard transport did not receive original source");
 }

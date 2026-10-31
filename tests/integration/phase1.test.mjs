@@ -151,7 +151,7 @@ test("Project/Conversation CRUD validates actual paths, canonicalizes duplicates
   const extra = await api(`/v1/projects/${project.id}/conversations`, "POST", {
     title: "Delete metadata",
   });
-  await api(`/v1/conversations/${extra.id}`, "DELETE");
+  await api(`/v1/conversations/${extra.id}`, "DELETE", { confirmed: true });
   assert.equal((await request(`/v1/conversations/${extra.id}`)).status, 404);
   assert.equal(readFileSync(join(root, "keep.txt"), "utf8"), "user file");
   assert.equal(
@@ -195,7 +195,7 @@ test("SQLite uses WAL, foreign keys, schema version, and private permissions", a
     assert.equal(statSync(file).mode & 0o777, 0o600);
   const db = new Database(join(data, "harnesshub.db"));
   assert.equal(db.pragma("journal_mode", { simple: true }), "wal");
-  assert.equal(db.pragma("user_version", { simple: true }), 4);
+  assert.equal(db.pragma("user_version", { simple: true }), 5);
   db.pragma("foreign_keys = ON");
   assert.throws(() =>
     db
@@ -237,7 +237,7 @@ test("doctor reports real runtime and native binding; CLI errors are explicit", 
     /Stop the running HarnessHub Daemon/,
   );
   assert.equal(statSync(cli).mtimeMs, buildTime, "installation guard must run before build");
-  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.4.0");
+  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.4.1");
   await assert.rejects(cliRun("daemon", "bogus"), /Usage/);
   await assert.rejects(cliRun(), /interactive terminal/);
 });

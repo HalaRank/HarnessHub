@@ -8,7 +8,7 @@ export const draftInput = z
     pendingSubmission: turnInput.nullable().default(null),
   })
   .strict()
-  .refine((d) => !d.pendingSubmission || d.pendingSubmission.message === d.text);
+  .refine((d) => !d.pendingSubmission || d.text === "" || d.pendingSubmission.message === d.text);
 export type Draft = z.infer<typeof draftInput> & { conversationId: string };
 export const shortcutNames = ["palette", "sidebar", "newline", "changes", "copy"] as const;
 export const defaultShortcuts = {

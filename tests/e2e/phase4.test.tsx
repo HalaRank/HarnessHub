@@ -73,7 +73,7 @@ async function frame(screen: Awaited<ReturnType<typeof testRender>>, text: strin
   await waitFor(async () => {
     await screen.renderOnce();
     return screen.captureCharFrame().includes(text);
-  }, `${text}\n${screen.captureCharFrame()}`);
+  }, text);
 }
 async function setup(title: string) {
   const root = join(temp, title);
@@ -266,6 +266,10 @@ test("source viewer copies exact original Markdown, code and native tool output 
     height: 35,
   });
   const copied: string[] = [];
+  Object.defineProperty(screen.renderer, "capabilities", {
+    get: () => ({ remote: true, osc52_support: "supported" }),
+    configurable: true,
+  });
   screen.renderer.copyToClipboardOSC52 = (text) => {
     copied.push(text);
     return true;
@@ -274,14 +278,17 @@ test("source viewer copies exact original Markdown, code and native tool output 
     await screen.renderOnce();
     screen.mockInput.pressEnter();
     await screen.renderOnce();
+    await waitFor(() => copied.length > 0);
     expect(copied.at(-1)).toBe(markdown);
     screen.mockInput.pressArrow("down");
     screen.mockInput.pressEnter();
     await screen.renderOnce();
+    await waitFor(() => copied.at(-1) === output);
     expect(copied.at(-1)).toBe(output);
     screen.mockInput.pressArrow("down");
     screen.mockInput.pressEnter();
     await screen.renderOnce();
+    await waitFor(() => copied.at(-1) === "  original();\n\n");
     expect(copied.at(-1)).toBe("  original();\n\n");
   } finally {
     await screen.dispose();
@@ -609,6 +616,10 @@ test("Codex terminal metadata deltas render and copy without changing native pay
     { width: 140, height: 45 },
   );
   const copied: string[] = [];
+  Object.defineProperty(screen.renderer, "capabilities", {
+    get: () => ({ remote: true, osc52_support: "supported" }),
+    configurable: true,
+  });
   screen.renderer.copyToClipboardOSC52 = (value) => {
     copied.push(value);
     return true;
@@ -623,6 +634,7 @@ test("Codex terminal metadata deltas render and copy without changing native pay
     screen.mockInput.pressArrow("down");
     screen.mockInput.pressEnter();
     await screen.renderOnce();
+    await waitFor(() => copied.length > 0);
     expect(copied.at(-1)).toBe("  first\nsecond\n\n");
   } finally {
     await screen.dispose();
@@ -713,5 +725,306 @@ test("a new history page cannot replace the page being read after the user scrol
     await frame(screen, "DO_NOT_JUMP_NEW_PAGE");
   } finally {
     await screen.dispose();
+  }
+});
+
+test("refinement hides ACP control traffic, retains real errors and all raw sources", async () => {
+  const model = new Transcript();
+  const events = [
+    event(1, "initialize", { secretMarker: "HANDSHAKE_ONLY" }),
+    event(2, "acp.response", { result: "CONTROL_ONLY" }),
+    textEvent(3, "visible original Markdown"),
+    event(4, "config_option_update", { configOptions: [] }),
+    textEvent(5, " continuation"),
+    {
+      ...event(6, "acp.response", { message: "REAL_PROTOCOL_ERROR" }),
+      raw: { id: 2, error: { code: -1, message: "REAL_PROTOCOL_ERROR" } },
+    },
+    event(7, "custom", { meaningful: "UNKNOWN_VISIBLE" }),
+    event(8, "runtime.session_error", { message: "REAL_RUNTIME_ERROR" }),
+  ];
+  model.append(events);
+  expect(model.events).toEqual(events);
+  expect(model.rows[0]?.value().text).toBe("visible original Markdown continuation");
+  const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+    width: 140,
+    height: 30,
+  });
+  try {
+    await frame(screen, "REAL_RUNTIME_ERROR");
+    expect(screen.captureCharFrame()).toContain("REAL_PROTOCOL_ERROR");
+    expect(screen.captureCharFrame()).toContain("UNKNOWN_VISIBLE");
+    expect(screen.captureCharFrame()).not.toContain("HANDSHAKE_ONLY");
+    expect(screen.captureCharFrame()).not.toContain("CONTROL_ONLY");
+  } finally {
+    await screen.dispose();
+  }
+});
+
+test("Ctrl+C clears draft, second Ctrl+C exits; selection takes precedence and does not cancel running Agent", async () => {
+  const { c } = await setup("Ctrl C states");
+  const turn = await api<{ id: string }>(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "mock",
+    message: "wait",
+  });
+  let exits = 0;
+  const screen = await testRender(
+    () => (
+      <App
+        onExit={() => {
+          exits++;
+        }}
+      />
+    ),
+    { width: 150, height: 35, exitOnCtrlC: false, exitSignals: [] },
+  );
+  const copied: string[] = [];
+  Object.defineProperty(screen.renderer, "capabilities", {
+    get: () => ({ remote: true, osc52_support: "supported" }),
+    configurable: true,
+  });
+  screen.renderer.copyToClipboardOSC52 = (text) => {
+    copied.push(text);
+    return true;
+  };
+  try {
+    await frame(screen, "started");
+    await frame(screen, "m Message");
+    screen.mockInput.pressKey("m");
+    await screen.mockInput.typeText("unsent draft");
+    const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
+    screen.mockInput.pressKey("c", { ctrl: true });
+    await screen.renderOnce();
+    expect(input.plainText).toBe("");
+    expect(exits).toBe(0);
+    await screen.mockInput.typeText("preserve this draft");
+    screen.mockInput.pressEscape();
+    await new Promise((r) => setTimeout(r, 60));
+    await screen.renderOnce();
+    const lines = screen.captureCharFrame().split("\n");
+    const y = lines.findIndex((line) => line.includes("started")),
+      x = lines[y]?.indexOf("started") ?? -1;
+    expect(x).toBeGreaterThan(0);
+    await screen.mockMouse.drag(x, y, x + 6, y);
+    await waitFor(() => copied.includes("started"));
+    const before = copied.length;
+    screen.mockInput.pressKey("c", { ctrl: true });
+    await waitFor(() => copied.length > before);
+    expect(copied.at(-1)).toBe("started");
+    expect(screen.renderer.getSelection()).toBeNull();
+    expect(input.plainText).toBe("preserve this draft");
+    expect(exits).toBe(0);
+    screen.mockInput.pressKey("c", { ctrl: true });
+    expect(input.plainText).toBe("");
+    expect(exits).toBe(0);
+    screen.mockInput.pressKey("c", { ctrl: true });
+    await waitFor(() => exits === 1);
+    expect((await api<{ endedAt: number | null }>(`/v1/turns/${turn.id}`)).endedAt).toBeNull();
+    const events = (
+      await api<{ events: ConversationEvent[] }>(`/v1/conversations/${c.id}/events?limit=1000`)
+    ).events;
+    expect(events.some((e) => (e.raw as { method?: string })?.method === "session/cancel")).toBe(
+      false,
+    );
+    expect((await api<{ text: string }>(`/v1/conversations/${c.id}/draft`)).text).toBe("");
+  } finally {
+    await screen.dispose();
+    await api(`/v1/turns/${turn.id}/cancel`, "POST");
+    await waitFor(
+      async () => (await api<{ endedAt: number | null }>(`/v1/turns/${turn.id}`)).endedAt !== null,
+    );
+    await api(`/v1/conversations/${c.id}/session/stop`, "POST", {});
+  }
+}, 20000);
+
+test("mouse release copies multiline chat and code; double click selects a word and triple click selects a line", async () => {
+  const { c } = await setup("Selection gestures");
+  const message = "alpha beta gamma\nsecond line exact\n\n```ts\n  codeIndent();\n```";
+  const turn = await api<{ id: string }>(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "mock",
+    message,
+  });
+  await waitFor(
+    async () => (await api<{ endedAt: number | null }>(`/v1/turns/${turn.id}`)).endedAt !== null,
+  );
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 40 });
+  const copied: string[] = [];
+  Object.defineProperty(screen.renderer, "capabilities", {
+    get: () => ({ remote: true, osc52_support: "supported" }),
+    configurable: true,
+  });
+  screen.renderer.copyToClipboardOSC52 = (text) => {
+    copied.push(text);
+    return true;
+  };
+  try {
+    await frame(screen, "m Message");
+    const scroll = screen.renderer.root.findDescendantById("native-history") as ScrollBoxRenderable;
+    scroll.scrollTo(0);
+    await frame(screen, "alpha beta gamma");
+    const locate = (text: string) => {
+      const lines = screen.captureCharFrame().split("\n");
+      const y = lines.findIndex((line) => line.includes(text));
+      return { x: lines[y]?.indexOf(text) ?? -1, y };
+    };
+    const first = locate("alpha beta gamma"),
+      second = locate("second line exact");
+    await screen.mockMouse.doubleClick(first.x + 7, first.y);
+    await waitFor(() => copied.at(-1) === "beta");
+    await screen.mockMouse.click(first.x + 7, first.y);
+    await waitFor(() => copied.at(-1)?.includes("alpha beta gamma") ?? false);
+    expect(screen.renderer.getSelection()?.behavior).toBe("line");
+    screen.renderer.clearSelection();
+    await screen.mockMouse.drag(first.x, first.y, second.x + 16, second.y);
+    await waitFor(() => copied.at(-1)?.includes("second line exact") ?? false);
+    expect(copied.at(-1)).toContain("alpha beta gamma\nsecond line exact");
+    screen.renderer.clearSelection();
+    const code = locate("  codeIndent();");
+    await screen.mockMouse.drag(code.x, code.y, code.x + 14, code.y);
+    await waitFor(() => copied.at(-1)?.includes("codeIndent();") ?? false);
+    expect(copied.at(-1)).toContain("  codeIndent();");
+    screen.renderer.clearSelection();
+    screen.mockInput.pressKey("t");
+    screen.mockInput.pressKey("e");
+    await screen.renderOnce();
+    scroll.scrollTo(Infinity);
+    await frame(screen, "Result");
+    const output = locate("output\\n");
+    expect(output.x).toBeGreaterThan(0);
+    await screen.mockMouse.drag(output.x, output.y, output.x + 5, output.y);
+    await waitFor(() => copied.at(-1) === "output");
+  } finally {
+    await screen.dispose();
+    await api(`/v1/conversations/${c.id}/session/stop`, "POST", {});
+  }
+}, 20000);
+
+async function command(screen: Awaited<ReturnType<typeof testRender>>, query: string) {
+  screen.mockInput.pressKey("p", { ctrl: true });
+  await frame(screen, "Command palette");
+  await screen.mockInput.typeText(query);
+  screen.mockInput.pressEnter();
+  await screen.renderOnce();
+}
+
+test("archive, restore, Raw Events and delete confirmation synchronize between two TUI clients", async () => {
+  const { c } = await setup("Lifecycle UI");
+  await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "mock" });
+  const one = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  const two = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  try {
+    await frame(one, "m Message");
+    await frame(two, "m Message");
+    await command(one, "Raw Events");
+    await frame(one, "Raw Events #");
+    expect(one.captureCharFrame()).toContain('"raw"');
+    one.mockInput.pressEscape();
+    await new Promise((r) => setTimeout(r, 60));
+    await one.renderOnce();
+    await command(one, "Archive Conversation");
+    await waitFor(async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt);
+    await frame(two, "Press n to create");
+    expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
+    await command(one, "View Archived");
+    await frame(one, "Archives visible");
+    await command(one, "Conversation · Lifecycle UI");
+    await frame(one, "[archived]");
+    await frame(one, "m Message");
+    await command(one, "Restore Archived");
+    await waitFor(
+      async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt === null,
+    );
+    await command(two, "Conversation · Lifecycle UI");
+    await frame(two, "Conversation · Lifecycle UI");
+    await command(one, "Delete Conversation");
+    await frame(one, "Confirm Conversation deletion");
+    one.mockInput.pressEscape();
+    await new Promise((r) => setTimeout(r, 60));
+    await one.renderOnce();
+    expect((await api<Conversation>(`/v1/conversations/${c.id}`)).id).toBe(c.id);
+    await command(one, "Delete Conversation");
+    await frame(one, "Type DELETE");
+    await one.mockInput.typeText("DELETE");
+    one.mockInput.pressEnter();
+    await waitFor(
+      async () =>
+        !(await api<{ conversations: Conversation[] }>("/v1/snapshot")).conversations.some(
+          (v) => v.id === c.id,
+        ),
+    );
+    await frame(two, "Press n to create");
+    expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
+  } finally {
+    await one.dispose();
+    await two.dispose();
+  }
+}, 20000);
+
+test("compact layout gives transcript most rows; input grows and narrow sidebar collapses", async () => {
+  await setup("Layout refinement");
+  const screen = await testRender(() => <App onExit={() => {}} />, {
+    width: 120,
+    height: 30,
+    kittyKeyboard: true,
+  });
+  try {
+    await frame(screen, "m Message");
+    const history = screen.renderer.root.findDescendantById(
+      "native-history",
+    ) as ScrollBoxRenderable;
+    const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
+    expect(history.height).toBeGreaterThanOrEqual(20);
+    expect(input.height).toBe(1);
+    screen.mockInput.pressKey("m");
+    await screen.mockInput.typeText("one");
+    screen.mockInput.pressEnter({ shift: true });
+    await screen.mockInput.typeText("two");
+    screen.mockInput.pressEnter({ shift: true });
+    await screen.mockInput.typeText("three");
+    await screen.renderOnce();
+    expect(input.height).toBe(3);
+    screen.resize(70, 24);
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).not.toContain("Projects → Conversations");
+    expect(input.plainText).toBe("one\ntwo\nthree");
+    screen.resize(120, 30);
+    await frame(screen, "Projects → Conversations");
+  } finally {
+    await screen.dispose();
+  }
+});
+
+test("clearing an unconfirmed draft persists empty input while retaining the reserved requestId", async () => {
+  const { DraftSession } = await import("../../apps/tui/src/draft-session");
+  const { c } = await setup("Clear reserved draft");
+  const first = new DraftSession(
+    c.id,
+    () => {},
+    () => {},
+  );
+  await first.load();
+  first.update("original uncertain message");
+  const reserved = await first.prepare("mock");
+  first.update("");
+  await first.flush();
+  await first.dispose();
+  const second = new DraftSession(
+    c.id,
+    () => {},
+    () => {},
+  );
+  await second.load();
+  try {
+    expect(second.text).toBe("");
+    expect(second.value.pendingSubmission?.requestId).toBe(reserved.requestId);
+    expect((await api<{ events: unknown[] }>(`/v1/conversations/${c.id}/events`)).events).toEqual(
+      [],
+    );
+    second.update(reserved.message);
+    expect((await second.prepare("mock")).requestId).toBe(reserved.requestId);
+  } finally {
+    await second.dispose();
   }
 });

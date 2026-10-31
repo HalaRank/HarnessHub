@@ -1,26 +1,29 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
-import { useKeyboard, useRenderer } from "@opentui/solid";
-import { createMemo, createSignal, For } from "solid-js";
+import { useKeyboard } from "@opentui/solid";
+import { createEffect, createMemo, createSignal, For, untrack } from "solid-js";
+import { useClipboard } from "./clipboard";
 import type { SourcePart } from "./rich-content";
 
 // Showing source never submits it to an Agent. Copy uses the original string, not screen text.
 export function SourceViewer(props: { parts: SourcePart[]; onClose: () => void }) {
-  const renderer = useRenderer();
+  const copyText = useClipboard();
   let scroll: ScrollBoxRenderable | undefined;
   const [selected, setSelected] = createSignal(0),
     [page, setPage] = createSignal(0),
     [notice, setNotice] = createSignal("");
+  createEffect(() => {
+    if (untrack(selected) >= props.parts.length) setSelected(0);
+    const text = props.parts[untrack(selected)]?.text ?? "";
+    setPage((value) => Math.min(value, Math.max(0, Math.ceil(text.length / 24000) - 1)));
+  });
   const source = () => props.parts[selected()]?.text ?? "";
   const count = () => Math.max(1, Math.ceil(source().length / 24000));
   const options = createMemo(() =>
     props.parts.map((p) => ({ name: p.name, description: "", value: p })),
   );
-  const copy = () =>
-    setNotice(
-      renderer.copyToClipboardOSC52(source())
-        ? "Copy sent to terminal clipboard (OSC52); terminal policy controls acceptance"
-        : "Terminal clipboard unavailable; select source text to copy",
-    );
+  const copy = () => {
+    void copyText(source()).then(setNotice);
+  };
   useKeyboard((key) => {
     if (key.name === "escape") {
       key.preventDefault();

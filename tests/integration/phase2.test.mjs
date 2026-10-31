@@ -90,14 +90,19 @@ test("migration upgrades a real Phase-1 database without losing projects/convers
   mkdirSync(join(env.XDG_DATA_HOME, "harnesshub"), { recursive: true });
   const store = await openStore(dbFile, dir);
   project = store.addProject(temp, "Existing Phase-1 Project").value;
-  const c = store.addConversation(project.id, "Preserve this conversation").value;
+  const c = { id: crypto.randomUUID(), title: "Preserve this conversation" };
+  store.sqlite
+    .prepare(
+      "INSERT INTO conversations (id, project_id, title, workspace_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    )
+    .run(c.id, project.id, c.title, temp, Date.now(), Date.now());
   store.close();
   await cli("daemon", "start");
   assert.equal((await api(`/v1/conversations/${c.id}`)).title, c.title);
   assert.equal((await api("/v1/projects"))[0].name, project.name);
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).some((p) => p.includes(".backup-")));
   const db = new Database(dbFile);
-  assert.equal(db.pragma("user_version", { simple: true }), 4);
+  assert.equal(db.pragma("user_version", { simple: true }), 5);
   db.close();
   await api("/v1/harness-profiles", "POST", {
     id: "mock",
@@ -138,7 +143,7 @@ test("SDK initialization, both cwd values, native settings, ordered raw streams 
     (await request(`/v1/projects/${project.id}`, "PATCH", { rootPath: tmpdir() })).status,
     409,
   );
-  assert.equal((await request(`/v1/conversations/${c.id}`, "DELETE")).status, 409);
+  assert.equal((await request(`/v1/conversations/${c.id}`, "DELETE", {})).status, 400);
   const turn = await submit(c, "stream");
   assert.equal((await turnDone(turn)).state, "COMPLETED");
   const all = await events(c),

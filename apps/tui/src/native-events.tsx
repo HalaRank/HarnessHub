@@ -174,7 +174,7 @@ export function NativeEvents(props: {
                 </Show>
                 <Show when={row.value().kind === "tool"}>
                   <box flexDirection="column" border borderColor="#36404b" paddingX={1}>
-                    <text>{`${row.value().waiting ? "WAITING_APPROVAL · " : ""}${row.value().tool?.status ?? "pending"} · t select tool / e expand/collapse`}</text>
+                    <text>{`${row.value().waiting ? "WAITING_APPROVAL · " : ""}${row.value().tool?.status ?? "pending"} · e expand/collapse`}</text>
                     <Show when={toolExpanded(row.value(), manual()[row.id])}>
                       <ToolContent
                         tool={row.value().tool ?? {}}
@@ -215,8 +215,9 @@ export function NativeEvents(props: {
       </scrollbox>
       <text
         flexShrink={0}
+        height={1}
         fg="#8b949e"
-      >{`History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · r raw · y source/copy · PgUp/PgDn scroll · Ctrl+PgUp/PgDn pages · End follow`}</text>
+      >{`History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · r details · y copy · PgUp/PgDn scroll · End follow`}</text>
       <Show when={source()}>{(parts) => <SourceViewer parts={parts()} onClose={close} />}</Show>
     </box>
   );

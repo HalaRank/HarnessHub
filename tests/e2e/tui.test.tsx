@@ -72,7 +72,7 @@ test("Solid view registers real workspace and empty conversation through authent
     screen.mockInput.pressEnter();
     await waitFor("└ Real empty");
     screen.mockInput.pressArrow("down");
-    await waitFor("Conversation · IDLE");
+    await waitFor("· IDLE");
     expect(screen.captureCharFrame()).toContain("No Agent output yet");
     const client = await connect();
     const snapshot = await client?.request<{
@@ -402,7 +402,7 @@ test("background approval is discoverable in another Project, survives TUI exit 
   });
   let screen = await testRender(() => <App onExit={() => {}} />, { width: 160, height: 45 });
   try {
-    await waitFrame(screen, "Approval 1 (1 requests)");
+    await waitFrame(screen, "Approval 1");
     await waitFrame(screen, "WAITING_APPROVAL");
     const before = await client.request<{ id: string; workerId: string }[]>(
       `/v1/conversations/${c.id}/sessions`,

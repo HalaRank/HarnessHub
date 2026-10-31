@@ -9,9 +9,10 @@ import {
 } from "@harnesshub/shared";
 import { connect, watchSnapshot } from "@harnesshub/shared/client";
 import { createCliRenderer } from "@opentui/core";
-import { render, useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import { render, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid";
 import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type AgentAction, AgentPane } from "./agent-pane";
+import { interruptTui, useClipboard } from "./clipboard";
 import { type Command, CommandPalette } from "./command-palette";
 import { flushDrafts } from "./draft-session";
 import { expandProjectPath } from "./project-path";
@@ -42,8 +43,15 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     | "shortcuts"
     | "details"
     | "settings"
+    | "delete"
     | null
   >(null);
+  const renderer = useRenderer();
+  const copyText = useClipboard();
+  const [notice, setNotice] = createSignal("");
+  const [showArchived, setShowArchived] = createSignal(false);
+  let clearInput: (() => boolean) | undefined;
+  const [deleteTarget, setDeleteTarget] = createSignal<Conversation | null>(null);
   const [error, setError] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const [showActivity, setShowActivity] = createSignal(true);
@@ -68,9 +76,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     snapshot().projects.flatMap((project) => [
       { name: project.name, description: project.rootPath, value: { project } },
       ...snapshot()
-        .conversations.filter((c) => c.projectId === project.id)
+        .conversations.filter(
+          (c) => c.projectId === project.id && (showArchived() || c.archivedAt === null),
+        )
         .map((conversation) => ({
-          name: `  └ ${conversation.title}`,
+          name: `  └ ${conversation.title}${conversation.archivedAt !== null ? " [archived]" : ""}`,
           description: conversation.runtimeStatus,
           value: { project, conversation },
         })),
@@ -79,12 +89,16 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   const row = () => rows()[selected()];
   let initial = true;
   let recent: Preferences | undefined;
+  let exiting = false;
   const exit = async () => {
+    if (exiting) return;
+    exiting = true;
     try {
       await flushDrafts();
       await preferenceSave;
       props.onExit();
     } catch (e) {
+      exiting = false;
       setError(e instanceof Error ? e.message : "Could not save draft before exit");
     }
   };
@@ -160,13 +174,45 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       stop?.();
     });
   });
+  const interrupt = () =>
+    interruptTui(
+      renderer,
+      (text) => {
+        void copyText(text).then(setNotice);
+      },
+      () => {
+        const editor = renderer.currentFocusedEditor;
+        if (editor && editor.id !== "message-draft" && editor.plainText.length) {
+          editor.setText("");
+          return true;
+        }
+        return clearInput?.() ?? false;
+      },
+      () => {
+        void exit();
+      },
+    );
+  onMount(() => {
+    const selection = () => {
+      const text = renderer.getSelection()?.getSelectedText();
+      if (text) void copyText(text).then(setNotice);
+    };
+    renderer.on("selection", selection);
+    process.on("SIGINT", interrupt);
+    onCleanup(() => {
+      renderer.off("selection", selection);
+      process.off("SIGINT", interrupt);
+    });
+  });
   useKeyboard((key) => {
     if (key.ctrl && key.name === "q" && error()) {
       props.onExit();
       return;
     }
     if (key.ctrl && key.name === "c") {
-      void exit();
+      key.preventDefault();
+      key.stopPropagation();
+      interrupt();
       return;
     }
     if (
@@ -214,6 +260,30 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     if (name === "changes") setChangesView((v) => !v);
     setAction((v) => ({ id: v.id + 1, name }));
   };
+  const lifecycle = async (conversation: Conversation, operation: "archive" | "delete") => {
+    if (busy()) return;
+    setBusy(true);
+    setError("");
+    try {
+      await flushDrafts();
+      const client = await connect();
+      if (!client) throw new Error("Daemon disconnected");
+      await client.request(
+        `/v1/conversations/${conversation.id}`,
+        operation === "delete" ? "DELETE" : "PATCH",
+        operation === "delete"
+          ? { confirmed: true }
+          : { archived: conversation.archivedAt === null },
+      );
+      if (operation === "delete") views.delete(conversation.id);
+      setForm(null);
+      setDeleteTarget(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Conversation operation failed");
+    } finally {
+      setBusy(false);
+    }
+  };
   const commands = createMemo<Command[]>(() => [
     ...rows().map((r) => ({
       id: r.value.conversation?.id ?? r.value.project.id,
@@ -231,6 +301,14 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         setChangesView(false);
       },
     })),
+    {
+      id: "archives",
+      name: showArchived() ? "Hide Archived Conversations" : "View Archived Conversations",
+      run: () => {
+        setShowArchived((v) => !v);
+        setSelected(0);
+      },
+    },
     { id: "project", name: "Add Project", run: () => setForm("project") },
     {
       id: "new",
@@ -251,6 +329,38 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     },
     ...(row()?.value.conversation
       ? [
+          {
+            id: "raw",
+            name: "Raw Events / Debug (complete ACP protocol)",
+            run: () => dispatch("raw"),
+          },
+          {
+            id: "archive",
+            name:
+              row()?.value.conversation?.archivedAt === null
+                ? "Archive Conversation"
+                : "Restore Archived Conversation",
+            run: () => {
+              const c = row()?.value.conversation;
+              if (c) void lifecycle(c, "archive");
+            },
+          },
+          {
+            id: "delete",
+            name: "Delete Conversation…",
+            run: () => {
+              const c = row()?.value.conversation;
+              if (c) {
+                setDeleteTarget(c);
+                setForm("delete");
+              }
+            },
+          },
+          {
+            id: "restore_pending",
+            name: "Restore Unconfirmed Message (without sending)",
+            run: () => dispatch("restore_pending"),
+          },
           { id: "message", name: "Write Message", run: () => setForm("message") },
           { id: "changes", name: "Toggle Changes / Chat", run: () => dispatch("changes") },
           { id: "approval", name: "Choose Native Approval", run: () => setForm("approval") },
@@ -285,16 +395,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     }
   };
   return (
-    <box flexDirection="column" width="100%" height="100%" padding={1} gap={1}>
-      <text fg="#80cbc4">HarnessHub · {state()}</text>
-      <Show when={showActivity()}>
-        <text fg="#ffcc80">
-          Global · Running {snapshot().activity.running} · Approval{" "}
-          {snapshot().activity.waitingApproval} ({snapshot().activity.pendingApprovals} requests) ·
-          Problems {snapshot().activity.problems}
-        </text>
-      </Show>
-      <box flexGrow={1} flexDirection="row" gap={1}>
+    <box flexDirection="column" width="100%" height="100%" paddingX={1} gap={0}>
+      <text fg="#80cbc4" height={1} flexShrink={0}>
+        {`HarnessHub · ${state()}${showActivity() ? ` · Global · Running ${snapshot().activity.running} · Approval ${snapshot().activity.pendingApprovals} · Problems ${snapshot().activity.problems}` : ""}${showArchived() ? " · Archives visible" : ""}`}
+      </text>
+      <box flexGrow={1} minHeight={0} flexDirection="row" gap={1}>
         <Show when={sidebarVisible()}>
           <box
             width={Math.min(34, Math.floor(dimensions().width * 0.28))}
@@ -318,33 +423,17 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             </Show>
           </box>
         </Show>
-        <box
-          flexGrow={1}
-          flexShrink={1}
-          minWidth={0}
-          title="Workspace"
-          flexDirection="column"
-          padding={1}
-          gap={1}
-        >
+        <box flexGrow={1} flexShrink={1} minWidth={0} flexDirection="column" minHeight={0} gap={0}>
           <Show
             when={row()}
             fallback={
               <text>Global project list. Startup shell cwd is not registered automatically.</text>
             }
           >
-            <text>
+            <text height={1} flexShrink={0} fg="#8b949e">
               {row()?.value.conversation
-                ? `Conversation · ${row()?.value.conversation?.title}`
-                : row()?.value.project.name}
-            </text>
-            <text>
-              Workspace: {row()?.value.conversation?.workspacePath ?? row()?.value.project.rootPath}
-            </text>
-            <text>
-              {row()?.value.conversation
-                ? `Conversation · ${row()?.value.conversation?.runtimeStatus}`
-                : "Press n to create a conversation in this project."}
+                ? `Conversation · ${row()?.value.conversation?.title}${row()?.value.conversation?.archivedAt !== null ? " [archived]" : ""} · Workspace: ${row()?.value.conversation?.workspacePath}`
+                : `${row()?.value.project.name} · Workspace: ${row()?.value.project.rootPath} · Press n to create a conversation`}
             </text>
           </Show>
           <Show when={row()?.value.conversation?.id} keyed>
@@ -360,6 +449,9 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                 shortcuts={keyOverrides()}
                 action={action()}
                 onChangesChange={setChangesView}
+                registerClearInput={(clear) => {
+                  clearInput = clear;
+                }}
               />
             )}
           </Show>
@@ -398,6 +490,36 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       </Show>
       <Show when={form() === "palette"}>
         <CommandPalette commands={commands()} onClose={() => setForm(null)} />
+      </Show>
+      <Show when={form() === "delete" && deleteTarget()}>
+        {(target) => (
+          <box
+            position="absolute"
+            top={3}
+            left={3}
+            width="88%"
+            height={8}
+            border
+            backgroundColor="#10151c"
+            padding={1}
+            flexDirection="column"
+            title="Confirm Conversation deletion · Esc cancel"
+          >
+            <text>{`Permanently delete “${(target() as Conversation).title}” and its application history?`}</text>
+            <text>
+              Project files, Git branches and workspaces are preserved. Active / pending approval /
+              UNCERTAIN tasks cannot be deleted.
+            </text>
+            <input
+              focused={!busy()}
+              placeholder="Type DELETE then Enter to confirm"
+              onSubmit={(value) => {
+                if (value === "DELETE") void lifecycle(target() as Conversation, "delete");
+                else setError("Type DELETE to confirm, or Esc to cancel");
+              }}
+            />
+          </box>
+        )}
       </Show>
       <Show when={form() === "shortcuts"}>
         <box
@@ -439,8 +561,13 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         <text fg="#ef9a9a">{error()}</text>
         <text>Ctrl+Q closes this TUI without saving pending local edits.</text>
       </Show>
-      <text>
-        {`${keys().palette} Commands · ${keys().sidebar} Sidebar${dimensions().width < 90 ? " (narrow: hidden)" : ""} · ${keys().changes} Changes · ↑/↓ Select · p Add project · n New conversation · Esc Navigate · q Quit`}
+      <Show when={notice()}>
+        <text height={1} fg="#8b949e">
+          {notice()}
+        </text>
+      </Show>
+      <text height={1} flexShrink={0} fg="#8b949e">
+        {`${keys().palette} Commands · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
       </text>
     </box>
   );
@@ -448,6 +575,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
 export async function openTui(initialProjectId?: string) {
   const renderer = await createCliRenderer({
     exitOnCtrlC: false,
+    exitSignals: ["SIGTERM", "SIGHUP"],
     useKittyKeyboard: { disambiguate: true, alternateKeys: true },
   });
   let finish: () => void = () => {};

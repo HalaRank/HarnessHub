@@ -4,8 +4,10 @@ import type { TextareaRenderable } from "@opentui/core";
 import { useKeyboard, useRenderer } from "@opentui/solid";
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { ChangesPane } from "./changes-pane";
+import { useClipboard } from "./clipboard";
 import { DraftSession } from "./draft-session";
 import { NativeEvents } from "./native-events";
+import { RawEvents } from "./raw-events";
 import { binding, matches, shortcuts } from "./shortcuts";
 import { object, Transcript, type ViewState } from "./transcript";
 
@@ -33,9 +35,11 @@ export function AgentPane(props: {
   shortcuts?: Shortcuts;
   action?: AgentAction;
   onChangesChange?: (value: boolean) => void;
+  registerClearInput?: (clear: (() => boolean) | undefined) => void;
 }) {
   const transcript = new Transcript(),
     renderer = useRenderer();
+  const [debug, setDebug] = createSignal(false);
   const [profiles, setProfiles] = createSignal<{ id: string; name: string }[]>([]);
   const [harness, setHarness] = createSignal("codex"),
     [sessions, setSessions] = createSignal<NativeSession[]>([]);
@@ -55,6 +59,16 @@ export function AgentPane(props: {
   );
   let disposed = false,
     textarea: TextareaRenderable | undefined;
+  const copyText = useClipboard();
+  const [inputLines, setInputLines] = createSignal(1);
+  props.registerClearInput?.(() => {
+    if (!(textarea?.plainText ?? draft.text).length) return false;
+    textarea?.setText("");
+    draft.update("");
+    setInputLines(1);
+    return true;
+  });
+  onCleanup(() => props.registerClearInput?.(undefined));
   const keys = () => shortcuts(props.shortcuts);
   createEffect(() => props.onChangesChange?.(changes()));
   const request = async <T,>(path: string, method = "GET", body?: unknown) => {
@@ -83,6 +97,12 @@ export function AgentPane(props: {
     if (!disposed) setSessions(result);
   };
   onMount(() => {
+    const measureInput = () => {
+      if (textarea && !textarea.isDestroyed)
+        setInputLines(Math.max(1, textarea.lineCount, textarea.virtualLineCount));
+    };
+    renderer.on("frame", measureInput);
+    onCleanup(() => renderer.off("frame", measureInput));
     void run(async () => {
       await draft.load();
       if (disposed) {
@@ -163,6 +183,15 @@ export function AgentPane(props: {
     const action = props.action;
     if (!action || action.id === lastAction) return;
     lastAction = action.id;
+    if (action.name === "raw") {
+      setDebug(true);
+      props.setForm("details");
+    }
+    if (action.name === "restore_pending" && draft.value.pendingSubmission) {
+      textarea?.setText(draft.value.pendingSubmission.message);
+      draft.update(draft.value.pendingSubmission.message);
+      props.setForm("message");
+    }
     if (action.name === "cancel") cancel();
     if (action.name === "harness") nextHarness();
     if (action.name === "changes") setChanges((v) => !v);
@@ -178,11 +207,8 @@ export function AgentPane(props: {
       const text = renderer.getSelection()?.getSelectedText();
       if (text) {
         key.preventDefault();
-        setError(
-          renderer.copyToClipboardOSC52(text)
-            ? "Selection copy sent to terminal clipboard"
-            : "Terminal clipboard unavailable; use source view (y)",
-        );
+        renderer.clearSelection();
+        void copyText(text).then(setError);
       }
       return;
     }
@@ -261,8 +287,12 @@ export function AgentPane(props: {
     return choices;
   });
   return (
-    <box flexDirection="column" flexGrow={1} minHeight={0} gap={1}>
-      <text fg="#80cbc4">{`ACP · ${harness()} · Model (ACP): ${actualModel(sessions().at(-1))} · ${props.conversation.runtimeStatus} · ${connection()}`}</text>
+    <box flexDirection="column" flexGrow={1} minHeight={0} gap={0}>
+      <text
+        fg="#80cbc4"
+        height={1}
+        flexShrink={0}
+      >{`ACP · ${harness()} · ${props.conversation.runtimeStatus} · Model (ACP): ${actualModel(sessions().at(-1))} · ${connection()}`}</text>
       <Show when={["INTERRUPTED", "UNCERTAIN"].includes(props.conversation.runtimeStatus)}>
         <text fg="#ffcc80">
           {props.conversation.runtimeStatus === "UNCERTAIN"
@@ -332,7 +362,7 @@ export function AgentPane(props: {
       <Show when={draftReady()}>
         <box
           border
-          height={props.form === "message" ? 6 : 4}
+          height={Math.min(8, inputLines()) + 2}
           flexShrink={0}
           borderColor={props.form === "message" ? "#80cbc4" : "#36404b"}
           title={`Enter send · Shift+Enter / ${keys().newline} newline · Esc navigate`}
@@ -342,12 +372,22 @@ export function AgentPane(props: {
             initialValue={draft.text}
             placeholder="m to write a message…"
             onContentChange={() => {
-              draft.update(textarea?.plainText ?? draft.text);
+              const text = textarea?.plainText ?? draft.text;
+              draft.update(text);
+              setInputLines(Math.max(1, text.split("\n").length));
             }}
             ref={(element) => {
               textarea = element;
+              setInputLines(Math.max(1, draft.text.split("\n").length));
+            }}
+            onSizeChange={() => {
+              if (textarea && !textarea.isDestroyed)
+                setInputLines(
+                  Math.max(1, textarea.virtualLineCount, textarea.plainText.split("\n").length),
+                );
             }}
             focused={props.form === "message" && !busy()}
+            minHeight={1}
             keyBindings={[
               { name: "return", action: "submit" },
               { name: "return", shift: true, action: "newline" },
@@ -365,15 +405,25 @@ export function AgentPane(props: {
       </Show>
       <Show when={draftState() >= 0 && draft.value.pendingSubmission}>
         <text fg="#ffcc80">
-          Unconfirmed request {draft.value.pendingSubmission?.requestId}. Enter explicitly retries
-          this same request; reconnect never sends it.
+          Unconfirmed request {draft.value.pendingSubmission?.requestId}. Restore Unconfirmed
+          Message to inspect/retry the original; reconnect never sends it.
         </text>
       </Show>
-      <text fg="#8b949e">
+      <text fg="#8b949e" height={1}>
         {busy() || !draftReady()
           ? "ACP operation pending"
-          : "m Message · h Select Harness · a Native approval · c Cancel Turn"}
+          : "m Message · a Approval · c Cancel Turn"}
       </text>
+      <Show when={debug() && props.form === "details"}>
+        <RawEvents
+          events={transcript.events}
+          count={transcript.eventCount()}
+          onClose={() => {
+            setDebug(false);
+            props.setForm(null);
+          }}
+        />
+      </Show>
       <Show when={props.form === "settings"}>
         <box
           position="absolute"

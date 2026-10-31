@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const VERSION = "0.4.0";
+export const VERSION = "0.4.1";
 export * from "./changes";
 export * from "./runtime";
 export * from "./session-state";
@@ -21,6 +21,12 @@ export const projectPatch = z
   .strict()
   .refine((value) => Object.keys(value).length > 0);
 export const conversationInput = z.object({ title: z.string().trim().min(1).max(200) }).strict();
+export const conversationPatch = conversationInput
+  .partial()
+  .extend({ archived: z.boolean().optional() })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0);
+export const conversationDeleteInput = z.object({ confirmed: z.literal(true) }).strict();
 export type Project = {
   id: string;
   name: string;
@@ -32,6 +38,7 @@ export type Conversation = {
   id: string;
   projectId: string;
   title: string;
+  archivedAt: number | null;
   workspaceMode: "shared";
   workspacePath: string;
   runtimeStatus: RuntimeStatus;

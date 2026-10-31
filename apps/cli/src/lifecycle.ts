@@ -2,6 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { closeSync, existsSync, fchmodSync, openSync, renameSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PROTOCOL_VERSION } from "@harnesshub/shared";
 import { Client, connect, readInstance } from "@harnesshub/shared/client";
 import { paths, securePaths } from "@harnesshub/shared/paths";
 
@@ -86,7 +87,12 @@ export async function stopDaemon(cancelActive = false) {
   if (!instance) return false;
   const client = new Client(instance);
   try {
-    await client.health();
+    // A compatible older patch may be stopped for migration, with the same identity/auth checks.
+    const health = await client.request<{ instanceId: string; protocolVersion: number }>(
+      "/v1/health",
+    );
+    if (health.instanceId !== instance.instanceId || health.protocolVersion !== PROTOCOL_VERSION)
+      throw new Error("Daemon identity or protocol mismatch");
   } catch {
     throw new Error("Daemon is unreachable or incompatible; no PID was signalled. Run hhu doctor.");
   }

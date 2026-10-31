@@ -114,7 +114,12 @@ test("incremental Phase 2 migration preserves history and privately stored legac
     writeFileSync(join(dir, `${e.tag}.sql`), readFileSync(join(migrations, `${e.tag}.sql`)));
   const store = await openStore(dbFile, dir);
   const p = store.addProject(temp, "Legacy Project").value;
-  const c = store.addConversation(p.id, "Legacy Conversation").value;
+  const c = { id: crypto.randomUUID(), title: "Legacy Conversation" };
+  store.sqlite
+    .prepare(
+      "INSERT INTO conversations (id, project_id, title, workspace_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    )
+    .run(c.id, p.id, c.title, temp, Date.now(), Date.now());
   store.sqlite.prepare("INSERT INTO harness_profiles VALUES (?, ?)").run(
     "legacy",
     JSON.stringify({
@@ -130,7 +135,7 @@ test("incremental Phase 2 migration preserves history and privately stored legac
   assert.equal((await api(`/v1/conversations/${c.id}`)).title, c.title);
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).some((f) => f.includes(".backup-")));
   const db = new Database(dbFile);
-  assert.equal(db.pragma("user_version", { simple: true }), 4);
+  assert.equal(db.pragma("user_version", { simple: true }), 5);
   db.close();
   for (const name of ["first project", "第二项目"]) mkdirSync(join(temp, name));
   first = await api("/v1/projects", "POST", { rootPath: join(temp, "first project") });
@@ -533,7 +538,7 @@ test("large Unicode drafts obey schema bounds; CAS races and metadata deletion p
     ).status,
     400,
   );
-  await api(`/v1/conversations/${c.id}`, "DELETE");
+  await api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
   assert.equal((await response(path)).status, 404);
   assert.equal((await api("/v1/preferences")).lastConversationId, null);
   await api(`/v1/projects/${p.id}`, "DELETE");

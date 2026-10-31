@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
@@ -180,7 +180,7 @@ test("sidebar and validated shortcut preferences persist across daemon restart i
   assert.equal(result.showSidebar, false);
   assert.deepEqual(result.shortcuts, shortcuts);
   const db = new Database(join(env.XDG_DATA_HOME, "harnesshub/harnesshub.db"), { readonly: true });
-  assert.equal(db.pragma("user_version", { simple: true }), 4);
+  assert.equal(db.pragma("user_version", { simple: true }), 5);
   db.close();
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).includes("harnesshub.db"));
 });
@@ -218,10 +218,179 @@ test("Bun and Node clients reach only the local Daemon even with proxy environme
           timeout: 10000,
         },
       );
-      assert.equal(result.stdout.trim(), "0.4.0");
+      assert.equal(result.stdout.trim(), "0.4.1");
     }
     assert.equal(hits, 0);
   } finally {
     await new Promise((resolveClose) => proxy.close(resolveClose));
+  }
+});
+
+async function until(check) {
+  for (let i = 0; i < 300; i++) {
+    if (await check()) return;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  throw new Error("Timed out waiting for refinement state");
+}
+const dbFile = join(env.XDG_DATA_HOME, "harnesshub/harnesshub.db");
+
+test("archive/restore survives restart; confirmed deletion removes app relations and preserves workspace", async () => {
+  await api("/v1/harness-profiles", "POST", {
+    id: "refinement",
+    name: "Refinement Mock",
+    command: "node",
+    args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+    envOverrides: { HHU_MOCK_CLOSE_DELAY: "300" },
+  });
+  const c = await api(`/v1/projects/${p.id}/conversations`, "POST", { title: "Archive fixture" });
+  const path = `/v1/conversations/${c.id}`;
+  const turn = await api(`${path}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "refinement",
+    message: "stream",
+  });
+  await until(async () => (await api(`/v1/turns/${turn.id}`)).endedAt !== null);
+  await api(`${path}/draft`, "PUT", {
+    text: "retained draft",
+    revision: 0,
+    pendingSubmission: null,
+  });
+  await api("/v1/preferences", "PATCH", { lastConversationId: c.id });
+  const before = await api(`${path}/events?limit=1000`);
+  const archived = await api(path, "PATCH", { archived: true });
+  assert.equal(typeof archived.archivedAt, "number");
+  assert.deepEqual((await api(`${path}/events?limit=1000`)).events, before.events);
+  assert.equal((await api(`${path}/draft`)).text, "retained draft");
+  // A second client reads canonical state; metadata carries the same archive invalidation.
+  assert.equal(
+    (await new Client(client.instance).request("/v1/snapshot")).conversations.find(
+      (v) => v.id === c.id,
+    ).archivedAt,
+    archived.archivedAt,
+  );
+  assert.equal((await api(path, "PATCH", { archived: false })).archivedAt, null);
+  await api(path, "PATCH", { archived: true });
+  cli("daemon", "stop");
+  cli("daemon", "start");
+  client = new Client(
+    JSON.parse(readFileSync(join(env.XDG_STATE_HOME, "harnesshub/instance.json"))),
+  );
+  assert.ok((await api(path)).archivedAt);
+  await api(path, "PATCH", { archived: false });
+  await api(`${path}/sessions`, "POST", { harnessId: "refinement" });
+  await assert.rejects(api(path, "DELETE", {}), (e) => e.status === 400);
+  const deleting = api(path, "DELETE", { confirmed: true });
+  await new Promise((r) => setTimeout(r, 60));
+  await assert.rejects(
+    api(`${path}/turns`, "POST", {
+      requestId: crypto.randomUUID(),
+      harnessId: "refinement",
+      message: "must not run",
+    }),
+    (e) => e.status === 409,
+  );
+  assert.equal((await deleting).projectFilesDeleted, false);
+  await assert.rejects(api(path), (e) => e.status === 404);
+  assert.equal((await api("/v1/preferences")).lastConversationId, null);
+  const db = new Database(dbFile, { readonly: true });
+  for (const table of [
+    "native_sessions",
+    "turns",
+    "conversation_events",
+    "approvals",
+    "conversation_drafts",
+  ])
+    assert.equal(
+      db.prepare(`SELECT count(*) AS n FROM ${table} WHERE conversation_id = ?`).get(c.id).n,
+      0,
+    );
+  assert.deepEqual(db.pragma("foreign_key_check"), []);
+  assert.ok(
+    db
+      .prepare(
+        "SELECT * FROM metadata_changes WHERE type = 'conversation.deleted' AND entity_id = ?",
+      )
+      .get(c.id),
+  );
+  db.close();
+  assert.ok(readFileSync(join(root, "tracked.ts"), "utf8").includes("value"));
+  assert.ok(readdirSync(root).includes(".git"));
+});
+
+test("running, pending approval and UNCERTAIN conversations cannot be deleted or bypassed through project deletion", async () => {
+  for (const message of ["wait", "permission", "crash"]) {
+    const c = await api(`/v1/projects/${p.id}/conversations`, "POST", { title: message });
+    const path = `/v1/conversations/${c.id}`;
+    const turn = await api(`${path}/turns`, "POST", {
+      requestId: crypto.randomUUID(),
+      harnessId: "refinement",
+      message,
+    });
+    await until(async () =>
+      message === "permission"
+        ? (await api(`${path}/approvals`)).length > 0
+        : message === "crash"
+          ? (await api(`/v1/turns/${turn.id}`)).endedAt !== null
+          : (await api(`${path}/events?limit=1000`)).events.some(
+              (e) => e.kind === "agent_message_chunk",
+            ),
+    );
+    await assert.rejects(api(path, "DELETE", { confirmed: true }), (e) => e.status === 409);
+    await assert.rejects(api(`/v1/projects/${p.id}`, "DELETE"), (e) => e.status === 409);
+    // Archiving a running task only changes list visibility, never cancels its Turn.
+    await api(path, "PATCH", { archived: true });
+    if (message !== "crash") {
+      assert.equal((await api(`/v1/turns/${turn.id}`)).endedAt, null);
+      await api(`/v1/turns/${turn.id}/cancel`, "POST");
+      await until(async () => (await api(`/v1/turns/${turn.id}`)).endedAt !== null);
+      await api(path, "DELETE", { confirmed: true });
+    } else {
+      assert.equal((await api(path)).runtimeStatus, "UNCERTAIN");
+    }
+  }
+});
+
+test("built TUI handles raw Ctrl+C and OS SIGINT; exiting leaves the running Worker intact", async () => {
+  const c = await api(`/v1/projects/${p.id}/conversations`, "POST", { title: "PTY interrupt" });
+  await api("/v1/preferences", "PATCH", { lastConversationId: c.id, shortcuts: {} });
+  const turn = await api(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "refinement",
+    message: "wait",
+  });
+  await until(async () =>
+    (await api(`/v1/conversations/${c.id}/events?limit=1000`)).events.some(
+      (e) => e.kind === "agent_message_chunk",
+    ),
+  );
+  const sessions = await api(`/v1/conversations/${c.id}/sessions`);
+  try {
+    const output = await new Promise((ok, fail) =>
+      execFile(
+        "python3",
+        [
+          resolve("tests/e2e/refinement-terminal.py"),
+          process.env.HARNESSHUB_BUN,
+          resolve("dist/cli/hhu.js"),
+          c.id,
+        ],
+        { env, timeout: 45000, encoding: "utf8" },
+        (error, stdout) => (error ? fail(error) : ok(stdout)),
+      ),
+    );
+    assert.equal(JSON.parse(output.trim()).sigintClears, true);
+    assert.equal((await api(`/v1/turns/${turn.id}`)).endedAt, null);
+    assert.deepEqual(await api(`/v1/conversations/${c.id}/sessions`), sessions);
+    assert.equal(
+      (await api(`/v1/conversations/${c.id}/events?limit=1000`)).events.some(
+        (e) => e.raw?.method === "session/cancel",
+      ),
+      false,
+    );
+  } finally {
+    await api(`/v1/turns/${turn.id}/cancel`, "POST");
+    await until(async () => (await api(`/v1/turns/${turn.id}`)).endedAt !== null);
+    await api(`/v1/conversations/${c.id}/session/stop`, "POST", {});
   }
 });

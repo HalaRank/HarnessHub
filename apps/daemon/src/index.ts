@@ -17,7 +17,9 @@ import { Projects, Runtime } from "@harnesshub/core";
 import {
   AppError,
   type ChangeEvent,
+  conversationDeleteInput,
   conversationInput,
+  conversationPatch,
   draftInput,
   type Instance,
   PROTOCOL_VERSION,
@@ -198,13 +200,14 @@ async function main() {
   app.patch("/v1/conversations/:id", async (c) => {
     const result = store.updateConversation(
       c.req.param("id"),
-      conversationInput.parse(await c.req.json()).title,
+      conversationPatch.parse(await c.req.json()),
     );
     publish(result.event);
     return c.json(result.value);
   });
-  app.delete("/v1/conversations/:id", (c) => {
-    publish(store.deleteConversation(c.req.param("id")));
+  app.delete("/v1/conversations/:id", async (c) => {
+    conversationDeleteInput.parse(await c.req.json());
+    publish(await runtime.deleteConversation(c.req.param("id")));
     return c.json({ deleted: true, projectFilesDeleted: false });
   });
   app.get("/v1/events", (c) => {

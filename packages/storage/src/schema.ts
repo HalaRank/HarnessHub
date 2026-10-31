@@ -14,6 +14,7 @@ export const conversations = sqliteTable("conversations", {
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  archivedAt: integer("archived_at"),
   workspaceMode: text("workspace_mode", { enum: ["shared"] })
     .notNull()
     .default("shared"),

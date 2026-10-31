@@ -122,6 +122,7 @@ export class Store {
   }
   deleteProject(id: string) {
     this.getProject(id);
+    for (const c of this.listConversations(id)) this.assertConversationDeletable(c.id);
     this.assertWorkspaceMutable(this.listConversations(id).map((c) => c.id));
     return this.db.transaction(() => {
       this.db.delete(schema.projects).where(eq(schema.projects.id, id)).run();
@@ -151,6 +152,7 @@ export class Store {
       id: randomUUID(),
       projectId,
       title,
+      archivedAt: null,
       workspaceMode: "shared" as const,
       workspacePath: project.rootPath,
       runtimeStatus: "IDLE" as const,
@@ -162,20 +164,54 @@ export class Store {
       return { value, event: this.record("conversation.created", value.id) };
     });
   }
-  updateConversation(id: string, title: string) {
+  updateConversation(
+    id: string,
+    patch: { title?: string | undefined; archived?: boolean | undefined },
+  ) {
     this.getConversation(id);
     return this.db.transaction(() => {
       const value = this.db
         .update(schema.conversations)
-        .set({ title, updatedAt: Date.now() })
+        .set({
+          ...(patch.title === undefined ? {} : { title: patch.title }),
+          ...(patch.archived === undefined
+            ? {}
+            : { archivedAt: patch.archived ? Date.now() : null }),
+          updatedAt: Date.now(),
+        })
         .where(eq(schema.conversations.id, id))
         .returning()
         .get();
       return { value, event: this.record("conversation.updated", id) };
     });
   }
+  assertConversationDeletable(id: string) {
+    const conversation = this.getConversation(id);
+    const active = this.db
+      .select()
+      .from(schema.turns)
+      .where(
+        and(eq(schema.turns.conversationId, id), sql`(ended_at is null OR state = 'UNCERTAIN')`),
+      )
+      .get();
+    const pending = this.db
+      .select()
+      .from(schema.approvals)
+      .where(and(eq(schema.approvals.conversationId, id), eq(schema.approvals.status, "PENDING")))
+      .get();
+    if (
+      activeStates.has(conversation.runtimeStatus) ||
+      conversation.runtimeStatus === "UNCERTAIN" ||
+      active ||
+      pending
+    )
+      throw new AppError(
+        409,
+        "Active, pending approval or UNCERTAIN Conversation cannot be deleted",
+      );
+  }
   deleteConversation(id: string) {
-    this.getConversation(id);
+    this.assertConversationDeletable(id);
     this.assertWorkspaceMutable([id]);
     return this.db.transaction(() => {
       this.db.delete(schema.conversations).where(eq(schema.conversations.id, id)).run();
