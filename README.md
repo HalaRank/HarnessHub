@@ -2,7 +2,7 @@
 
 HarnessHub 是 Linux x64 / WSL2 的本地 TUI。全局命令是 **`hhu`**。
 
-当前实现 Phase 5（0.5.0，SQLite schema 6）：同一 Conversation 跨 Harness 延迟交接、可追溯的报告与失败降级确认、独立 Git Worktree 和安全清理。保留 Phase 1–4 与 UI Refinement 的原生输出、草稿、审批、取消和 WebSocket 补拉。真实 Codex → Grok → Codex 接力及 Linux PTY 后台保活已验证；Windows Terminal / VS Code WSL 的物理键盘、鼠标及系统剪贴板仍待人工验收。详见 [Phase 5 验收记录](docs/acceptance/phase-5.md)；已有阶段验收记录保留。未实施 Phase 6。
+当前交付 Phase 6（0.6.0，SQLite schema 6）：修复关停/源 Worker 清理边界，异步执行有安全预留的 Worktree Git 操作，补齐数据权限、日志轮转、事务迁移故障验证、对话导出与用户级安装锁。Codex、Claude、Grok 的本轮真实消息和取消通过；OpenCode 握手成功但消息超时，仍待排查。Windows Terminal / VS Code WSL 物理键鼠及系统剪贴板待人工验收，**尚未宣布 MVP 全部通过**。见 [Phase 6 报告](docs/acceptance/phase-6.md)、[安装/升级/恢复指南](docs/OPERATIONS.md) 和 [双终端人工清单](docs/acceptance/windows-terminal-checklist.md)。
 
 ## 安装与运行
 
@@ -24,6 +24,7 @@ hhu
 hhu /absolute/project/path   # 注册/打开已存在的目录
 hhu .                       # 显式注册当前位置
 hhu doctor
+hhu doctor --acp <conversationId> codex  # 显式握手，不发送模型 Prompt
 hhu daemon start
 hhu daemon status
 hhu daemon logs
@@ -76,6 +77,8 @@ hhu agent decide <approvalId> <nativeOptionId>       # 必须由用户选择 Age
 hhu agent cancel <turnId>
 hhu agent settings <conversationId> '{"kind":"config","configId":"model","value":"<advertised-value>"}'
 hhu agent stop <conversationId>                      # 停止空闲 Worker
+hhu agent export <conversationId> chat conversation.md  # 原文 Markdown；新建 0600 文件
+hhu agent export <conversationId> debug debug.json       # 原始 ACP 调试导出；拒绝覆盖
 ```
 
 `prompt` 返回 Turn，执行在后台继续。`requestId` 是 UUID；命令会在提交前打印它。HTTP 响应丢失时只能用相同 ID 和相同消息查询/重试，服务器返回已有 Turn，不重复提交 Prompt。已发出但结果无法确定的任务标记 `UNCERTAIN`，查看事件并核实工作区后显式创建新 Conversation；不会自动恢复或重放。
@@ -102,16 +105,21 @@ Worker 继承 Daemon 启动时的原生进程环境，并使用 Conversation 工
 
 可用 `node scripts/verify-phase5.mjs` 显式运行真实 Codex → Grok → Codex；脚本在临时 Git 项目的独立 Worktree 中依次更新无害 progress.txt，检查同一 Conversation、三段原生会话、零调用选择、5 次原生 Prompt、交接决策、TUI 退出保活和真实报告渲染/复制。遇原生审批不会自动选择。证据与工作目录保留，测试 Daemon 尝试正常停止。
 
+可用 `node scripts/verify-phase6.mjs` 显式检查四个真实 Harness 的握手、Workspace、读取/Markdown 输出和取消。脚本在私有临时目录运行，会实际调用模型；遇审批或 120 秒无结果时请求原生取消，不选择审批、不重发 Prompt。各 Harness 的原始 debug 导出及结果保留在打印的证据目录；任何消息或取消验证未通过时返回失败状态，不能把握手成功当作完整兼容。
+
 ## 开发与数据
 
 - `apps/cli`：Bun CLI；`apps/tui`：OpenTUI/Solid 聊天、原生内容、Changes 与命令面板。
 - `apps/daemon`：纯 Node Hono HTTP/WS；`packages/acp`：共享 ACP SDK Client / Worker / 内置 Profile。
 - `packages/shared`：DTO、校验、客户端、独立 Conversation 补拉；`packages/core`：项目和 Runtime 状态机；`packages/storage`：Drizzle schema / migrations / SQLite。
 - Phase 5 新增 `PUT /v1/conversations/:id/harness`、`GET /v1/conversations/:id/handoffs`、`POST /v1/conversations/:id/handoff/action`（`{handoffId, action: retry|confirm|cancel}`）、`GET /v1/worktrees`、`POST /v1/worktrees/:id/cleanup`（`{confirmed:true}`）；创建 Conversation 支持 `workspaceMode`。
+- Phase 6 新增 `GET /v1/conversations/:id/export?format=chat|debug`（`readable`/`raw` 为兼容别名）；`chat` 为可读对话投影，`debug` 包含脱敏 raw ACP 事件、来源序号、Session、Turn、审批和 Handoff。
 - Phase 4 新增 `GET /v1/conversations/:id/changes`，可通过编码的 `?path=` 查询同一 Git 状态中的文件 Diff；偏好增加侧栏与快捷键。
 - Phase 3 新增 `GET/PUT /v1/conversations/:id/draft`（版本检查）、`GET/PATCH /v1/preferences`、只读 `GET /v1/requests/:requestId`；`GET /v1/snapshot` 增加 activity 汇总。草稿最多 100,000 个 UTF-16 单元，HTTP 请求体限制为 1 MiB。
 - `tests/fixtures/mock-acp`、`tests/integration`：真实子进程 Mock、Daemon、SQLite、HTTP/WS、故障和生命周期；`tests/e2e`：Solid 操作及双 Linux PTY。PTY 测试需要 Python 3。
 
-数据库默认 `~/.local/share/harnesshub/harnesshub.db`，实例凭据与锁位于 `~/.local/state/harnesshub/`，日志在其 `logs/`。尊重绝对路径的 XDG_CONFIG_HOME / XDG_DATA_HOME / XDG_STATE_HOME；目录 0700，数据、凭据和日志 0600。日志不复制完整 Prompt、工具输出或 Worker stderr；原始 ACP 和结构化事件保存在私有 SQLite，结构化凭据字段定向脱敏。
+数据库默认 `~/.local/share/harnesshub/harnesshub.db`，实例凭据与锁位于 `~/.local/state/harnesshub/`，日志在其 `logs/`。尊重绝对路径的 XDG_CONFIG_HOME / XDG_DATA_HOME / XDG_STATE_HOME；目录 0700，数据、凭据和日志 0600。日志不复制完整 Prompt、工具输出或 Worker stderr；原始 ACP 和结构化事件保存在私有 SQLite，结构化凭据字段定向脱敏。Daemon 和启动日志达到 1 MiB 时轮转，最多保留 5 个历史文件，旧文件不会无限增长。
 
-迁移前生成同目录 0600 的 `harnesshub.db.backup-*`，再执行 Drizzle migrations；不支持的更高 schema 拒绝打开。不要在 Daemon 运行时替换数据库、构建产物或删除锁文件。强制停止只通过 `POST /v1/conversations/:id/session/stop` 的 `{ "force": true, "confirmed": true }` 明确确认；结果保守标记 `UNCERTAIN`。普通停止没有自动 SIGKILL 升级。
+迁移前生成同目录 0600 的 `harnesshub.db.backup-*`，再执行 Drizzle migrations；SQL 失败会事务回滚，保留旧库和备份，不自动覆盖。不支持的更高 schema 拒绝打开。不要在 Daemon 运行时替换数据库、构建产物或删除锁文件；恢复步骤见[操作指南](docs/OPERATIONS.md)。强制停止只通过 `POST /v1/conversations/:id/session/stop` 的 `{ "force": true, "confirmed": true }` 明确确认；结果保守标记 `UNCERTAIN`。普通停止没有自动 SIGKILL 升级。
+
+Conversation 导出通过 `hhu agent export <id> chat|debug [新文件]` 或 `/v1/conversations/:id/export?format=...` 使用。`chat` 提供用户消息、Agent 内容、工具、公开思考/计划和 Handoff 的 Markdown；`debug` 另含原始 ACP、序号、Session、Turn、审批和用途。已知结构化凭据字段脱敏，不注入 Daemon Token 或 Profile 环境值；原生文本/源码仍可能含秘密，导出和备份需私密保存。`doctor` 默认不握手；`hhu doctor --acp <conversationId> <harnessId>` / `hhu agent session ...` 才显式执行握手。

@@ -44,6 +44,7 @@ export class Runtime {
   readonly deleting = new Set<string>();
   assertAvailable(id: string) {
     if (this.deleting.has(id)) throw new AppError(409, "Conversation deletion is in progress");
+    this.store.assertWorkspaceAvailable(this.store.getConversation(id).workspacePath);
   }
   async deleteConversation(id: string) {
     this.assertAvailable(id);
@@ -90,7 +91,11 @@ export class Runtime {
         400,
         "Credential environment overrides cannot be stored in a Profile; inherit the native process environment instead",
       );
-    if ([...this.live.values()].some((l) => l.harnessId === profile.id))
+    if (
+      [...this.live.values(), ...this.handoffs.sources.values()].some(
+        (l) => l.harnessId === profile.id,
+      )
+    )
       throw new AppError(409, "Stop the profile's Workers before editing it");
     this.data.saveProfile(profile);
     return profile;
@@ -101,6 +106,9 @@ export class Runtime {
       name: p.name,
       command: p.command,
       args: p.args,
+      executableAvailable: !!executable(p.command, { ...process.env, ...p.envOverrides }),
+      // A process lookup is intentionally not reported as a successful ACP handshake.
+      handshake: "not-run" as const,
       available: !!executable(p.command, { ...process.env, ...p.envOverrides }),
       capabilities: "Run an explicit session to negotiate; executable presence is not a handshake",
     }));
@@ -253,6 +261,13 @@ export class Runtime {
         lost: () => this.lost(live),
       });
       live.worker = worker;
+      this.event(live, conversationId, "runtime.worker_started", {
+        workerPid: worker.child.pid ?? null,
+        processGroupId: worker.child.pid ?? null,
+        epoch: this.epoch,
+        harnessId,
+        cwd,
+      });
       live.initialize = await worker.initialize();
       this.capabilities(live);
       live.session = await worker.bounded(
@@ -324,11 +339,7 @@ export class Runtime {
     if (
       current &&
       (!current.session || current.worker?.closed) &&
-      !(
-        switching &&
-        current.worker?.closed &&
-        (current.worker.child.exitCode !== null || current.worker.child.signalCode !== null)
-      )
+      !(switching && current.worker?.closed && current.worker.exitedConfirmed)
     )
       throw new AppError(
         409,
@@ -460,10 +471,7 @@ export class Runtime {
   lost(live: Live) {
     this.data.updateSession(live.id, {
       status: "INTERRUPTED",
-      endedAt:
-        live.worker?.child.exitCode !== null || live.worker?.child.signalCode !== null
-          ? Date.now()
-          : null,
+      endedAt: live.worker?.exitedConfirmed ? Date.now() : null,
     });
     this.expire(live, "EXPIRED");
     if (live.turnId && this.data.turn(live.turnId).state !== "PREPARING")
@@ -555,7 +563,8 @@ export class Runtime {
     this.status(turn.conversationId, "CANCELLING");
     const h = this.handoffs.data.open(turn.conversationId);
     if (h?.userTurnId === turnId && h.status === "FAILED") {
-      this.handoffs.action(turn.conversationId, h.id, "cancel");
+      // Daemon shutdown owns this cancellation even while new user actions are blocked.
+      this.handoffs.cancelReserved(h);
       return this.data.turn(turnId);
     }
     const live = this.live.get(turn.conversationId);
@@ -632,8 +641,7 @@ export class Runtime {
     const unconfirmedWorker =
       this.store.getConversation(conversationId).runtimeStatus === "UNCERTAIN" &&
       live.worker &&
-      live.worker.child.exitCode === null &&
-      live.worker.child.signalCode === null;
+      !live.worker.exitedConfirmed;
     if ((this.data.active(conversationId).length || unconfirmedWorker) && !force)
       throw new AppError(
         409,
@@ -676,21 +684,21 @@ export class Runtime {
 
   async shutdown(cancelActive = false) {
     if (this.closing) throw new AppError(409, "Runtime is already stopping");
+    if (this.store.workspaceOperations.size || this.store.projectOperations.size)
+      throw new AppError(409, "Wait for pending Git operations before stopping Daemon");
     if (this.data.active().length && !cancelActive)
       throw new AppError(
         409,
         "Active Turns prevent daemon stop; cancel them and wait, or use hhu daemon stop --cancel-active",
       );
     this.closing = true;
-    for (const turn of this.data.active()) await this.cancel(turn.id);
-    const deadline = Date.now() + 5000;
-    while (this.data.active().length && Date.now() < deadline)
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    if (this.data.active().length) {
-      this.closing = false;
-      throw new AppError(409, "Agent has not confirmed cancellation; Daemon remains running");
-    }
     try {
+      for (const turn of this.data.active()) await this.cancel(turn.id);
+      const deadline = Date.now() + 5000;
+      while (this.data.active().length && Date.now() < deadline)
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      if (this.data.active().length)
+        throw new AppError(409, "Agent has not confirmed cancellation; Daemon remains running");
       const results = await Promise.allSettled(
         [...this.live.keys()].map((id) => this.closeSession(id, false)),
       );

@@ -259,16 +259,20 @@ export class Handoffs {
       const source = r.live.get(h.conversationId);
       if (source) this.sources.set(h.id, source);
       target = await r.createLive(h.conversationId, h.targetHarness, false, h.id);
+      // Keep prepared targets reachable even if their cooperative cancellation/cleanup fails.
+      this.sources.set(target.id, target);
       target.turnId = h.userTurnId;
       this.data.patch(h.id, { targetNativeSessionId: target.id });
       if (r.data.turn(h.userTurnId).state === "CANCELLING" || r.closing) {
         target.turnId = null;
         await r.disposeLive(target);
+        this.sources.delete(target.id);
         this.sources.delete(h.id);
         this.cancelReserved(h);
         return;
       }
       r.live.set(h.conversationId, target);
+      this.sources.delete(target.id);
       r.data.updateTurn(h.userTurnId, { nativeSessionId: target.id, state: "RUNNING" });
       h = this.data.move(h.id, "READY", "DELIVERING");
       this.announce(h);
@@ -371,11 +375,7 @@ export class Handoffs {
     if (action === "confirm") {
       // Source must be idle or positively gone; an uncertain source never enters FAILED.
       const source = r.live.get(conversationId);
-      if (
-        source?.worker?.closed &&
-        source.worker.child.exitCode === null &&
-        source.worker.child.signalCode === null
-      )
+      if (source?.worker?.closed && !source.worker.exitedConfirmed)
         throw new AppError(409, "Source process exit is unconfirmed");
       const next = this.data.move(id, "FAILED", "READY", {
         degraded: true,

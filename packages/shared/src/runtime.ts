@@ -107,7 +107,7 @@ export function redact(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value).map(([key, entry]) => [
         key,
-        /^(authorization|proxy-authorization|(?:[a-z0-9]+[-_])*(?:api[-_]?key|access[-_]?token|refresh[-_]?token)|token|password|secret)$/i.test(
+        /^(authorization|proxy[-_]?authorization|cookie|set[-_]?cookie|(?:[a-z0-9]+[-_])*(?:api[-_]?key|access[-_]?token|refresh[-_]?token|secret[-_]?access[-_]?key|client[-_]?secret|private[-_]?key|password|passwd|credentials?|secret)|token|password|secret|privateKey|clientSecret|apiKey)$/i.test(
           key,
         )
           ? "[REDACTED]"

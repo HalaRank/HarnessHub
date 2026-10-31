@@ -178,6 +178,147 @@ export class RuntimeStore {
       .limit(limit)
       .all();
   }
+  /** Export a conversation without exposing the storage connection or ACP secrets. */
+  exportConversation(conversationId: string, format: "chat" | "debug" = "chat") {
+    const conversation = this.store.getConversation(conversationId);
+    const eventRows = this.db
+      .select()
+      .from(conversationEvents)
+      .where(eq(conversationEvents.conversationId, conversationId))
+      .orderBy(conversationEvents.seq)
+      .all();
+    const handoffRows = this.db
+      .select()
+      .from(handoffs)
+      .where(eq(handoffs.conversationId, conversationId))
+      .orderBy(handoffs.createdAt)
+      .all();
+    const sessionsRows = this.db
+      .select()
+      .from(nativeSessions)
+      .where(eq(nativeSessions.conversationId, conversationId))
+      .orderBy(nativeSessions.createdAt)
+      .all();
+    const turnsRows = this.db
+      .select()
+      .from(turns)
+      .where(eq(turns.conversationId, conversationId))
+      .orderBy(turns.createdAt)
+      .all();
+    const approvalsRows = this.db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.conversationId, conversationId))
+      .orderBy(approvals.createdAt)
+      .all();
+    const textOf = (payload: unknown) => {
+      if (!payload || typeof payload !== "object") return undefined;
+      const value = payload as Record<string, unknown>;
+      const content = value.content;
+      if (typeof content === "string") return content;
+      if (
+        content &&
+        typeof content === "object" &&
+        typeof (content as { text?: unknown }).text === "string"
+      )
+        return (content as { text: string }).text;
+      if (typeof value.text === "string") return value.text;
+      return undefined;
+    };
+    const latestHandoff = new Map<unknown, number>();
+    for (const event of eventRows)
+      if (event.kind === "handoff.record")
+        latestHandoff.set((event.payload as { id?: unknown })?.id, event.seq);
+    const sessionHarness = new Map(sessionsRows.map((session) => [session.id, session.harnessId]));
+    const turnHarness = new Map(turnsRows.map((turn) => [turn.id, turn.harnessId]));
+    const messages = eventRows
+      .map((event) => {
+        // The full internal report is represented once by its Handoff record. Native
+        // report/delivery echo remains traceable in debug.events without becoming user chat.
+        if (event.purpose !== "user" && event.purpose != null) return null;
+        const role =
+          event.kind === "user.message"
+            ? "user"
+            : event.kind === "handoff.record"
+              ? "handoff"
+              : event.kind === "agent_message_chunk" || event.kind === "agent_message"
+                ? "agent"
+                : event.kind.startsWith("tool")
+                  ? "tool"
+                  : event.kind === "agent_thought_chunk"
+                    ? "thinking"
+                    : event.kind === "plan"
+                      ? "plan"
+                      : event.origin === "agent" &&
+                          event.kind !== "acp.response" &&
+                          !event.kind.startsWith("session/")
+                        ? "observable"
+                        : null;
+        if (!role) return null;
+        const handoff =
+          event.kind === "handoff.record" ? (event.payload as Record<string, unknown>) : null;
+        if (handoff && latestHandoff.get(handoff.id) !== event.seq) return null;
+        return {
+          seq: event.seq,
+          role,
+          kind: event.kind,
+          source: event.origin,
+          purpose: event.purpose,
+          content: handoff?.reportText ?? textOf(event.payload) ?? null,
+          payload: event.payload,
+          turnId: event.turnId,
+          nativeSessionId: event.nativeSessionId,
+          harnessId:
+            sessionHarness.get(event.nativeSessionId ?? "") ??
+            turnHarness.get(event.turnId ?? "") ??
+            null,
+          createdAt: event.createdAt,
+        };
+      })
+      .filter((value): value is NonNullable<typeof value> => value !== null);
+    const readable: string[] = [
+      `# ${conversation.title}\n`,
+      `Conversation: ${conversation.id}\nWorkspace: ${conversation.workspacePath}\n`,
+    ];
+    let lastMessage: (typeof messages)[number] | undefined;
+    for (const message of messages) {
+      const continuation =
+        message.kind.endsWith("_chunk") &&
+        lastMessage?.kind === message.kind &&
+        lastMessage.turnId === message.turnId &&
+        lastMessage.nativeSessionId === message.nativeSessionId;
+      if (!continuation)
+        readable.push(
+          `\n\n## ${message.role}${message.harnessId ? ` — ${message.harnessId}` : ""} (source ${message.source}, seq ${message.seq})\n\n`,
+        );
+      readable.push(
+        typeof message.content === "string"
+          ? message.content
+          : JSON.stringify(message.payload, null, 2),
+      );
+      lastMessage = message;
+    }
+    const result = {
+      format,
+      exportedAt: Date.now(),
+      conversation,
+      messages,
+      handoffs: handoffRows,
+      markdown: `${readable.join("")}\n`,
+    } as Record<string, unknown>;
+    if (format === "debug")
+      Object.assign(result, {
+        events: eventRows,
+        sessions: sessionsRows,
+        turns: turnsRows,
+        approvals: approvalsRows,
+        notes: [
+          "Raw ACP events are preserved as stored, with known credential fields redacted.",
+          "Daemon credentials and Profile environment overrides are excluded. Native prose/code may contain sensitive text and is preserved verbatim.",
+        ],
+      });
+    return result;
+  }
   recentUsers(conversationId: string, boundary: number) {
     return this.db
       .select()

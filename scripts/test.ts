@@ -12,6 +12,7 @@ const integration = spawnSync(
     "tests/integration/phase3.test.mjs",
     "tests/integration/phase4.test.mjs",
     "tests/integration/phase5.test.mjs",
+    "tests/integration/phase6.test.mjs",
   ],
   { stdio: "inherit", env: { ...process.env, HARNESSHUB_BUN: process.execPath } },
 );

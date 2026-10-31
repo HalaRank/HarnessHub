@@ -1,16 +1,6 @@
 import { spawn } from "node:child_process";
 import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import {
-  closeSync,
-  existsSync,
-  fchmodSync,
-  openSync,
-  readFileSync,
-  renameSync,
-  statSync,
-  unlinkSync,
-  writeSync,
-} from "node:fs";
+import { readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Projects, Runtime } from "@harnesshub/core";
@@ -28,7 +18,7 @@ import {
   projectPatch,
   VERSION,
 } from "@harnesshub/shared";
-import { paths, privateWrite, securePaths } from "@harnesshub/shared/paths";
+import { appendPrivateLog, paths, privateWrite, securePaths } from "@harnesshub/shared/paths";
 import { openStore } from "@harnesshub/storage";
 import { serve, upgradeWebSocket, type WebSocketServerLike } from "@hono/node-server";
 import { Hono } from "hono";
@@ -147,6 +137,8 @@ async function main() {
       metadataEvents: true,
       acp: true,
       conversationEvents: true,
+      conversationExports: true,
+      debugExports: true,
     }),
   );
   app.get("/v1/snapshot", (c) => c.json(store.snapshot()));
@@ -172,7 +164,8 @@ async function main() {
   app.get("/v1/worktrees", (c) => c.json(projects.worktrees.data.worktrees()));
   app.post("/v1/worktrees/:id/cleanup", async (c) => {
     const input = conversationDeleteInput.parse(await c.req.json());
-    return c.json(projects.worktrees.cleanup(c.req.param("id"), input.confirmed));
+    if (runtime.closing) throw new AppError(503, "Runtime is stopping");
+    return c.json(await projects.worktrees.cleanup(c.req.param("id"), input.confirmed));
   });
   app.get("/v1/projects", (c) => c.json(store.listProjects()));
   app.post("/v1/projects", async (c) => {
@@ -197,7 +190,12 @@ async function main() {
   });
   app.post("/v1/projects/:id/conversations", async (c) => {
     const data = conversationInput.parse(await c.req.json());
-    const result = projects.createConversation(c.req.param("id"), data.title, data.workspaceMode);
+    if (runtime.closing) throw new AppError(503, "Runtime is stopping");
+    const result = await projects.createConversation(
+      c.req.param("id"),
+      data.title,
+      data.workspaceMode,
+    );
     publish(result.event);
     return c.json(result.value, 201);
   });
@@ -336,13 +334,8 @@ async function main() {
 }
 
 function log(event: string) {
-  const file = join(p.logs, "daemon.log");
-  if (existsSync(file) && statSync(file).size > 1024 * 1024) renameSync(file, `${file}.1`);
-  const fd = openSync(file, "a", 0o600);
-  fchmodSync(fd, 0o600);
-  try {
-    writeSync(fd, `${new Date().toISOString()} ${event} pid=${process.pid}\n`);
-  } finally {
-    closeSync(fd);
-  }
+  appendPrivateLog(
+    join(p.logs, "daemon.log"),
+    `${new Date().toISOString()} ${event} pid=${process.pid}`,
+  );
 }

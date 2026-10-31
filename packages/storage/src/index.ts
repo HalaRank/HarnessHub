@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { chmodSync, existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import type { Activity, ChangeEvent, Draft, Preferences } from "@harnesshub/shared";
 import { AppError, activeStates, problemStates } from "@harnesshub/shared";
-import { privateDir } from "@harnesshub/shared/paths";
+import { privateDir, secureFile } from "@harnesshub/shared/paths";
 import Database from "better-sqlite3";
 import { and, eq, gt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -12,10 +12,22 @@ import * as schema from "./schema";
 
 export async function openStore(file: string, migrations: string) {
   privateDir(join(file, ".."));
+  for (const name of readdirSync(join(file, "..")))
+    if (name.startsWith(`${basename(file)}.backup-`)) secureFile(join(file, "..", name));
+  // Reject symlinks before SQLite can open or mutate the target or its sidecars.
+  for (const path of [file, `${file}-wal`, `${file}-shm`]) {
+    try {
+      lstatSync(path);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+      throw error;
+    }
+    secureFile(path);
+  }
   const existed = existsSync(file);
   const sqlite = new Database(file);
   try {
-    chmodSync(file, 0o600);
+    secureFile(file);
     sqlite.pragma("foreign_keys = ON");
     sqlite.pragma("busy_timeout = 5000");
     const journal = JSON.parse(readFileSync(join(migrations, "meta/_journal.json"), "utf8")) as {
@@ -34,16 +46,28 @@ export async function openStore(file: string, migrations: string) {
     const db = drizzle(sqlite, { schema });
     migrate(db, { migrationsFolder: migrations });
     sqlite.pragma(`user_version = ${expected}`);
-    for (const path of [file, `${file}-wal`, `${file}-shm`])
-      if (existsSync(path)) chmodSync(path, 0o600);
+    for (const path of [file, `${file}-wal`, `${file}-shm`]) if (existsSync(path)) secureFile(path);
     return new Store(sqlite, db);
   } catch (error) {
     sqlite.close();
+    // The locked Drizzle migrator rolls back ALL pending SQL in one transaction.
+    // Preserve the original database and its private backup; never overwrite it on error.
     throw error;
   }
 }
 
 export class Store {
+  readonly workspaceOperations = new Set<string>();
+  readonly projectOperations = new Set<string>();
+  assertWorkspaceAvailable(path: string) {
+    for (const pending of this.workspaceOperations)
+      if (path === pending || path.startsWith(`${pending}/`) || pending.startsWith(`${path}/`))
+        throw new AppError(409, "Workspace has a pending Git operation; wait for it to finish");
+  }
+  private assertProjectAvailable(id: string) {
+    if (this.projectOperations.has(id))
+      throw new AppError(409, "Project has a pending Git operation; wait for it to finish");
+  }
   constructor(
     readonly sqlite: Database.Database,
     readonly db: ReturnType<typeof drizzle<typeof schema>>,
@@ -63,6 +87,7 @@ export class Store {
     return this.db.select().from(schema.projects).where(eq(schema.projects.rootPath, root)).get();
   }
   addProject(rootPath: string, name: string) {
+    this.assertWorkspaceAvailable(rootPath);
     const existing = this.projectByRoot(rootPath);
     if (existing) return { value: existing, event: null };
     const now = Date.now();
@@ -92,8 +117,10 @@ export class Store {
     }
   }
   updateProject(id: string, patch: { rootPath?: string | undefined; name?: string | undefined }) {
+    this.assertProjectAvailable(id);
     this.getProject(id);
     if (patch.rootPath) {
+      this.assertWorkspaceAvailable(patch.rootPath);
       this.assertWorkspaceMutable(this.listConversations(id).map((c) => c.id));
       const duplicate = this.projectByRoot(patch.rootPath);
       if (duplicate && duplicate.id !== id)
@@ -121,6 +148,7 @@ export class Store {
     });
   }
   deleteProject(id: string) {
+    this.assertProjectAvailable(id);
     this.getProject(id);
     for (const c of this.listConversations(id)) this.assertConversationDeletable(c.id);
     this.assertWorkspaceMutable(this.listConversations(id).map((c) => c.id));
@@ -147,6 +175,7 @@ export class Store {
   }
   addConversation(projectId: string, title: string, workspace?: { id: string; path: string }) {
     const project = this.getProject(projectId);
+    this.assertWorkspaceAvailable(workspace?.path ?? project.rootPath);
     const now = Date.now();
     const value = {
       id: randomUUID(),

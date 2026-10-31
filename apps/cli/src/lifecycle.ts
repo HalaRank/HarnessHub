@@ -1,10 +1,10 @@
 import { spawn, spawnSync } from "node:child_process";
-import { closeSync, existsSync, fchmodSync, openSync, renameSync, statSync } from "node:fs";
+import { closeSync, existsSync, fchmodSync, openSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PROTOCOL_VERSION } from "@harnesshub/shared";
 import { Client, connect, readInstance } from "@harnesshub/shared/client";
-import { paths, securePaths } from "@harnesshub/shared/paths";
+import { appendPrivateLog, paths, securePaths } from "@harnesshub/shared/paths";
 
 export async function ensureDaemon(): Promise<Client> {
   const existing = await connect();
@@ -30,13 +30,8 @@ export async function ensureDaemon(): Promise<Client> {
   securePaths(p);
   const launch = () => {
     const startupLog = join(p.logs, "startup.log");
-    if (existsSync(startupLog) && statSync(startupLog).size > 1024 * 1024) {
-      try {
-        renameSync(startupLog, `${startupLog}.1`);
-      } catch {
-        /* Another concurrent launcher rotated it. */
-      }
-    }
+    if (existsSync(startupLog) && statSync(startupLog).size > 1024 * 1024)
+      appendPrivateLog(startupLog, "launcher log rotated");
     const fd = openSync(startupLog, "a", 0o600);
     fchmodSync(fd, 0o600);
     // Acquire the kernel lock before loading Hono/SQLite. The child becomes Node via exec.

@@ -1,9 +1,11 @@
+import { existsSync } from "node:fs";
 import { Readable, Writable } from "node:stream";
 import { AgentApp, ndJsonStream } from "@agentclientprotocol/sdk";
 
 let current;
 let cancelled = false;
 let prompts = 0;
+if (process.env.HHU_MOCK_EXIT_GATE) process.on("SIGTERM", () => {});
 const sessionId = "mock-native-session";
 const configOptions = [
   {
@@ -43,7 +45,11 @@ const app = new AgentApp()
       sessionId,
       configOptions,
       modes: { currentModeId: "ask", availableModes: [{ id: "ask", name: "Native ask" }] },
-      _meta: { workerCwd: process.cwd(), inheritedCredential: !!process.env.HHU_TEST_API_KEY },
+      _meta: {
+        workerCwd: process.cwd(),
+        workerPid: process.pid,
+        inheritedCredential: !!process.env.HHU_TEST_API_KEY,
+      },
     };
   })
   .onRequest("session/set_config_option", ({ params }) => ({
@@ -195,4 +201,6 @@ const conn = app.connect(
   ndJsonStream(Writable.toWeb(process.stdout), Readable.toWeb(process.stdin)),
 );
 await conn.closed;
+while (process.env.HHU_MOCK_EXIT_GATE && !existsSync(process.env.HHU_MOCK_EXIT_GATE))
+  await new Promise((resolve) => setTimeout(resolve, 25));
 process.exit(0);

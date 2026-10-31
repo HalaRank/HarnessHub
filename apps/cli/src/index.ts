@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { builtinProfiles, executable } from "@harnesshub/acp";
 import { type Project, VERSION } from "@harnesshub/shared";
 import { connect, readInstance } from "@harnesshub/shared/client";
 import { paths } from "@harnesshub/shared/paths";
@@ -12,7 +13,9 @@ process.umask(0o077);
 try {
   await main(process.argv.slice(2));
 } catch (error) {
-  console.error(`HarnessHub: ${error instanceof Error ? error.message : "Command failed"}`);
+  console.error(
+    `HarnessHub: ${error instanceof SyntaxError ? "Invalid JSON input (contents omitted)" : error instanceof Error ? error.message : "Command failed"}`,
+  );
   process.exitCode = 1;
 }
 
@@ -24,12 +27,20 @@ async function main(args: string[]) {
   }
   if (command === "--help" || command === "-h") {
     console.log(
-      "HarnessHub\n  hhu [project-path]\n  hhu doctor\n  hhu daemon start|stop [--cancel-active]|status|logs\n  hhu agent --help\n  hhu --version",
+      "HarnessHub\n  hhu [project-path]\n  hhu doctor [--acp <conversationId> <harnessId>]\n  hhu daemon start|stop [--cancel-active]|status|logs\n  hhu agent --help\n  hhu --version",
     );
     return;
   }
   if (command === "doctor") {
+    if (args.length !== 1 && !(args.length === 4 && args[1] === "--acp"))
+      throw new Error("Usage: hhu doctor [--acp <conversationId> <harnessId>]");
     await doctor();
+    if (args[1] === "--acp") {
+      if (process.exitCode) return;
+      console.log("Explicit ACP initialize + session/new; no model Prompt will be sent.");
+      const { agentCommand } = await import("./agent");
+      await agentCommand(["session", args[2] ?? "", args[3] ?? ""]);
+    }
     return;
   }
   if (command === "agent") {
@@ -69,7 +80,9 @@ async function main(args: string[]) {
         return;
       }
       case "logs":
-        for (const name of ["daemon.log.1", "daemon.log", "startup.log.1", "startup.log"]) {
+        for (const name of ["daemon", "startup"].flatMap((base) =>
+          [5, 4, 3, 2, 1, 0].map((index) => `${base}.log${index ? `.${index}` : ""}`),
+        )) {
           const file = join(paths().logs, name);
           if (existsSync(file)) console.log(readFileSync(file, "utf8").slice(-16000));
         }
@@ -107,8 +120,9 @@ async function doctor() {
   );
   check("Bun", Bun.version === "1.4.4", `${Bun.version} (tested 1.4.4)`);
   const node = spawnSync("node", ["--version"], { encoding: "utf8" });
-  const match = /^v24\.(\d+)\./.exec(node.stdout ?? "");
-  check("Node LTS", !!match && Number(match[1]) >= 18, node.stdout?.trim() || "not found");
+  const match = /^v(\d+)\.(\d+)\./.exec(node.stdout ?? "");
+  const nodeOk = !!match && Number(match[1]) === 24 && Number(match[2]) >= 18;
+  check("Node LTS", nodeOk, node.stdout?.trim() || "not found (tested 24.18+ <25)");
   const root = fileURLToPath(new URL("../../", import.meta.url));
   const sqlite = spawnSync(
     "node",
@@ -146,8 +160,33 @@ async function doctor() {
       ? `Daemon: connected, pid=${client.instance.pid}, port=${client.instance.port}, runtime=Node ${(await client.health()).nodeVersion}`
       : `Daemon: ${readInstance() ? "unreachable/stale/incompatible instance metadata" : "not running"}`,
   );
+  const profiles =
+    (await client?.request<
+      Array<{
+        id: string;
+        command: string;
+        executableAvailable: boolean;
+        handshake: string;
+      }>
+    >("/v1/diagnostics")) ??
+    builtinProfiles(executable("node") ?? "node").map((profile) => ({
+      id: profile.id,
+      command: profile.command,
+      executableAvailable: !!executable(profile.command, {
+        ...process.env,
+        ...profile.envOverrides,
+      }),
+      handshake: "not-run",
+    }));
+  for (const profile of profiles)
+    console.log(
+      `${profile.executableAvailable ? "OK" : "WARN"} ACP executable ${profile.id}: ${profile.command}; executable only (handshake=${profile.handshake})`,
+    );
   console.log(
-    "ACP: Generic SDK runtime; use hhu agent list for executable diagnostics and hhu agent session for an explicit handshake.",
+    "ACP: Generic SDK runtime; executable presence is not an ACP handshake and missing optional entries do not prevent HarnessHub startup.",
+  );
+  console.log(
+    "ACP: no handshake or model Prompt sent by default. Use hhu doctor --acp <conversationId> <harnessId> or hhu agent session for an explicit handshake.",
   );
   if (failed) process.exitCode = 1;
 }

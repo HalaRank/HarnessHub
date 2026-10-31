@@ -16,7 +16,7 @@
 | TypeScript / Biome | 5.9.3 / 2.6.4 | 严格类型检查、推荐 lint 规则通过 |
 | Git / flock | 2.53.0 / util-linux 2.41.3 | 实测版本；flock 在进程崩溃后释放锁 |
 | Windows Terminal / VS Code WSL 终端 | 未单独验证 | 当前只能访问 Linux PTY；需用户人工验收 |
-| ACP SDK / 四种真实 Harness | 未接入、未验证 | 阶段 2 再锁定 SDK/Adapter 版本及协商能力，不提前宣称兼容 |
+| ACP SDK / 四种真实 Harness | SDK 2.2.0；入口与版本见下表 | Phase 6 四者握手通过；Codex/Claude/Grok 消息和取消通过，OpenCode 消息超时，详见当前复核记录 |
 
 依赖精确版本见根 `package.json` 与 `bun.lock`；`.node-version` / `.bun-version` 固定实测运行时。启动器要求 Node 24.18+ 且 <25，但当前仅 24.18.0 做过验证。
 
@@ -55,6 +55,23 @@ Codex 本次原生输出包含“自定义模型缺少 metadata、使用 fallbac
 - 本机 `grok --version`、`grok agent --help` 和真实 stdio 握手；`opencode --version`、`opencode acp --help` 和真实握手。没有用文档中可能过期的命令替代安装版本验证。
 
 详细事件边界、测试命令、能力限制和人工验收见 [Phase 2 记录](acceptance/phase-2.md)。以上不替代 Windows Terminal / VS Code WSL 的人工验证。
+
+## Phase 6：稳定性与真实兼容性复核（2026-10-31）
+
+版本 **0.6.0**，SQLite schema **6**；没有升级第三方依赖。Node 24.18.0 / Bun 1.4.4 / OpenTUI 0.8.0 / SQLite 3.53.4 在本环境继续通过。doctor 默认仅检查可执行入口并标记 handshake=not-run；`hhu doctor --acp <conversationId> <harnessId>` 或 `hhu agent session ...` 才显式执行 initialize/session/new，不发送模型 Prompt。
+
+本轮 `node scripts/verify-phase6.mjs` 的私有证据在 `/tmp/hhu-real-phase6-mwxQPP`，不沿用旧阶段成功替代当前真实结果：
+
+| Harness | 当前 CLI / ACP 入口 | 握手与 cwd | 消息/工具 | Prompt 取消 | 配置 / 恢复边界 |
+| --- | --- | --- | --- | --- | --- |
+| Codex | CLI 0.166.0；codex-acp 2.5.0 | 通过 | COMPLETED，1 工具，原文/Markdown 保留 | CANCELLED / cancelled | mode、collaboration_mode、model；未暴露独立 effort |
+| Claude Code | CLI 2.1.311；claude-agent-acp 0.99.1 | 通过 | COMPLETED，2 工具，原文保留 | CANCELLED / cancelled | mode、model、effort、ultracode |
+| Grok Build | **1.0.70 (f50904eaee6c)**；grok agent stdio | 通过 | COMPLETED，2 工具，原文保留 | CANCELLED / cancelled | 仅 model；无 agentInfo，版本来自实际 CLI |
+| OpenCode | **1.18.32**；opencode acp | 通过 | **120 秒无 Agent 文本/工具，未通过** | 发 cancel 后 end_turn / COMPLETED，不能当作 cancelled | model、mode；原生恢复/Handoff 未验证 |
+
+四者本轮均未遇审批请求，不能宣称真实审批全部验证；前三者取消在 Prompt 后约 1.5 秒触发，不代表所有运行中工具/审批态取消均已真实验证。initialize 宣告的 loadSession/resume 不等于实际恢复通过，HarnessHub 不自动恢复/重放。Claude/OpenCode 的本轮真实 Handoff 未验证。OpenCode 无原始 ACP error，usage used=0；没有足够证据归因账号、网络或模型配置，保留真实超时，未修改设置或重发任务。
+
+真实 Codex→Grok→Codex 和完整自动化、权限/日志/导出、安装与 Windows 双终端待验收见 [Phase 6 记录](acceptance/phase-6.md)。历史 Phase 2/4/5 记录为当时证据，不能覆盖上述当前限制。
 
 ## Phase 4：TUI、终端与 Git（2026-10-31）
 

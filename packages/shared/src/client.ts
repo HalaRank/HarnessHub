@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { lstatSync, readFileSync, statSync } from "node:fs";
 import { Agent, request as httpRequest } from "node:http";
 import WebSocket from "ws";
 import { z } from "zod";
@@ -15,7 +15,17 @@ const instanceSchema = z.object({
 });
 export function readInstance(): Instance | null {
   try {
-    return instanceSchema.parse(JSON.parse(readFileSync(paths().instance, "utf8")));
+    const path = paths().instance;
+    const link = lstatSync(path);
+    const stat = statSync(path);
+    if (
+      link.isSymbolicLink() ||
+      !stat.isFile() ||
+      stat.uid !== process.getuid?.() ||
+      (stat.mode & 0o077) !== 0
+    )
+      return null;
+    return instanceSchema.parse(JSON.parse(readFileSync(path, "utf8")));
   } catch {
     return null;
   }
@@ -83,12 +93,13 @@ export class Client {
   async health() {
     const health = await this.request<{
       instanceId: string;
+      pid: number;
       version: string;
       protocolVersion: number;
       runtime: string;
       nodeVersion: string;
     }>("/v1/health", "GET", undefined, 750);
-    if (health.instanceId !== this.instance.instanceId)
+    if (health.instanceId !== this.instance.instanceId || health.pid !== this.instance.pid)
       throw new Error("Daemon instance identity mismatch");
     if (health.version !== VERSION || health.protocolVersion !== PROTOCOL_VERSION)
       throw new Error("Daemon version mismatch; stop it before installing this build");

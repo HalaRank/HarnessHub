@@ -9,7 +9,7 @@ import {
   settingInput,
   turnInput,
 } from "@harnesshub/shared";
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 import { z } from "zod";
 
 export function runtimeRoutes(app: Hono, runtime: Runtime) {
@@ -25,6 +25,17 @@ export function runtimeRoutes(app: Hono, runtime: Runtime) {
     runtime.store.getConversation(c.req.param("id"));
     return c.json(runtime.handoffs.data.list(c.req.param("id")));
   });
+  const exportConversation = (c: Context) => {
+    const requested = c.req.query("format") ?? "chat";
+    const format = requested === "readable" ? "chat" : requested === "raw" ? "debug" : requested;
+    if (format !== "chat" && format !== "debug")
+      throw new AppError(400, "Export format must be chat or debug");
+    return c.json(
+      runtime.data.exportConversation(c.req.param("id") ?? "", format as "chat" | "debug"),
+    );
+  };
+  app.get("/v1/conversations/:id/export", exportConversation);
+  app.get("/v1/export/conversations/:id", exportConversation);
   app.post("/v1/conversations/:id/handoff/action", async (c) => {
     const input = handoffAction.parse(await c.req.json());
     return c.json(runtime.handoffs.action(c.req.param("id"), input.handoffId, input.action));

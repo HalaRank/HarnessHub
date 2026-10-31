@@ -28,6 +28,8 @@ console.log("Built HarnessHub CLI (Bun) and Daemon (Node)");
 for (const [entry, outdir] of [
   ["packages/storage/src/index.ts", "dist/storage"],
   ["packages/shared/src/client.ts", "dist/client"],
+  ["packages/shared/src/paths.ts", "dist/paths"],
+  ["packages/acp/src/index.ts", "dist/acp"],
 ] as const) {
   const result = await Bun.build({
     entrypoints: [entry],

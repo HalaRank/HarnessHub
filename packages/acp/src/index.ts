@@ -29,13 +29,13 @@ export function executable(command: string, env = process.env): string | null {
   }
   return null;
 }
-export function builtinProfiles(): HarnessProfile[] {
+export function builtinProfiles(adapterRuntime = process.execPath): HarnessProfile[] {
   const adapter = (id: string, name: string, bin: string, pkg: string): HarnessProfile => {
     const path = executable(bin);
     return {
       id,
       name,
-      command: path ?? process.execPath,
+      command: path ?? adapterRuntime,
       args: path ? [] : [fileURLToPath(new URL("./index.js", import.meta.resolve(pkg)))],
       envOverrides: {},
     };
@@ -61,6 +61,7 @@ export class Worker {
   readonly child: ChildProcessWithoutNullStreams;
   readonly connection: ClientConnection;
   readonly exited: Promise<void>;
+  exitedConfirmed = false;
   closed = false;
   private stopping = false;
   stderrBytes = 0;
@@ -86,7 +87,10 @@ export class Worker {
     };
     this.child.on("error", failed);
     // close follows stdio drain; exit can fire while final ACP messages remain unread.
-    this.child.on("close", failed);
+    this.child.on("close", () => {
+      this.exitedConfirmed = true;
+      failed();
+    });
     this.child.stdin.on("error", failed);
     this.exited = new Promise((resolve) => {
       this.child.once("close", () => resolve());
@@ -186,14 +190,18 @@ export class Worker {
         /* Process group already exited. */
       }
     };
-    if (!(await wait(1000))) {
+    let drained = await wait(1000);
+    if (!drained) {
       signal("SIGTERM");
-      if (!(await wait(4000)) && force) {
+      drained = await wait(4000);
+      if (!drained && force) {
         signal("SIGKILL");
-        await wait(1000);
+        drained = await wait(1000);
       }
     }
-    if (this.child.exitCode === null && this.child.signalCode === null)
+    // An adapter can exit while its descendants still hold ACP pipes open. Keep the
+    // Worker handle until close confirms the entire stdio lifetime has ended.
+    if (!drained || !this.exitedConfirmed)
       throw new AppError(
         409,
         "Worker has not confirmed exit; explicit force confirmation is required",

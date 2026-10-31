@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const VERSION = "0.5.0";
+export const VERSION = "0.6.0";
 export * from "./changes";
 export * from "./handoff";
 export * from "./runtime";

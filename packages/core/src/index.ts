@@ -33,13 +33,14 @@ export class Projects {
       ...(patch.rootPath ? { rootPath: projectRoot(patch.rootPath) } : {}),
     });
   }
-  createConversation(
+  async createConversation(
     projectId: string,
     title: string,
     workspaceMode: "shared" | "worktree" = "shared",
   ) {
     projectRoot(this.store.getProject(projectId).rootPath);
-    const workspace = workspaceMode === "worktree" ? this.worktrees.create(projectId) : undefined;
+    const workspace =
+      workspaceMode === "worktree" ? await this.worktrees.create(projectId) : undefined;
     try {
       return this.store.addConversation(projectId, title, workspace);
     } catch (error) {

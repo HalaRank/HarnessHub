@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import type { Turn } from "@harnesshub/shared";
 import { watchConversation } from "@harnesshub/shared/client";
 import { ensureDaemon } from "./lifecycle";
@@ -19,6 +19,7 @@ export async function agentCommand(args: string[]) {
   hhu agent decide <approvalId> <nativeOptionId>
   hhu agent settings <conversationId> <json>
   hhu agent stop <conversationId>
+  hhu agent export <conversationId> [chat|debug] [new-output-file]
 Prompt returns immediately. Use watch/status/approvals to follow it. Reuse requestId only for the identical request after an uncertain HTTP response.`);
     return;
   }
@@ -109,6 +110,25 @@ Prompt returns immediately. Use watch/status/approvals to follow it. Reuse reque
         ),
       );
       return;
+    case "export": {
+      const format = value ?? "chat";
+      if (format !== "chat" && format !== "debug")
+        throw new Error("Export format must be chat or debug");
+      const result = await client.request<{ markdown: string }>(
+        `/v1/conversations/${id}/export?format=${format}`,
+        "GET",
+        undefined,
+        30000,
+      );
+      const serialized = format === "chat" ? result.markdown : JSON.stringify(result, null, 2);
+      if (message) {
+        writeFileSync(message, serialized, { mode: 0o600, flag: "wx" });
+        console.log(
+          `Exported ${format} to ${message} (private file; native conversation content may be sensitive)`,
+        );
+      } else console.log(serialized);
+      return;
+    }
     default:
       throw new Error("Unknown agent command; see hhu agent --help");
   }
