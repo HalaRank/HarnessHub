@@ -225,7 +225,7 @@ test("failed Handoff TUI exposes saved materials and requires explicit degraded 
   }
 }, 20000);
 
-test("TUI creates independent Worktree with Ctrl+W; safe cleanup is independent and asks for CLEAN confirmation", async () => {
+test("TUI creates automatically named independent Worktree from palette; safe cleanup is independent and asks for CLEAN confirmation", async () => {
   const { p, root } = await setup("Worktree UI");
   const git = (...args: string[]) =>
     execFileSync("git", args, { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
@@ -236,22 +236,25 @@ test("TUI creates independent Worktree with Ctrl+W; safe cleanup is independent 
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 160, height: 40 });
   try {
     await frame(screen, "m Message");
-    screen.mockInput.pressKey("n");
-    await frame(screen, "Ctrl+W");
-    screen.mockInput.pressKey("w", { ctrl: true });
-    await frame(screen, "worktree");
-    await screen.mockInput.typeText("Isolated UI");
+    screen.mockInput.pressKey("p", { ctrl: true });
+    await frame(screen, "Command palette");
+    await screen.mockInput.typeText("New Conversation in Git Worktree");
     screen.mockInput.pressEnter();
     let created: Conversation | undefined;
     await until(async () => {
       created = (await api<Conversation[]>(`/v1/projects/${p.id}/conversations`)).find(
-        (c) => c.title === "Isolated UI",
+        (c) => c.workspaceMode === "worktree",
       );
       return !!created;
     });
     expect(created?.workspaceMode).toBe("worktree");
     expect(existsSync(created?.workspacePath ?? "")).toBe(true);
+    expect(created?.title).toBe("New conversation");
+    await frame(screen, "Enter send");
+    screen.mockInput.pressEscape();
+    await screen.renderOnce();
     await api(`/v1/conversations/${created?.id}`, "DELETE", { confirmed: true });
+    await frame(screen, "Press n to create");
     expect(existsSync(created?.workspacePath ?? "")).toBe(true);
     screen.mockInput.pressKey("p", { ctrl: true });
     await frame(screen, "Command palette");

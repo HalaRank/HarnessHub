@@ -67,11 +67,23 @@ test("Solid view registers real workspace and empty conversation through authent
     screen.mockInput.pressEnter();
     await waitFor("Press n to create");
     screen.mockInput.pressKey("n");
-    await waitFor("New conversation title");
-    await screen.mockInput.typeText("Real empty conversation");
+    await waitFor("Conversation · New conversation");
+    await waitFor("Enter send");
+    expect(screen.captureCharFrame()).not.toContain("New conversation title");
+    screen.mockInput.pressEscape();
+    // A standalone Esc waits for the terminal parser to rule out an escape sequence.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    await screen.renderOnce();
+    screen.mockInput.pressKey("o");
+    await waitFor("Conversation / Project actions");
+    await screen.mockInput.typeText("Rename");
     screen.mockInput.pressEnter();
-    await waitFor("└ Real empty");
-    screen.mockInput.pressArrow("down");
+    await waitFor("Rename Conversation");
+    const title = screen.renderer.root.findDescendantById("conversation-title") as InputRenderable;
+    expect(title.value).toBe("New conversation");
+    title.value = "Real empty conversation";
+    screen.mockInput.pressEnter();
+    await waitFor("Conversation · Real empty conversation");
     await waitFor("· IDLE");
     expect(screen.captureCharFrame()).toContain("No Agent output yet");
     const client = await connect();

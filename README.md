@@ -33,7 +33,7 @@ hhu daemon stop --cancel-active  # 明确请求原生取消；等待结束后才
 hhu --version
 ```
 
-无参数启动不会把 Shell cwd 注册为项目。在 TUI 中按 `p` 注册项目，目录默认从 `~/` 开始；按 Tab 补全目录，多个匹配时补齐共同前缀并显示候选，继续输入后可再次 Tab。支持绝对路径，`~` 和相对路径以 Home 展开，不会创建目录。按 `n` 创建会话，标题框默认 shared；Ctrl+W 切换为独立 worktree，再 Enter 创建。↑/↓ 浏览，选中 Conversation 后 `h` 选择 Harness、`m` 输入消息、Enter 发送、Shift+Enter 换行（终端不支持时用 Ctrl+J）、`a` 输入原生权限选项编号、`c` 正常取消。工具成功默认折叠，`t` 选择工具、`e` 手动展开/折叠。Esc 关闭输入，`q` 退出；Ctrl+C 优先复制有效选区并清除选区，否则清空非空输入框，再次 Ctrl+C 在空输入时退出。退出不停止 Daemon / Worker，取消 Turn 仍独立使用 `c`。Windows Terminal 和 VS Code WSL 的真实键码仍需人工验收。
+无参数启动不会把 Shell cwd 注册为项目。在 TUI 中按 `p` 注册项目，目录默认从 `~/` 开始；按 Tab 补全目录，多个匹配时补齐共同前缀并显示候选，继续输入后可再次 Tab。支持绝对路径，`~` 和相对路径以 Home 展开，不会创建目录。按 `n` 直接创建并进入共享目录会话，无需输入名称；首条消息自动生成标题（空白折叠，最多 80 字符），后续消息不覆盖。选择会话后通过 `o` / `⋯` / Ctrl+P → Rename Conversation 重命名，手动标题优先。Ctrl+P → New Conversation in Git Worktree 创建独立 worktree 会话，同样自动命名。↑/↓ 浏览，选中 Conversation 后 `h` 选择 Harness、`m` 输入消息、Enter 发送、Shift+Enter 换行（终端不支持时用 Ctrl+J）、`a` 输入原生权限选项编号、`c` 正常取消。工具成功默认折叠，`t` 选择工具、`e` 手动展开/折叠。Esc 关闭输入，`q` 退出；Ctrl+C 优先复制有效选区并清除选区，否则清空非空输入框，再次 Ctrl+C 在空输入时退出。退出不停止 Daemon / Worker，取消 Turn 仍独立使用 `c`。Windows Terminal 和 VS Code WSL 的真实键码仍需人工验收。
 
 Ctrl+P 打开命令面板，搜索 Project / Conversation 或执行常见操作；Ctrl+B 隐藏侧栏，少于 90 列自动收起，选择不受影响。输入框始终位于底部，`m` 聚焦编辑，Esc 返回浏览；Enter 发送、Shift+Enter 换行，默认备用 Ctrl+J。命令面板中的 `Configure Shortcuts` 接受 JSON 覆盖，例如 `{"palette":"ctrl+o","sidebar":"ctrl+s","newline":"meta+return"}`；空对象恢复默认。偏好保存在 HarnessHub SQLite，不修改终端或 Harness 原生配置。Enter、Shift+Enter、Esc 和退出键保留；终端可能拦截某些组合，需按实际环境选择。
 

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
   type BoxRenderable,
+  type InputRenderable,
   RGBA,
   type ScrollBoxRenderable,
   type TextareaRenderable,
@@ -381,6 +382,43 @@ test("sidebar click/drag and chat selection do not cross-trigger; Ctrl+C copies,
     await waitFor(() => exited, "Ctrl+C exited");
   } finally {
     await screen.dispose();
+  }
+}, 20000);
+
+test("mouse rename targets the clicked conversation, supports cancel and syncs another TUI", async () => {
+  const { a, b } = await setup("Rename-mouse");
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  const other = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  try {
+    await current(screen, a);
+    await current(other, a);
+    await click(other, conversationKey(b.id), 5);
+    await current(other, b);
+    await click(screen, `actions-${b.id}`);
+    await click(screen, "conversation-action-rename", 2);
+    await frame(screen, "Rename Conversation");
+    const input = node(screen, "conversation-title") as InputRenderable;
+    expect(input.value).toBe(b.title);
+    input.value = "Cancelled title";
+    screen.mockInput.pressEscape();
+    await waitFor(async () => {
+      await screen.renderOnce();
+      return !screen.renderer.root.findDescendantById("conversation-title");
+    }, "rename cancelled");
+    expect((await api<Conversation>(`/v1/conversations/${b.id}`)).title).toBe(b.title);
+    await click(screen, `actions-${b.id}`);
+    await click(screen, "conversation-action-rename", 2);
+    await frame(screen, "Rename Conversation");
+    (node(screen, "conversation-title") as InputRenderable).value = "Renamed by mouse";
+    screen.mockInput.pressEnter();
+    await frame(screen, "Conversation renamed");
+    await frame(other, "Renamed by mouse");
+    await current(screen, a);
+    expect((await api<Conversation>(`/v1/conversations/${a.id}`)).title).toBe(a.title);
+    expect((await api<Conversation>(`/v1/conversations/${b.id}`)).title).toBe("Renamed by mouse");
+  } finally {
+    await screen.dispose();
+    await other.dispose();
   }
 }, 20000);
 

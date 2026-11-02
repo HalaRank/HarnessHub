@@ -148,11 +148,59 @@ test("incremental Phase 2 migration preserves history and privately stored legac
   });
 });
 
+test("automatic titles use the first message once, persist and respect explicit names", async () => {
+  const create = (body = {}) => api(`/v1/projects/${first.id}/conversations`, "POST", body);
+  const get = (c) => api(`/v1/conversations/${c.id}`);
+  const a = await create();
+  assert.equal(a.title, "New conversation");
+  assert.equal(a.workspacePath, first.rootPath);
+  assert.deepEqual(await api(`/v1/conversations/${a.id}/sessions`), []);
+  const input = {
+    harnessId: "mock",
+    requestId: randomUUID(),
+    message: "  修复登录\n  并添加测试  ",
+  };
+  const turn = await api(`/v1/conversations/${a.id}/turns`, "POST", input);
+  assert.equal((await get(a)).title, "修复登录 并添加测试");
+  assert.equal((await api(`/v1/conversations/${a.id}/turns`, "POST", input)).id, turn.id);
+  await done(turn);
+  await done(await submit(a, "Later message"));
+  assert.equal((await get(a)).title, "修复登录 并添加测试");
+  assert.equal((await history(a)).filter((e) => e.kind === "user.message").length, 2);
+  await stop(a);
+
+  const b = await create();
+  await api(`/v1/conversations/${b.id}`, "PATCH", { title: "New conversation" });
+  await cli("daemon", "stop");
+  await cli("daemon", "start");
+  await done(await submit(b, "Must not overwrite the explicit placeholder"));
+  assert.equal((await get(b)).title, "New conversation");
+  await stop(b);
+  assert.equal((await get(a)).title, "修复登录 并添加测试");
+
+  const explicit = await create({ title: "New conversation" });
+  await done(await submit(explicit, "Keep the explicitly supplied name"));
+  assert.equal((await get(explicit)).title, "New conversation");
+  await stop(explicit);
+  const long = await create();
+  await done(await submit(long, "😀".repeat(90)));
+  assert.equal((await get(long)).title, `${"😀".repeat(79)}…`);
+  await stop(long);
+  for (const title of ["", "   ", "x".repeat(201)]) {
+    assert.equal((await response(`/v1/conversations/${a.id}`, "PATCH", { title })).status, 400);
+    assert.equal(
+      (await response(`/v1/projects/${first.id}/conversations`, "POST", { title })).status,
+      400,
+    );
+  }
+});
+
 test("parallel projects have separate native sessions, cwd, events, cancellation and background approvals", async () => {
   const a = await conversation(first),
     b = await conversation(second);
   const [ta, tb] = await Promise.all([submit(a, "wait"), submit(b, "permissions")]);
   await waitFor(async () => (await api(`/v1/conversations/${b.id}/approvals`)).length === 2);
+  await waitFor(async () => (await api(`/v1/turns/${ta.id}`)).state === "RUNNING");
   const snapshot = await api("/v1/snapshot");
   assert.equal(snapshot.activity.running, 2);
   assert.equal(snapshot.activity.waitingApproval, 1);

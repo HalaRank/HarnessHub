@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { Activity, ChangeEvent, Draft, Preferences } from "@harnesshub/shared";
-import { AppError, activeStates, problemStates } from "@harnesshub/shared";
+import { AppError, activeStates, NEW_CONVERSATION_TITLE, problemStates } from "@harnesshub/shared";
 import { privateDir, secureFile } from "@harnesshub/shared/paths";
 import Database from "better-sqlite3";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema";
@@ -173,7 +173,7 @@ export class Store {
     if (!value) throw new AppError(404, "Conversation not found");
     return value;
   }
-  addConversation(projectId: string, title: string, workspace?: { id: string; path: string }) {
+  addConversation(projectId: string, title?: string, workspace?: { id: string; path: string }) {
     this.assertProjectAvailable(projectId);
     const project = this.getProject(projectId);
     this.assertWorkspaceAvailable(workspace?.path ?? project.rootPath);
@@ -181,7 +181,7 @@ export class Store {
     const value = {
       id: randomUUID(),
       projectId,
-      title,
+      title: title ?? NEW_CONVERSATION_TITLE,
       archivedAt: null,
       workspaceMode: workspace ? ("worktree" as const) : ("shared" as const),
       worktreeId: workspace?.id ?? null,
@@ -194,7 +194,13 @@ export class Store {
     };
     return this.db.transaction(() => {
       this.db.insert(schema.conversations).values(value).run();
-      return { value, event: this.record("conversation.created", value.id) };
+      return {
+        value,
+        event: this.record(
+          title === undefined ? "conversation.created" : "conversation.created_named",
+          value.id,
+        ),
+      };
     });
   }
   updateConversation(
@@ -215,8 +221,38 @@ export class Store {
         .where(eq(schema.conversations.id, id))
         .returning()
         .get();
-      return { value, event: this.record("conversation.updated", id) };
+      return {
+        value,
+        event: this.record(
+          patch.title === undefined ? "conversation.updated" : "conversation.title_set",
+          id,
+        ),
+      };
     });
+  }
+  nameConversationFromMessage(id: string, message: string) {
+    const conversation = this.getConversation(id);
+    if (conversation.title !== NEW_CONVERSATION_TITLE) return null;
+    // Keep explicit title intent across restarts, including renames to the placeholder.
+    const assigned = this.db
+      .select({ seq: schema.changes.seq })
+      .from(schema.changes)
+      .where(
+        and(
+          eq(schema.changes.entityId, id),
+          inArray(schema.changes.type, ["conversation.created_named", "conversation.title_set"]),
+        ),
+      )
+      .get();
+    const userTurns = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.turns)
+      .where(and(eq(schema.turns.conversationId, id), eq(schema.turns.origin, "user")))
+      .get();
+    if (assigned || userTurns?.count !== 1) return null;
+    const text = Array.from(message.replace(/\s+/gu, " ").trim());
+    const title = text.length > 80 ? `${text.slice(0, 79).join("")}…` : text.join("");
+    return title ? this.updateConversation(id, { title }).event : null;
   }
   assertConversationDeletable(id: string) {
     const conversation = this.getConversation(id);

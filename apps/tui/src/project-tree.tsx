@@ -176,6 +176,7 @@ export function ProjectTree(props: {
 export function ConversationActions(props: {
   conversation: Conversation;
   busy: boolean;
+  onRename: () => void;
   onArchive: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -188,7 +189,7 @@ export function ConversationActions(props: {
       top={3}
       left={3}
       width={38}
-      height={7}
+      height={8}
       border
       borderColor="#80cbc4"
       backgroundColor="#10151c"
@@ -200,6 +201,7 @@ export function ConversationActions(props: {
       </text>
       <For
         each={[
+          { id: "rename", label: "Rename Conversation…", run: props.onRename },
           {
             id: "archive",
             label:

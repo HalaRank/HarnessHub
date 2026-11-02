@@ -393,6 +393,8 @@ export class Runtime {
       turn.id,
     );
     this.data.updateTurn(turn.id, { startEventSeq: event.seq });
+    const titleEvent = this.store.nameConversationFromMessage(conversationId, input.message);
+    if (titleEvent) this.metadata(titleEvent);
     this.store.consumeDraft(conversationId, input.requestId);
     if (
       this.data

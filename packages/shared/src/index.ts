@@ -8,6 +8,7 @@ export * from "./session-state";
 
 import type { RuntimeStatus } from "./runtime";
 export const PROTOCOL_VERSION = 1;
+export const NEW_CONVERSATION_TITLE = "New conversation";
 export const projectInput = z
   .object({
     rootPath: z.string().min(1).max(4096),
@@ -23,7 +24,7 @@ export const projectPatch = z
   .refine((value) => Object.keys(value).length > 0);
 export const conversationInput = z
   .object({
-    title: z.string().trim().min(1).max(200),
+    title: z.string().trim().min(1).max(200).optional(),
     workspaceMode: z.enum(["shared", "worktree"]).optional(),
   })
   .strict();

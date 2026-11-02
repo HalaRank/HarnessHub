@@ -35,7 +35,7 @@ export class Projects {
   }
   async createConversation(
     projectId: string,
-    title: string,
+    title?: string,
     workspaceMode: "shared" | "worktree" = "shared",
   ) {
     projectRoot(this.store.getProject(projectId).rootPath);

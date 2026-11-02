@@ -43,7 +43,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   const [actionsTarget, setActionsTarget] = createSignal<Conversation | null>(null);
   const [form, setForm] = createSignal<
     | "project"
-    | "conversation"
+    | "rename"
     | "message"
     | "approval"
     | "palette"
@@ -60,7 +60,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   const renderer = useRenderer();
   const copyText = useClipboard();
   const sidebarClick = mouseClick();
-  const [workspaceMode, setWorkspaceMode] = createSignal<"shared" | "worktree">("shared");
+  const [renameTarget, setRenameTarget] = createSignal<Conversation | null>(null);
   const [worktrees, setWorktrees] = createSignal<ManagedWorktree[]>([]);
   const [cleanupTarget, setCleanupTarget] = createSignal<ManagedWorktree | null>(null);
   const [notice, setNotice] = createSignal("");
@@ -285,12 +285,6 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       setError("");
       return;
     }
-    if (form() === "conversation" && key.ctrl && key.name === "w") {
-      key.preventDefault();
-      key.stopPropagation();
-      setWorkspaceMode((v) => (v === "shared" ? "worktree" : "shared"));
-      return;
-    }
     if (form()) return;
     if (key.ctrl && key.name === "g") {
       setShowActivity((value) => !value);
@@ -314,8 +308,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     if (key.name === "n" && row()) {
       key.preventDefault();
       setError("");
-      setWorkspaceMode("shared");
-      setForm("conversation");
+      void createConversation("shared");
     }
     if (key.name === "o" && row()) {
       key.preventDefault();
@@ -388,6 +381,45 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       setBusy(false);
     }
   };
+  const createConversation = async (workspaceMode: "shared" | "worktree") => {
+    const project = row()?.value.project;
+    if (!project || busy()) return;
+    setBusy(true);
+    setError("");
+    try {
+      await flushDrafts();
+      const client = await connect();
+      if (!client) throw new Error("Daemon disconnected");
+      const conversation = await client.request<Conversation>(
+        `/v1/projects/${project.id}/conversations`,
+        "POST",
+        { workspaceMode },
+      );
+      // Select the returned ID immediately, even if the WS snapshot has not arrived yet.
+      batch(() => {
+        setSnapshot((current) => ({
+          ...current,
+          conversations: [
+            ...current.conversations.filter((c) => c.id !== conversation.id),
+            conversation,
+          ],
+        }));
+        setShowArchived(false);
+        selectRow({ id: conversationKey(conversation.id), project, conversation });
+        setForm("message");
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Conversation creation failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const requestRename = (conversation: Conversation) => {
+    if (busy()) return;
+    setRenameTarget(conversation);
+    setError("");
+    setForm("rename");
+  };
   const contextCommands = createMemo<Command[]>(() => {
     const target = row()?.value;
     if (!target) return [];
@@ -395,6 +427,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     return [
       ...(conversation
         ? [
+            {
+              id: "rename",
+              name: "Rename Conversation…",
+              run: () => requestRename(conversation),
+            },
             {
               id: "archive",
               name:
@@ -437,12 +474,12 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     {
       id: "new",
       name: "New Conversation",
-      run: () => {
-        if (row()) {
-          setWorkspaceMode("shared");
-          setForm("conversation");
-        }
-      },
+      run: () => void createConversation("shared"),
+    },
+    {
+      id: "new_worktree",
+      name: "New Conversation in Git Worktree",
+      run: () => void createConversation("worktree"),
     },
     {
       id: "worktrees",
@@ -514,11 +551,10 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       if (!client) throw new Error("Daemon disconnected; reconnect before saving");
       if (form() === "project")
         await client.request("/v1/projects", "POST", { rootPath: expandProjectPath(value) });
-      else if (form() === "conversation" && row())
-        await client.request(`/v1/projects/${row()?.value.project.id}/conversations`, "POST", {
-          title: value,
-          workspaceMode: workspaceMode(),
-        });
+      else if (form() === "rename" && renameTarget()) {
+        await client.request(`/v1/conversations/${renameTarget()?.id}`, "PATCH", { title: value });
+        setNotice("Conversation renamed");
+      }
       setForm(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Save failed");
@@ -644,21 +680,21 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       <Show when={form() === "project"}>
         <ProjectPathInput busy={busy()} onSubmit={(value) => void submit(value)} />
       </Show>
-      <Show when={form() === "conversation"}>
-        <box
-          border
-          title={`New conversation title · ${workspaceMode()} · Ctrl+W choose shared / worktree`}
-          height={3}
-        >
-          <input
-            focused={!busy()}
-            placeholder="Conversation title"
-            onSubmit={(value) => {
-              if (typeof value === "string") void submit(value);
-            }}
-            width="100%"
-          />
-        </box>
+      <Show when={form() === "rename" && renameTarget()}>
+        {(target) => (
+          <box border title="Rename Conversation · Enter save · Esc cancel" height={3}>
+            <input
+              id="conversation-title"
+              focused={!busy()}
+              value={(target() as Conversation).title}
+              placeholder="Conversation title"
+              onSubmit={(value) => {
+                if (typeof value === "string") void submit(value);
+              }}
+              width="100%"
+            />
+          </box>
+        )}
       </Show>
       <Show when={form() === "worktrees"}>
         <box
@@ -761,6 +797,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           <ConversationActions
             conversation={target() as Conversation}
             busy={busy()}
+            onRename={() => requestRename(target() as Conversation)}
             onArchive={() => void lifecycle(target() as Conversation)}
             onDelete={() => {
               const conversation = target() as Conversation;
