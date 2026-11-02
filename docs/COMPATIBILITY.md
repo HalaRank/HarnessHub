@@ -73,6 +73,16 @@ Codex 本次原生输出包含“自定义模型缺少 metadata、使用 fallbac
 
 真实 Codex→Grok→Codex 和完整自动化、权限/日志/导出、安装与 Windows 双终端待验收见 [Phase 6 记录](acceptance/phase-6.md)。历史 Phase 2/4/5 记录为当时证据，不能覆盖上述当前限制。
 
+### MVP 最终跟进：OpenCode 环境差异（2026-10-31）
+
+本轮核对原始事件确认：Phase 2 的 OpenCode 1.18.32 协商模型为 `codeforce/baizhi-cloud/grok-4.6`，Phase 6 的同版本在全隔离 XDG 环境中协商为 `opencode/big-pickle`；initialize 能力和 session/new 参数形状一致，原生配置/认证环境不一致。
+
+全隔离的原生 CLI 和不经 HarnessHub/SDK 的 ACP 纯文本对照同样 120 秒无文本/工具；ACP cancel 后仍返回 end_turn/零 usage。只保留原生配置路径、数据仍隔离时，ACP 选择 CodeForce，但 CLI 明确返回 HTTP 401 / Missing Authorization header，ACP 及 Runtime 收到相同错误。当前没有证据支持修改 HarnessHub Runtime，也没有证据确定 Big Pickle 无响应的上游具体原因。未切换模型、复制认证、自动审批或重放任务；工具阶梯尚未通过纯文本门槛，OpenCode 完整兼容性继续标为未通过。
+
+复现脚本、逐项客户端请求/服务端响应/时间边界、隔离进程保留情况及剩余验收见 [MVP 最终跟进记录](acceptance/mvp-final-followup.md)。原 Phase 6 历史结果保留，MVP 最终验收仍未完成。
+
+**2026-11-01 授权后复测更新**：用户允许 OpenCode 使用既有原生登录，HarnessHub 数据与 Project/Conversation 仍临时隔离。OpenCode 1.18.32 原生协商 CodeForce Grok/build，直连 ACP 与 HarnessHub Runtime 均真实完成纯文本、read 哨兵及 bash pwd，无超时/权限请求；原生 CLI 显式指定 `--dir` 后也通过三步；Worker/Daemon 正常关闭。旧隔离 UNCERTAIN Worker 也已按用户确认清理。此前失败与全隔离 XDG 更换原生模型/认证环境的差异相符，没有确认 Runtime 缺陷；Big Pickle 的具体上游原因仍未知。完整证据见同一跟进记录，不将本轮消息/工具成功扩大为原生取消、Handoff、恢复或 MVP 最终全部通过。
+
 ## Phase 4：TUI、终端与 Git（2026-10-31）
 
 版本 0.4.0，数据库 schema 4；没有升级 OpenTUI、ACP SDK 或 Adapter 依赖。实现使用锁定 OpenTUI 0.8.0 自带的 `MarkdownRenderable`、`DiffRenderable`、`ScrollBoxRenderable`、`SyntaxStyle`、`copyToClipboardOSC52`，API 以本机安装包的 `.d.ts` 和实际 renderer 测试为准。参考 [OpenTUI 官方仓库](https://github.com/anomalyco/opentui/tree/main/packages/core/src/renderables)、[Solid binding](https://github.com/anomalyco/opentui/tree/main/packages/solid)。原生 Markdown 流式解析与代码高亮由现有 OpenTUI 实现负责，没有另建 Web 渲染器。
