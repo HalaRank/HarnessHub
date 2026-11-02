@@ -17,7 +17,7 @@ import { useClipboard } from "./clipboard";
 import { DraftSession } from "./draft-session";
 import { NativeEvents } from "./native-events";
 import { RawEvents } from "./raw-events";
-import { binding, matches, shortcuts } from "./shortcuts";
+import { binding, matches, navigationShortcuts, shortcuts } from "./shortcuts";
 import { matchingCommands, SlashCommands, slashQuery } from "./slash-commands";
 import { SourceViewer } from "./source-viewer";
 import { object, Transcript, type ViewState } from "./transcript";
@@ -403,8 +403,7 @@ export function AgentPane(props: {
       return;
     }
     if (props.form) return;
-    if (key.ctrl || key.meta || key.shift) return;
-    if (key.name === "m" || key.name === "return") {
+    if (matches(key, navigationShortcuts.message) || matches(key, "return")) {
       key.preventDefault();
       key.stopPropagation();
       props.setForm("message");
@@ -412,14 +411,14 @@ export function AgentPane(props: {
       return;
     }
     if (busy()) return;
-    if (key.name === "a" && approvals().length) {
+    if (matches(key, navigationShortcuts.approval) && approvals().length) {
       key.preventDefault();
       props.setForm("approval");
     }
-    if (key.name === "h") nextHarness();
-    if (key.name === "c") cancel();
-    if (key.name === "x") cancelSwitch();
-    if (key.name === "f" && failedHandoff()) openHandoff();
+    if (matches(key, navigationShortcuts.harness)) nextHarness();
+    if (matches(key, navigationShortcuts.cancel)) cancel();
+    if (matches(key, navigationShortcuts.cancelSwitch)) cancelSwitch();
+    if (matches(key, navigationShortcuts.handoff) && failedHandoff()) openHandoff();
   });
   const send = (raw = false) =>
     run(async () => {
@@ -498,12 +497,38 @@ export function AgentPane(props: {
     return choices;
   });
   return (
-    <box flexDirection="column" flexGrow={1} minHeight={0} gap={0}>
+    <box
+      flexDirection="column"
+      flexGrow={1}
+      minHeight={0}
+      gap={0}
+      onMouse={(event) => {
+        if (
+          event.type !== "down" ||
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          busy() ||
+          !draftReady() ||
+          (changes() && event.target !== textarea && event.target !== textarea?.parent) ||
+          (props.form && props.form !== "message")
+        )
+          return;
+        props.setForm("message");
+        if (event.target !== textarea) {
+          event.preventDefault();
+          // Renderer starts history selection before dispatching this mouse event.
+          // Editor movement helpers clear that selection, breaking drag and multi-click copy.
+          textarea?.editBuffer.gotoLine(textarea.editBuffer.getLineCount());
+          textarea?.requestRender();
+          textarea?.focus();
+        }
+      }}
+    >
       <text
         fg="#80cbc4"
         height={1}
         flexShrink={0}
-      >{`ACP · ${executionSession()?.harnessId ?? harness()}${openHandoffRecord() ? ` · Handoff ${openHandoffRecord()?.sourceHarness} → ${openHandoffRecord()?.targetHarness} · ${openHandoffRecord()?.status}` : activeSession() && activeSession()?.harnessId !== harness() ? ` → ${harness()} (PENDING_SWITCH; x cancel)` : ""} · ${props.conversation.runtimeStatus} · Model (ACP): ${actualModel(executionSession())} · ${connection()}`}</text>
+      >{`ACP · ${executionSession()?.harnessId ?? harness()}${openHandoffRecord() ? ` · Handoff ${openHandoffRecord()?.sourceHarness} → ${openHandoffRecord()?.targetHarness} · ${openHandoffRecord()?.status}` : activeSession() && activeSession()?.harnessId !== harness() ? ` → ${harness()} (PENDING_SWITCH; Alt+X cancel)` : ""} · ${props.conversation.runtimeStatus} · Model (ACP): ${actualModel(executionSession())} · ${connection()}`}</text>
       <Show when={activeSession() && activeSession()?.harnessId !== harness()}>
         <text fg="#ffcc80">
           First target message starts Handoff. Wait for source execution/approval/cancellation to
@@ -512,8 +537,8 @@ export function AgentPane(props: {
       </Show>
       <Show when={failedHandoff()}>
         <text fg="#ffcc80">
-          Context may be incomplete / 上下文可能不完整 · f: materials / confirm degraded / retry /
-          cancel. Target task has NOT been sent.
+          Context may be incomplete / 上下文可能不完整 · Alt+F: materials / confirm degraded / retry
+          / cancel. Target task has NOT been sent.
         </text>
       </Show>
       <Show when={["INTERRUPTED", "UNCERTAIN"].includes(props.conversation.runtimeStatus)}>
@@ -565,7 +590,7 @@ export function AgentPane(props: {
             </For>
             <Show
               when={props.form === "approval"}
-              fallback={<text>Press a to choose an Agent option.</text>}
+              fallback={<text>Press Alt+A to choose an Agent option.</text>}
             >
               <input
                 focused={!busy()}
@@ -606,6 +631,7 @@ export function AgentPane(props: {
             />
           </Show>
           <box
+            id="message-composer"
             border
             height={Math.min(8, inputLines()) + 2}
             flexShrink={0}
@@ -616,10 +642,9 @@ export function AgentPane(props: {
               id="message-draft"
               onMouseDown={(event) => {
                 if (props.form && props.form !== "message") event.preventDefault();
-                else if (event.button === 0 && !busy()) props.setForm("message");
               }}
               initialValue={draft.text}
-              placeholder="Enter / m to write a message…"
+              placeholder="Enter / Alt+M to write a message…"
               onContentChange={() => {
                 const text = textarea?.plainText ?? draft.text;
                 draft.update(text);
@@ -719,7 +744,7 @@ export function AgentPane(props: {
       <text fg="#8b949e" height={1}>
         {busy() || !draftReady()
           ? "ACP operation pending"
-          : "Enter / m Message · a Approval · c Cancel Turn"}
+          : "Enter / Alt+M Message · Alt+A Approval · Alt+C Cancel Turn"}
       </text>
       <Show when={handoffMenu() && props.form === "details"}>
         <box

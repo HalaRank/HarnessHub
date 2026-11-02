@@ -55,9 +55,9 @@ def until(check, label):
 
 try:
     def ready():
-        return b"m Message" in re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", bytes(output))
+        return b"Alt+M Message" in re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", bytes(output))
     until(ready, "TUI editor did not load")
-    os.write(fd, b"mclear by SIGINT")
+    os.write(fd, b"\x1bmclear by SIGINT")
     draft_path = "/v1/conversations/" + cid + "/draft"
     until(lambda: api(draft_path)["text"] == "clear by SIGINT", "first draft not saved")
     os.kill(pid, signal.SIGINT)

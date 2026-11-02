@@ -168,7 +168,7 @@ test("styled streaming replies wrap and copy original Markdown while user backgr
     expect(replyLine?.spans.some((span) => span.bg.equals(RGBA.fromHex("#2d2d30")))).toBe(false);
     screen.mockInput.pressKey("]");
     await frame(screen, "▶ Agent");
-    screen.mockInput.pressKey("y");
+    screen.mockInput.pressKey("y", { meta: true });
     await frame(screen, "Original Markdown / text");
     screen.mockInput.pressEnter();
     await waitFor(() => copied.length > 0);
@@ -239,12 +239,12 @@ test("native tool accents follow streaming status and approvals while preserving
           expect(screen.captureCharFrame()).not.toContain("NATIVE_OUTPUT");
         else await frame(screen, "NATIVE_OUTPUT");
       }
-      screen.mockInput.pressKey("t");
+      screen.mockInput.pressKey("t", { meta: true });
       await frame(screen, "▶ NativeExact");
-      screen.mockInput.pressKey("e");
+      screen.mockInput.pressKey("e", { meta: true });
       await screen.renderOnce();
       expect(screen.captureCharFrame()).not.toContain("NATIVE_OUTPUT");
-      screen.mockInput.pressKey("e");
+      screen.mockInput.pressKey("e", { meta: true });
       await frame(screen, "NATIVE_OUTPUT");
       const tool = model.rows[0];
       if (!tool) throw new Error("Native tool missing from transcript");

@@ -27,7 +27,7 @@ import {
   ProjectTree,
   projectKey,
 } from "./project-tree";
-import { matches, shortcuts } from "./shortcuts";
+import { matches, navigationShortcuts, shortcuts } from "./shortcuts";
 import { newViewState, type ViewState } from "./transcript";
 
 export function App(props: { initialProjectId?: string | undefined; onExit: () => void }) {
@@ -310,14 +310,13 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       setError("");
       return;
     }
-    if (key.ctrl && key.name === "g") {
+    if (matches(key, navigationShortcuts.activity)) {
       key.preventDefault();
       key.stopPropagation();
       setShowActivity((value) => !value);
       return;
     }
-    if (key.ctrl || key.meta || key.shift) return;
-    if (!changesView() && (key.name === "up" || key.name === "down")) {
+    if (!changesView() && (matches(key, "up") || matches(key, "down"))) {
       key.preventDefault();
       const visible = rows();
       let index = visible.findIndex((r) => r.id === selected());
@@ -326,23 +325,30 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         visible[Math.max(0, Math.min(visible.length - 1, index + (key.name === "up" ? -1 : 1)))];
       if (target) selectRow(target);
     }
-    if (key.name === "q") void exit();
-    if (key.name === "p") {
+    if (matches(key, navigationShortcuts.quit)) {
       key.preventDefault();
+      key.stopPropagation();
+      void exit();
+    }
+    if (matches(key, navigationShortcuts.project)) {
+      key.preventDefault();
+      key.stopPropagation();
       setError("");
       setForm("project");
     }
-    if (key.name === "n" && row()) {
+    if (matches(key, navigationShortcuts.conversation) && row()) {
       key.preventDefault();
+      key.stopPropagation();
       setError("");
       void createConversation("shared");
     }
-    if (key.name === "o" && row()) {
+    if (matches(key, navigationShortcuts.actions) && row()) {
       key.preventDefault();
+      key.stopPropagation();
       setError("");
       setForm("actions");
     }
-    if (key.name === "delete" && row()) {
+    if (matches(key, "delete") && row()) {
       key.preventDefault();
       key.stopPropagation();
       requestDelete(row()?.value);
@@ -632,13 +638,13 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                 }
               >
                 <text selectable={false} fg="#80cbc4">
-                  ⋯ Actions (o)
+                  ⋯ Actions (Alt+O)
                 </text>
               </box>
             </Show>
             <Show
               when={rows().length > 0}
-              fallback={<text>No projects. Press p to register an existing directory.</text>}
+              fallback={<text>No projects. Press Alt+P to register an existing directory.</text>}
             >
               <ProjectTree
                 rows={rows()}
@@ -673,7 +679,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             <text height={1} flexShrink={0} fg="#8b949e">
               {row()?.value.conversation
                 ? `Conversation · ${row()?.value.conversation?.title}${row()?.value.conversation?.archivedAt !== null ? " [archived]" : ""} · Workspace: ${row()?.value.conversation?.workspacePath}`
-                : `${row()?.value.project.name} · Workspace: ${row()?.value.project.rootPath} · Press n to create a conversation`}
+                : `${row()?.value.project.name} · Workspace: ${row()?.value.project.rootPath} · Press Alt+N to create a conversation`}
             </text>
           </Show>
           <Show
@@ -881,8 +887,8 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           title="Shortcuts · JSON overrides · Esc close"
         >
           <text>
-            Use Ctrl/Meta combinations. Enter send and Shift+Enter newline remain fixed. Empty
-            object restores defaults.
+            Use Ctrl/Meta combinations. Letters alone never invoke shortcuts. Fixed Alt actions,
+            Ctrl+G, Enter, Shift+Enter and Esc are reserved. Empty object restores defaults.
           </text>
           <text>{JSON.stringify(keys())}</text>
           <input
@@ -896,7 +902,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                 setForm(null);
               } catch {
                 setError(
-                  "Invalid shortcuts: use distinct Ctrl/Meta keys; Enter, Shift+Enter, Esc and quit are reserved",
+                  "Invalid shortcuts: use distinct Ctrl/Meta keys; editor keys, fixed Alt actions, Ctrl+G and quit are reserved",
                 );
               }
             }}
@@ -913,7 +919,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         </text>
       </Show>
       <text height={1} flexShrink={0} fg="#8b949e">
-        {`${keys().palette} Commands · o Actions · Del Delete · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
+        {`${keys().palette} Commands · Alt+O Actions · Del Delete · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
       </text>
     </box>
   );

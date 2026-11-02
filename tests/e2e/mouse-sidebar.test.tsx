@@ -118,7 +118,7 @@ async function command(screen: Screen, text: string) {
 }
 async function current(screen: Screen, conversation: Conversation) {
   await frame(screen, `Conversation · ${conversation.title} · Workspace`);
-  await frame(screen, "m Message");
+  await frame(screen, "Alt+M Message");
 }
 
 test("sidebar spacing preserves names and keeps project headings more prominent", async () => {
@@ -259,7 +259,7 @@ test("large sidebar wheel is isolated from chat, selection and metadata refresh;
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 30 });
   try {
     await current(screen, a);
-    await frame(screen, "completed · e expand/collapse");
+    await frame(screen, "completed · Alt+E expand/collapse");
     const tree = node(screen, "project-tree") as ScrollBoxRenderable;
     const history = node(screen, "native-history") as ScrollBoxRenderable;
     history.scrollTo(4);
@@ -312,18 +312,18 @@ test("mouse navigation preserves unsent drafts, scroll and manual tools; backgro
   try {
     await current(screen, a);
     await frame(screen, "Exact Native Tool Name");
-    screen.mockInput.pressKey("t");
-    screen.mockInput.pressKey("e");
+    screen.mockInput.pressKey("t", { meta: true });
+    screen.mockInput.pressKey("e", { meta: true });
     await frame(screen, "Native details:");
     const history = node(screen, "native-history") as ScrollBoxRenderable;
     history.scrollTo(4);
     await screen.renderOnce();
     const position = history.scrollTop;
-    screen.mockInput.pressKey("m");
+    screen.mockInput.pressKey("m", { meta: true });
     await screen.mockInput.typeText("Alpha unsent\n草稿");
     await click(screen, conversationKey(b.id), 5);
     await current(screen, b);
-    screen.mockInput.pressKey("m");
+    screen.mockInput.pressKey("m", { meta: true });
     await screen.mockInput.typeText("Beta draft");
     await click(screen, conversationKey(a.id), 5);
     await current(screen, a);
@@ -409,6 +409,110 @@ test("Enter focuses the selected conversation at the draft end without sending i
   }
 }, 20000);
 
+test("chat area clicks focus the draft without sending or stealing modal focus", async () => {
+  const { a, b } = await setup("Chat-click-focus");
+  const turn = await api<{ id: string }>(`/v1/conversations/${a.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "mock",
+    message: "click focus history",
+  });
+  await waitFor(
+    async () => (await api<{ endedAt: number | null }>(`/v1/turns/${turn.id}`)).endedAt !== null,
+  );
+  const screen = await testRender(() => <App onExit={() => {}} />, {
+    width: 150,
+    height: 40,
+    kittyKeyboard: true,
+  });
+  const editor = () => node(screen, "message-draft") as TextareaRenderable;
+  try {
+    await current(screen, a);
+    await frame(screen, "Exact Native Tool Name");
+    const history = node(screen, "native-history") as ScrollBoxRenderable;
+    history.scrollTo(0);
+    await frame(screen, "click focus history");
+    await screen.mockMouse.click(history.x + history.width - 3, history.y + history.height - 2);
+    await waitFor(() => editor().focused, "history whitespace focuses draft");
+    await screen.mockInput.pressKeys(Array.from("中文 👋 draft"));
+    screen.mockInput.pressEscape();
+    await waitFor(() => !editor().focused);
+    await screen.renderOnce();
+    editor().gotoBufferHome();
+    history.scrollTo(0);
+    await frame(screen, "click focus history");
+    const lines = screen.captureCharFrame().split("\n");
+    const messageY = lines.findIndex((line) => line.includes("click focus history"));
+    const messageX = lines[messageY]?.indexOf("click focus history") ?? -1;
+    expect(messageX).toBeGreaterThan(0);
+    await screen.mockMouse.click(messageX + 2, messageY);
+    await waitFor(() => editor().focused, "user message focuses draft");
+    expect(editor().getTextRange(0, editor().cursorOffset)).toBe("中文 👋 draft");
+    await screen.mockInput.typeText(" appended");
+    await frame(screen, "native-0");
+    const agentLines = screen.captureCharFrame().split("\n");
+    const agentY = agentLines.findIndex((line) => line.includes("native-0"));
+    const agentX = agentLines[agentY]?.indexOf("native-0") ?? -1;
+    expect(agentX).toBeGreaterThan(0);
+    editor().gotoBufferHome();
+    await screen.mockMouse.click(agentX, agentY);
+    await screen.renderOnce();
+    expect(editor().focused).toBe(true);
+    expect(editor().getTextRange(0, editor().cursorOffset)).toBe("中文 👋 draft appended");
+    screen.mockInput.pressEscape();
+    await waitFor(() => !editor().focused);
+    const composer = node(screen, "message-composer");
+    await screen.mockMouse.click(composer.x, composer.y);
+    await waitFor(() => editor().focused, "input border focuses draft");
+    await screen.mockInput.typeText(" border");
+    await screen.mockMouse.click(editor().x, editor().y);
+    await screen.renderOnce();
+    expect(editor().cursorOffset).toBe(0);
+    await screen.mockInput.typeText("prefix ");
+    expect(editor().plainText).toBe("prefix 中文 👋 draft appended border");
+
+    screen.mockInput.pressKey("p", { ctrl: true });
+    await frame(screen, "Command palette");
+    await screen.mockMouse.click(history.x + 3, history.y + 2);
+    await screen.renderOnce();
+    expect(editor().focused).toBe(false);
+    screen.mockInput.pressEscape();
+    screen.mockInput.pressEscape();
+    await waitFor(() => !editor().focused);
+    await screen.mockMouse.click(history.x + 3, history.y + 2, 2);
+    await screen.renderOnce();
+    expect(editor().focused).toBe(false);
+    await screen.mockMouse.scroll(history.x + 3, history.y + 2, "up");
+    await screen.renderOnce();
+    expect(editor().focused).toBe(false);
+
+    await click(screen, conversationKey(b.id), 5);
+    await current(screen, b);
+    expect(editor().focused).toBe(false);
+    await click(screen, conversationKey(a.id), 5);
+    await current(screen, a);
+    await frame(screen, "prefix 中文 👋 draft appended border");
+    expect(editor().focused).toBe(false);
+    const events = await api<{ events: { kind: string }[] }>(
+      `/v1/conversations/${a.id}/events?limit=1000`,
+    );
+    expect(events.events.filter((event) => event.kind === "user.message")).toHaveLength(1);
+    await click(screen, "message-composer");
+    await waitFor(() => editor().focused);
+    screen.mockInput.pressEnter({ shift: true });
+    await screen.mockInput.typeText("last line");
+    expect(editor().plainText).toBe("prefix 中文 👋 draft appended border\nlast line");
+    screen.mockInput.pressEnter();
+    await waitFor(async () => {
+      const result = await api<{ events: { kind: string }[] }>(
+        `/v1/conversations/${a.id}/events?limit=1000`,
+      );
+      return result.events.filter((event) => event.kind === "user.message").length === 2;
+    }, "Enter sends exactly one new message");
+  } finally {
+    await screen.dispose();
+  }
+}, 20000);
+
 test("sidebar click/drag and chat selection do not cross-trigger; Ctrl+C copies, clears then quits", async () => {
   const { a, b } = await setup("Gestures");
   const turn = await api<{ id: string }>(`/v1/conversations/${a.id}/turns`, "POST", {
@@ -463,7 +567,7 @@ test("sidebar click/drag and chat selection do not cross-trigger; Ctrl+C copies,
     screen.renderer.clearSelection();
     await screen.mockMouse.drag(x, y, x + 5, y);
     await waitFor(() => copied.at(-1)?.startsWith("alpha") ?? false, "selected alpha copied");
-    screen.mockInput.pressKey("m");
+    expect((node(screen, "message-draft") as TextareaRenderable).focused).toBe(true);
     await screen.mockInput.typeText("preserve draft");
     screen.mockInput.pressKey("c", { ctrl: true });
     await waitFor(

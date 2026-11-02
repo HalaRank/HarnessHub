@@ -4,6 +4,7 @@ import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/solid";
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { UnifiedDiff } from "./rich-content";
+import { matches, navigationShortcuts } from "./shortcuts";
 import { SourceViewer } from "./source-viewer";
 
 export function ChangesPane(props: {
@@ -83,8 +84,12 @@ export function ChangesPane(props: {
   useKeyboard((key) => {
     if (key.defaultPrevented || key.propagationStopped) return;
     if (props.disabled || source()) return;
+    if (matches(key, navigationShortcuts.refreshChanges)) void refresh();
+    if (matches(key, navigationShortcuts.copySource) && patch()) {
+      setSource(true);
+      props.onModalChange(true);
+    }
     if (key.ctrl || key.meta || key.shift) return;
-    if (key.name === "g") void refresh();
     if (key.name === "up" || key.name === "down") {
       key.preventDefault();
       void load(
@@ -98,15 +103,11 @@ export function ChangesPane(props: {
       key.preventDefault();
       scroll?.scrollBy(key.name === "pageup" ? -0.8 : 0.8, "viewport");
     }
-    if (key.name === "y" && patch()) {
-      setSource(true);
-      props.onModalChange(true);
-    }
   });
   return (
     <box flexGrow={1} flexDirection="column" gap={1}>
       <text fg="#ffcc80">
-        Changes · Conversation workspace · No Agent attribution · g refresh · y copy diff
+        Changes · Conversation workspace · No Agent attribution · Alt+G refresh · Alt+Y copy diff
       </text>
       <Show when={state()}>
         {(s) => (
@@ -150,7 +151,7 @@ export function ChangesPane(props: {
               <UnifiedDiff value={section.text.slice(0, 96000)} path={patch()?.path ?? ""} />
               <Show when={section.text.length > 96000}>
                 <text>
-                  Diff preview limited to 96,000 characters. Press y for complete source pages /
+                  Diff preview limited to 96,000 characters. Press Alt+Y for complete source pages /
                   copy.
                 </text>
               </Show>

@@ -58,15 +58,19 @@ test("Solid view registers real workspace and empty conversation through authent
   try {
     await waitFor("Connected");
     await waitFor("No projects");
-    screen.mockInput.pressKey("p");
+    await screen.mockInput.typeText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    await waitFor("No projects");
+    expect(screen.captureCharFrame()).not.toContain("Existing project");
+    expect(exited).toBe(false);
+    screen.mockInput.pressKey("p", { meta: true });
     await waitFor("Existing project");
     expect(screen.captureCharFrame()).toContain("~/");
     await screen.mockInput.typeText(relative(homedir(), temp).slice(0, -1));
     screen.mockInput.pressTab();
     await waitFor(`${temp.split("/").at(-1)}/`);
     screen.mockInput.pressEnter();
-    await waitFor("Press n to create");
-    screen.mockInput.pressKey("n");
+    await waitFor("Press Alt+N");
+    screen.mockInput.pressKey("n", { meta: true });
     await waitFor("Conversation · New conversation");
     await waitFor("Enter send");
     expect(screen.captureCharFrame()).not.toContain("New conversation title");
@@ -74,7 +78,7 @@ test("Solid view registers real workspace and empty conversation through authent
     // A standalone Esc waits for the terminal parser to rule out an escape sequence.
     await new Promise((resolve) => setTimeout(resolve, 60));
     await screen.renderOnce();
-    screen.mockInput.pressKey("o");
+    screen.mockInput.pressKey("o", { meta: true });
     await waitFor("Conversation / Project actions");
     await screen.mockInput.typeText("Rename");
     screen.mockInput.pressEnter();
@@ -93,7 +97,7 @@ test("Solid view registers real workspace and empty conversation through authent
     }>("/v1/snapshot");
     expect(snapshot?.projects[0]?.rootPath).toBe(temp);
     expect(snapshot?.conversations[0]?.workspacePath).toBe(temp);
-    screen.mockInput.pressKey("q");
+    screen.mockInput.pressKey("q", { meta: true });
     for (let i = 0; i < 100 && !exited; i++)
       await new Promise((resolve) => setTimeout(resolve, 20));
     expect(exited).toBe(true);
@@ -215,17 +219,17 @@ test("minimal ACP view sends once, preserves native choices and waits for a user
     screen.mockInput.pressArrow("down");
     screen.mockInput.pressArrow("down");
     await waitFor("Start a conversation");
-    await waitFor("m Message");
-    for (let i = 0; i < 4; i++) screen.mockInput.pressKey("h");
+    await waitFor("Alt+M Message");
+    for (let i = 0; i < 4; i++) screen.mockInput.pressKey("h", { meta: true });
     await waitFor("ACP · mock");
-    screen.mockInput.pressKey("m");
+    screen.mockInput.pressKey("m", { meta: true });
     await waitFor("Enter send");
     await screen.mockInput.typeText("permission");
     screen.mockInput.pressEnter();
     await waitFor("Native permission");
     await waitFor("Reject (native)");
     expect((await client.request<unknown[]>(`/v1/conversations/${c.id}/approvals`)).length).toBe(1);
-    screen.mockInput.pressKey("a");
+    screen.mockInput.pressKey("a", { meta: true });
     await waitFor("Option number");
     await screen.mockInput.typeText("2");
     screen.mockInput.pressEnter();
@@ -291,7 +295,11 @@ test("native tool success collapses by default and manual expansion survives upd
     ]);
     await screen.renderOnce();
     expect(screen.captureCharFrame()).not.toContain("SUCCESS_NATIVE_CONTENT");
-    screen.mockInput.pressKey("e");
+    await screen.mockInput.typeText("terygTERYG");
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).not.toContain("SUCCESS_NATIVE_CONTENT");
+    expect(screen.captureCharFrame()).not.toContain("Original source");
+    screen.mockInput.pressKey("e", { meta: true });
     await screen.renderOnce();
     expect(screen.captureCharFrame()).toContain("SUCCESS_NATIVE_CONTENT");
     setEvents((e) => [...e, event({ toolCallId: "tool", rawOutput: "UPDATED_NATIVE_CONTENT" }, 3)]);
@@ -342,31 +350,31 @@ test("drafts stay isolated when switching Conversations and restore with recent 
     { width: 150, height: 45 },
   );
   try {
-    await waitFrame(screen, "m Message");
-    screen.mockInput.pressKey("m");
+    await waitFrame(screen, "Alt+M Message");
+    screen.mockInput.pressKey("m", { meta: true });
     await waitFrame(screen, "Enter send");
     await screen.mockInput.typeText("Alpha 草稿");
     screen.mockInput.pressEscape();
     await new Promise((r) => setTimeout(r, 60));
     screen.mockInput.pressArrow("down");
     await waitFrame(screen, "Conversation · Draft Beta");
-    await waitFrame(screen, "m Message");
-    screen.mockInput.pressKey("m");
+    await waitFrame(screen, "Alt+M Message");
+    screen.mockInput.pressKey("m", { meta: true });
     await waitFrame(screen, "Enter send");
     await screen.mockInput.typeText("Beta pending");
     screen.mockInput.pressEscape();
     await new Promise((r) => setTimeout(r, 60));
     screen.mockInput.pressArrow("up");
     await waitFrame(screen, "Conversation · Draft Alpha");
-    await waitFrame(screen, "m Message");
-    screen.mockInput.pressKey("m");
+    await waitFrame(screen, "Alt+M Message");
+    screen.mockInput.pressKey("m", { meta: true });
     await waitFrame(screen, "Alpha 草稿");
     screen.mockInput.pressEscape();
     await new Promise((r) => setTimeout(r, 60));
     screen.mockInput.pressKey("g", { ctrl: true });
     await screen.renderOnce();
     expect(screen.captureCharFrame()).not.toContain("Global · Running");
-    screen.mockInput.pressKey("q");
+    screen.mockInput.pressKey("q", { meta: true });
     for (let i = 0; i < 100 && !exited; i++) await new Promise((r) => setTimeout(r, 20));
     expect(exited).toBe(true);
     expect((await client.request<{ text: string }>(`/v1/conversations/${a.id}/draft`)).text).toBe(
@@ -377,9 +385,9 @@ test("drafts stay isolated when switching Conversations and restore with recent 
     );
     await screen.dispose();
     screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 45 });
-    await waitFrame(screen, "m Message");
+    await waitFrame(screen, "Alt+M Message");
     expect(screen.captureCharFrame()).not.toContain("Global · Running");
-    screen.mockInput.pressKey("m");
+    screen.mockInput.pressKey("m", { meta: true });
     await waitFrame(screen, "Alpha 草稿");
     expect(
       (await client.request<{ events: unknown[] }>(`/v1/conversations/${a.id}/events`)).events
@@ -429,8 +437,8 @@ test("background approval is discoverable in another Project, survives TUI exit 
     expect(await client.request<typeof before>(`/v1/conversations/${c.id}/sessions`)).toEqual(
       before,
     );
-    await waitFrame(screen, "m Message");
-    screen.mockInput.pressKey("a");
+    await waitFrame(screen, "Alt+M Message");
+    screen.mockInput.pressKey("a", { meta: true });
     await waitFrame(screen, "Option number");
     await screen.mockInput.typeText("2");
     screen.mockInput.pressEnter();

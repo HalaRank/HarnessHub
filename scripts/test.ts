@@ -23,10 +23,12 @@ const ui = spawnSync(
   process.execPath,
   [
     "test",
+    "tests/e2e/shortcuts.test.ts",
     "tests/e2e/tui.test.tsx",
     "tests/e2e/phase4.test.tsx",
-    "tests/e2e/chat-scroll.test.tsx",
     "tests/e2e/agent-output.test.tsx",
+    "tests/e2e/chat-scroll.test.tsx",
+    "tests/e2e/chat-input-focus.test.tsx",
     "tests/e2e/phase5.test.tsx",
     "tests/e2e/mouse-sidebar.test.tsx",
     "tests/e2e/slash-commands.test.tsx",

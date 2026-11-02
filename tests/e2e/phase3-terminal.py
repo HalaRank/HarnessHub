@@ -65,7 +65,7 @@ def read_until(child, needle, timeout=20):
 
 
 def quit_child(child):
-    os.write(child[1], b"q")
+    os.write(child[1], b"\x1bq")
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
         pid, status = os.waitpid(child[0], os.WNOHANG)
@@ -109,8 +109,8 @@ try:
     for item in setup["conversations"]:
         cid = item["conversationId"]
         child = launch(cid)
-        read_until(child, b"m Message")
-        os.write(child[1], b"m")
+        read_until(child, b"Alt+M Message")
+        os.write(child[1], b"\x1bm")
         read_until(child, b"Enter send")
         os.write(child[1], item["message"].encode())
         time.sleep(0.1)
@@ -125,7 +125,7 @@ try:
     assert api("/v1/health")["pid"] == original_pid
     assert any(api("/v1/turns/" + t["id"])["endedAt"] is None for t in turns), "No Agent still running after both TUIs exit"
     reopened = launch(setup["conversations"][0]["conversationId"])
-    read_until(reopened, b"m Message")
+    read_until(reopened, b"Alt+M Message")
     for item, session in zip(setup["conversations"], sessions):
         assert api("/v1/conversations/" + item["conversationId"] + "/sessions")[-1]["id"] == session["id"]
     quit_child(reopened)

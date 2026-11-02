@@ -1,6 +1,6 @@
 import { defaultShortcuts, type Shortcuts } from "@harnesshub/shared";
 
-export { defaultShortcuts };
+export { defaultShortcuts, navigationShortcuts } from "@harnesshub/shared";
 export function binding(value: string) {
   const parts = value.split("+");
   return {

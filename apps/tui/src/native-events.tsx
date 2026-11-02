@@ -3,6 +3,7 @@ import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/solid";
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack } from "solid-js";
 import { Markdown, type SourcePart, sourceParts, ToolContent } from "./rich-content";
+import { matches, navigationShortcuts } from "./shortcuts";
 import { SourceViewer } from "./source-viewer";
 import {
   newViewState,
@@ -136,21 +137,22 @@ export function NativeEvents(props: {
   useKeyboard((key) => {
     if (key.defaultPrevented || key.propagationStopped) return;
     if (source() || props.disabled) return;
-    if ((key.ctrl || key.meta || key.shift) && !["pageup", "pagedown"].includes(key.name)) return;
-    if (key.name === "t") {
+    if (matches(key, navigationShortcuts.nextTool)) {
       const candidates = model.rows
         .map((r, i) => ({ r, i }))
         .filter(({ r }) => r.value().kind === "tool");
       const next = candidates.find(({ i }) => i > selectedIndex()) ?? candidates[0];
       if (next) reveal(next.i);
     }
-    if (key.name === "[" || key.name === "]")
+    if (matches(key, "[") || matches(key, "]"))
       reveal(
         Math.max(0, Math.min(model.size() - 1, selectedIndex() + (key.name === "[" ? -1 : 1))),
       );
-    if (key.name === "e" && selectedRow()) toggle(selectedRow() as TranscriptRow);
-    if (key.name === "r") inspect(true);
-    if (key.name === "y") inspect(false);
+    if (matches(key, navigationShortcuts.expand) && selectedRow())
+      toggle(selectedRow() as TranscriptRow);
+    if (matches(key, navigationShortcuts.source)) inspect(true);
+    if (matches(key, navigationShortcuts.copySource)) inspect(false);
+    if ((key.ctrl || key.meta || key.shift) && !["pageup", "pagedown"].includes(key.name)) return;
     if (key.name === "pageup" || key.name === "pagedown") {
       key.preventDefault();
       if (key.ctrl) {
@@ -187,7 +189,7 @@ export function NativeEvents(props: {
       >
         <Show
           when={model.size()}
-          fallback={<text>Start a conversation. Press m to write a message.</text>}
+          fallback={<text>Start a conversation. Press Alt+M to write a message.</text>}
         >
           <For each={visible()}>
             {(row) => (
@@ -222,7 +224,7 @@ export function NativeEvents(props: {
                   </Show>
                   <Show when={row.value().kind === "handoff"}>
                     <text fg="#80cbc4">
-                      e expand/collapse · y complete report · r source events
+                      Alt+E expand/collapse · Alt+Y complete report · Alt+R source events
                     </text>
                     <Show when={manual()[row.id] ?? row.value().waiting}>
                       <Markdown text={row.value().text.slice(0, 24000)} />
@@ -239,7 +241,7 @@ export function NativeEvents(props: {
                         <span
                           style={{ fg: rowAccent(row.value()) }}
                         >{`${row.value().waiting ? "WAITING_APPROVAL · " : ""}${row.value().tool?.status ?? "pending"}`}</span>
-                        <span style={{ fg: "#8b949e" }}> · e expand/collapse</span>
+                        <span style={{ fg: "#8b949e" }}> · Alt+E expand/collapse</span>
                       </text>
                       <Show when={toolExpanded(row.value(), manual()[row.id])}>
                         <ToolContent
@@ -257,7 +259,7 @@ export function NativeEvents(props: {
                             .value()
                             .text.slice(0, 180)
                             .replace(/\s*\n\s*/g, " ") +
-                          (row.value().text.length > 180 ? " … (e expand · r source)" : "")}
+                          (row.value().text.length > 180 ? " … (Alt+E expand · Alt+R source)" : "")}
                     </text>
                   </Show>
                   <Show when={row.value().kind === "plan"}>
@@ -291,7 +293,7 @@ export function NativeEvents(props: {
         flexShrink={0}
         height={1}
         fg="#8b949e"
-      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · r details · y copy · PgUp/PgDn scroll · Esc/End latest`}</text>
+      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · Alt+R details · Alt+Y copy · PgUp/PgDn scroll · Esc/End latest`}</text>
       <Show when={source()}>{(parts) => <SourceViewer parts={parts()} onClose={close} />}</Show>
     </box>
   );

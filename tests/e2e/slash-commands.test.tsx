@@ -109,7 +109,7 @@ async function screenFor(c: Conversation, onExit = () => {}) {
   });
   await frame(s, "ACP ·");
   await until(() => !!editor(s));
-  s.mockInput.pressKey("m");
+  s.mockInput.pressKey("m", { meta: true });
   await until(() => editor(s).focused, "initial editor focus");
   // Initial loading finishes before the editor accepts keyboard input.
   await until(async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).id === c.id);
@@ -233,12 +233,13 @@ test("ordinary letters, Ctrl+D/Y, arrows, Shift+Enter and Ctrl+J retain editor s
   let exits = 0;
   const s = await screenFor(c, () => exits++);
   try {
-    await s.mockInput.typeText("mahcxfpnoq");
-    expect(editor(s).plainText).toBe("mahcxfpnoq");
+    const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    await s.mockInput.typeText(letters);
+    expect(editor(s).plainText).toBe(letters);
     expect(exits).toBe(0);
     editor(s).cursorOffset = 0;
     s.mockInput.pressKey("d", { ctrl: true });
-    expect(editor(s).plainText).toBe("ahcxfpnoq");
+    expect(editor(s).plainText).toBe(letters.slice(1));
     expect(editor(s).focused).toBe(true);
     const before = editor(s).plainText;
     s.mockInput.pressKey("y", { ctrl: true });

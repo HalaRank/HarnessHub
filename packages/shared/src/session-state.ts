@@ -10,6 +10,24 @@ export const draftInput = z
   .strict()
   .refine((d) => !d.pendingSubmission || d.text === "" || d.pendingSubmission.message === d.text);
 export type Draft = z.infer<typeof draftInput> & { conversationId: string };
+export const navigationShortcuts = {
+  quit: "meta+q",
+  project: "meta+p",
+  conversation: "meta+n",
+  actions: "meta+o",
+  activity: "ctrl+g",
+  message: "meta+m",
+  approval: "meta+a",
+  harness: "meta+h",
+  cancel: "meta+c",
+  cancelSwitch: "meta+x",
+  handoff: "meta+f",
+  nextTool: "meta+t",
+  expand: "meta+e",
+  source: "meta+r",
+  copySource: "meta+y",
+  refreshChanges: "meta+g",
+} as const;
 export const shortcutNames = ["palette", "sidebar", "newline", "changes", "copy"] as const;
 export const defaultShortcuts = {
   palette: "ctrl+p",
@@ -56,6 +74,7 @@ export const shortcutInput = z
     const effective = { ...defaultShortcuts, ...value };
     return (
       Object.entries(value).every(([action, key]) => {
+        if (Object.values(navigationShortcuts).some((reserved) => reserved === key)) return false;
         if (action === "newline" && key === "meta+return") return true;
         const name = key.split("+").at(-1) ?? "";
         if (!/^(?:[a-z0-9]|f(?:[1-9]|1[0-2]))$/.test(name)) return false;
@@ -70,7 +89,7 @@ export const shortcutInput = z
         return true;
       }) && new Set(Object.values(effective)).size === Object.values(effective).length
     );
-  }, "Use distinct canonical Ctrl/Meta shortcuts; editor, navigation and quit keys are reserved (Changes is navigation-only)");
+  }, "Use distinct canonical Ctrl/Meta shortcuts; editor, fixed navigation and quit keys are reserved (Changes is navigation-only)");
 export type Shortcuts = z.infer<typeof shortcutInput>;
 export const preferencesPatch = z
   .object({

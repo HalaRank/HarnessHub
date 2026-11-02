@@ -109,8 +109,8 @@ try:
     for item in setup["conversations"]:
         cid = item["conversationId"]
         child = launch(cid)
-        read_until(child, b"m Message")
-        os.write(child[1], b"m")
+        read_until(child, b"Alt+M Message")
+        os.write(child[1], b"\x1bm")
         read_until(child, b"Enter send")
         lines = item["message"].split("\n")
         os.write(child[1], lines[0].encode())
@@ -154,7 +154,7 @@ try:
     assert api("/v1/health")["pid"] == original_pid
     assert any(api("/v1/turns/" + t["id"])["endedAt"] is None for t in turns), "No Agent still running after both TUIs exit"
     reopened = launch(setup["conversations"][0]["conversationId"])
-    read_until(reopened, b"m Message")
+    read_until(reopened, b"Alt+M Message")
     for item, session in zip(setup["conversations"], sessions):
         assert api("/v1/conversations/" + item["conversationId"] + "/sessions")[-1]["id"] == session["id"]
     quit_child(reopened)

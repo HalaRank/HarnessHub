@@ -137,10 +137,10 @@ test("internal report events remain available in Debug without appearing as user
   try {
     await frame(screen, "Codex → Grok");
     expect(screen.captureCharFrame()).not.toContain("Exact user decision");
-    screen.mockInput.pressKey("e");
+    screen.mockInput.pressKey("e", { meta: true });
     await frame(screen, "Exact user decision");
     await frame(screen, "source-native");
-    screen.mockInput.pressKey("y");
+    screen.mockInput.pressKey("y", { meta: true });
     await frame(screen, "Original Markdown");
   } finally {
     screen.renderer.destroy();
@@ -156,8 +156,8 @@ test("TUI Harness selection persists pending state, x cancels, and first message
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 38 });
   try {
     await frame(screen, "ACP · a");
-    await frame(screen, "m Message");
-    screen.mockInput.pressKey("h");
+    await frame(screen, "Alt+M Message");
+    screen.mockInput.pressKey("h", { meta: true });
     await frame(screen, "PENDING_SWITCH");
     expect((await api<Conversation>(`/v1/conversations/${c.id}`)).selectedHarnessId).toBe("b");
     expect(
@@ -165,13 +165,13 @@ test("TUI Harness selection persists pending state, x cancels, and first message
         (e) => (e.raw as { method?: string } | null)?.method === "session/prompt",
       ).length,
     ).toBe(before);
-    screen.mockInput.pressKey("x");
+    screen.mockInput.pressKey("x", { meta: true });
     await until(
       async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).selectedHarnessId === "a",
     );
-    screen.mockInput.pressKey("h");
+    screen.mockInput.pressKey("h", { meta: true });
     await frame(screen, "PENDING_SWITCH");
-    screen.mockInput.pressKey("m");
+    screen.mockInput.pressKey("m", { meta: true });
     await screen.renderOnce();
     await screen.mockInput.typeText("timed");
     screen.mockInput.pressEnter();
@@ -206,8 +206,8 @@ test("failed Handoff TUI exposes saved materials and requires explicit degraded 
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 160, height: 45 });
   try {
     await frame(screen, "Target task has NOT been sent.");
-    await frame(screen, "m Message");
-    screen.mockInput.pressKey("f");
+    await frame(screen, "Alt+M Message");
+    screen.mockInput.pressKey("f", { meta: true });
     await frame(screen, "View saved context");
     expect((await api<unknown[]>(`/v1/conversations/${c.id}/sessions`)).length).toBe(1);
     screen.mockInput.pressArrow("down");
@@ -235,7 +235,7 @@ test("TUI creates automatically named independent Worktree from palette; safe cl
   git("-c", "user.name=HHU", "-c", "user.email=test@localhost", "commit", "-m", "fixture");
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 160, height: 40 });
   try {
-    await frame(screen, "m Message");
+    await frame(screen, "Alt+M Message");
     screen.mockInput.pressKey("p", { ctrl: true });
     await frame(screen, "Command palette");
     await screen.mockInput.typeText("New Conversation in Git Worktree");
@@ -254,7 +254,7 @@ test("TUI creates automatically named independent Worktree from palette; safe cl
     screen.mockInput.pressEscape();
     await screen.renderOnce();
     await api(`/v1/conversations/${created?.id}`, "DELETE", { confirmed: true });
-    await frame(screen, "Press n to create");
+    await frame(screen, "Press Alt+N to create");
     expect(existsSync(created?.workspacePath ?? "")).toBe(true);
     screen.mockInput.pressKey("p", { ctrl: true });
     await frame(screen, "Command palette");
