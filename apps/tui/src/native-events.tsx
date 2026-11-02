@@ -8,6 +8,7 @@ import {
   newViewState,
   object,
   pretty,
+  type RowData,
   Transcript,
   type TranscriptRow,
   toolExpanded,
@@ -15,6 +16,19 @@ import {
 } from "./transcript";
 
 export const HISTORY_PAGE_SIZE = 60;
+function rowAccent(value: RowData) {
+  if (value.waiting) return "#ffcc80";
+  if (value.kind === "tool") {
+    if (value.tool?.status === "failed") return "#ef9a9a";
+    if (value.tool?.status === "completed") return "#4ade80";
+    return "#80cbc4";
+  }
+  if (value.label === "Agent") return "#a5d6ff";
+  if (value.label === "Public thinking") return "#8b949e";
+  if (value.kind === "notice") return "#ffcc80";
+  return "#80cbc4";
+}
+
 export function NativeEvents(props: {
   events?: ConversationEvent[];
   model?: Transcript;
@@ -170,63 +184,90 @@ export function NativeEvents(props: {
             {(row) => (
               <box
                 id={`native-${row.id}`}
-                flexDirection="column"
+                flexDirection="row"
                 flexShrink={0}
                 marginBottom={1}
                 backgroundColor={row.value().label === "You" ? "#2d2d30" : "transparent"}
                 paddingX={row.value().label === "You" ? 1 : 0}
                 paddingY={row.value().label === "You" ? 1 : 0}
               >
-                <text
-                  fg={row.value().label === "You" ? "#b7bdc8" : "#8b949e"}
-                >{`${selectedRow()?.id === row.id ? "▶ " : ""}${row.value().kind === "tool" ? (row.value().tool?.title ?? row.value().tool?.toolCallId) : row.value().label} · #${row.sources[0]?.seq}`}</text>
-                <Show when={row.value().kind === "text"}>
-                  <Markdown text={row.value().text} streaming={row.value().streaming} />
-                </Show>
-                <Show when={row.value().kind === "handoff"}>
-                  <text fg="#80cbc4">e expand/collapse · y complete report · r source events</text>
-                  <Show when={manual()[row.id] ?? row.value().waiting}>
-                    <Markdown text={row.value().text.slice(0, 24000)} />
-                  </Show>
-                </Show>
-                <Show when={row.value().kind === "tool"}>
-                  <box flexDirection="column" border borderColor="#36404b" paddingX={1}>
-                    <text>{`${row.value().waiting ? "WAITING_APPROVAL · " : ""}${row.value().tool?.status ?? "pending"} · e expand/collapse`}</text>
-                    <Show when={toolExpanded(row.value(), manual()[row.id])}>
-                      <ToolContent
-                        tool={row.value().tool ?? {}}
-                        terminals={row.value().terminals}
-                      />
-                    </Show>
-                  </box>
-                </Show>
-                <Show when={row.value().kind === "notice"}>
-                  <text selectable fg="#ffcc80">
-                    {manual()[row.id]
-                      ? row.value().text.slice(0, 24000)
-                      : row
-                          .value()
-                          .text.slice(0, 180)
-                          .replace(/\s*\n\s*/g, " ") +
-                        (row.value().text.length > 180 ? " … (e expand · r source)" : "")}
+                <Show when={row.value().label !== "You"}>
+                  <text width={2} flexShrink={0} fg={rowAccent(row.value())}>
+                    {selectedRow()?.id === row.id ? "▶" : "•"}
                   </text>
                 </Show>
-                <Show when={row.value().kind === "plan"}>
-                  <For
-                    each={
-                      Array.isArray(object(row.sources[0]?.payload).entries)
-                        ? (object(row.sources[0]?.payload).entries as unknown[])
-                        : []
-                    }
-                  >
-                    {(entry) => (
-                      <box flexDirection="column" flexShrink={0}>
-                        <text fg="#80cbc4">{`[${String(object(entry).status ?? "")}] ${String(object(entry).priority ?? "")}`}</text>
-                        <Markdown text={String(object(entry).content ?? "")} />
-                      </box>
-                    )}
-                  </For>
-                </Show>
+                <box flexDirection="column" flexGrow={1} flexBasis={0} minWidth={0}>
+                  <text>
+                    <span
+                      style={{
+                        fg: row.value().label === "You" ? "#b7bdc8" : rowAccent(row.value()),
+                        bold: true,
+                      }}
+                    >
+                      {`${row.value().label === "You" && selectedRow()?.id === row.id ? "▶ " : ""}${row.value().kind === "tool" ? (row.value().tool?.title ?? row.value().tool?.toolCallId) : row.value().label}`}
+                    </span>
+                    <span style={{ fg: "#8b949e" }}>{` · #${row.sources[0]?.seq}`}</span>
+                  </text>
+                  <Show when={row.value().kind === "text"}>
+                    <Markdown text={row.value().text} streaming={row.value().streaming} />
+                  </Show>
+                  <Show when={row.value().kind === "handoff"}>
+                    <text fg="#80cbc4">
+                      e expand/collapse · y complete report · r source events
+                    </text>
+                    <Show when={manual()[row.id] ?? row.value().waiting}>
+                      <Markdown text={row.value().text.slice(0, 24000)} />
+                    </Show>
+                  </Show>
+                  <Show when={row.value().kind === "tool"}>
+                    <box
+                      flexDirection="column"
+                      border={["left"]}
+                      borderColor={rowAccent(row.value())}
+                      paddingLeft={1}
+                    >
+                      <text>
+                        <span
+                          style={{ fg: rowAccent(row.value()) }}
+                        >{`${row.value().waiting ? "WAITING_APPROVAL · " : ""}${row.value().tool?.status ?? "pending"}`}</span>
+                        <span style={{ fg: "#8b949e" }}> · e expand/collapse</span>
+                      </text>
+                      <Show when={toolExpanded(row.value(), manual()[row.id])}>
+                        <ToolContent
+                          tool={row.value().tool ?? {}}
+                          terminals={row.value().terminals}
+                        />
+                      </Show>
+                    </box>
+                  </Show>
+                  <Show when={row.value().kind === "notice"}>
+                    <text selectable fg="#ffcc80">
+                      {manual()[row.id]
+                        ? row.value().text.slice(0, 24000)
+                        : row
+                            .value()
+                            .text.slice(0, 180)
+                            .replace(/\s*\n\s*/g, " ") +
+                          (row.value().text.length > 180 ? " … (e expand · r source)" : "")}
+                    </text>
+                  </Show>
+                  <Show when={row.value().kind === "plan"}>
+                    <For
+                      each={
+                        Array.isArray(object(row.sources[0]?.payload).entries)
+                          ? (object(row.sources[0]?.payload).entries as unknown[])
+                          : []
+                      }
+                    >
+                      {(entry) => (
+                        <box flexDirection="column" flexShrink={0}>
+                          <text fg="#80cbc4">{`[${String(object(entry).status ?? "")}] ${String(object(entry).priority ?? "")}`}</text>
+                          <Markdown text={String(object(entry).content ?? "")} />
+                        </box>
+                      )}
+                    </For>
+                  </Show>
+                </box>
               </box>
             )}
           </For>

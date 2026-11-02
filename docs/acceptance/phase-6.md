@@ -170,3 +170,7 @@ Ctrl+C 的选区复制 → 非空清空 → 空输入退出优先级不变，退
 - `umask 022; bun run test` 重跑：构建通过，集成 **84/84**，UI **65/67**；本轮用户灰底用例通过。执行期间发现同一渲染文件及测试被其他操作并行编辑，新增 Agent / 工具样式和用例；两项新增用例失败，最终工作区类型检查也因并行新增的 `span fg` 属性报错。本轮保留这些外部改动，不覆盖或修复其语义；不能宣称最终合并工作区全量通过。日志：`/tmp/hhu-user-message-full-test-final.log`、`/tmp/hhu-user-message-typecheck-final.log`；最终 lint 退出 0，但并行新增测试有两处非空断言警告。需完成并行修改后重新构建和验收。
 - Windows Terminal / VS Code WSL 物理终端外观本轮**未验证**。手动步骤：打开历史会话及发送新消息，检查用户块灰底/留白、Agent 回复无灰底，再缩窄窗口检查多行中文及代码。无需调用真实 Agent 验证本次纯样式改动；不扩大既有真实 ACP 验收结论。
 - 未覆盖全局安装。`bun run build` 不更新已安装的独立发布；用户按 `docs/OPERATIONS.md` 的安全升级流程执行 `bun run install:local` 后，再从全局 `hhu` 验收。未进入新阶段。
+
+## Agent 输出样式补充（2026-11-02）
+
+Agent 消息圆点/缩进/加粗标签、公开思考标签及工具原生状态色，见 [专项验收记录](phase-6-agent-output-style.md)。保留用户灰底与原始 ACP 输出；独立纯渲染回归 3/3 通过，修正前述新增样式测试及 span 类型问题。本轮未完成全量 Daemon 回归、真实 ACP 或 Windows 物理终端验收，未进入新阶段。
