@@ -204,6 +204,59 @@ test("Markdown headings, lists, quotes, tables, code indentation and colored Dif
   }
 });
 
+test("user messages have full-width gray backgrounds without coloring Agent replies at wide and narrow widths", async () => {
+  const prompt =
+    "# USER_HEADING\n\nUSER_FIRST\n\nUSER_WRAPPED " +
+    "readable words ".repeat(8) +
+    "\n\n```ts\nconst original = 1;\n```";
+  const events = [event(1, "user.message", { text: prompt }), textEvent(2, "AGENT_REPLY")];
+  for (const width of [100, 32]) {
+    const model = new Transcript();
+    model.append(events);
+    const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+      width,
+      height: 40,
+    });
+    try {
+      await frame(screen, "USER_HEADING");
+      await frame(screen, "const original = 1;");
+      await frame(screen, "AGENT_REPLY");
+      const gray = RGBA.fromHex("#2d2d30");
+      const lines = screen.captureSpans().lines;
+      for (const content of [
+        "You",
+        "USER_HEADING",
+        "USER_FIRST",
+        "USER_WRAPPED",
+        "const original",
+      ]) {
+        const line = lines.find((line) =>
+          line.spans
+            .map((span) => span.text)
+            .join("")
+            .includes(content),
+        );
+        expect(line).toBeDefined();
+        expect(line?.spans.every((span) => span.bg.equals(gray))).toBe(true);
+      }
+      const reply = lines.find((line) =>
+        line.spans
+          .map((span) => span.text)
+          .join("")
+          .includes("AGENT_REPLY"),
+      );
+      expect(reply).toBeDefined();
+      expect(reply?.spans.some((span) => span.bg.equals(gray))).toBe(false);
+      const user = model.rows[0];
+      if (!user) throw new Error("User message missing from transcript");
+      expect(model.source(user)).toBe(prompt);
+      expect(model.events).toEqual(events);
+    } finally {
+      await screen.dispose();
+    }
+  }
+});
+
 test("waiting and failed tools expand, completed tools collapse, explicit expansion survives status and pane remount", async () => {
   const model = new Transcript(),
     view = newViewState();

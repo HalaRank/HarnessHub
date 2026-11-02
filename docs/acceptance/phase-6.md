@@ -160,3 +160,13 @@ Ctrl+C 的选区复制 → 非空清空 → 空输入退出优先级不变，退
 ## 会话命名交互补充（2026-11-01）
 
 创建时免填标题、首条消息自动命名与创建后重命名，见 [专项验收记录](phase-6-conversation-titles.md)。属于当前 MVP 的交互补充，原有真实 Harness / Windows 人工验收限制继续保留。
+
+## 用户消息视觉区分补充（2026-11-02）
+
+- `apps/tui/src/native-events.tsx`：用户消息整块使用 `#2d2d30` 灰色背景，四周增加一格留白，用户标签改为浅灰；Agent 回复、公开思考、工具和其他事件仍保留原样。不修改消息正文、Markdown、原始事件或持久化数据；历史与实时消息使用同一渲染路径。
+- `tests/e2e/phase4.test.tsx`：增加 100 列、32 列真实 OpenTUI renderer 回归，逐 span 检查用户标签、标题、多段文字、长行换行和代码的灰底，以及 Agent 回复没有该灰底；核对原文与来源事件不变。
+- 已通过定向命令 `bun test tests/e2e/phase4.test.tsx --test-name-pattern 'user messages have full-width'`（1 项、28 个断言）、`bun run typecheck`、`bun run lint`、`git diff --check`。定向日志：`/tmp/hhu-user-message-style-test.log`。沙箱内首次启动测试 Daemon 失败，授权沙箱外隔离运行后通过；开发中的类型及格式检查问题已修正。
+- 首次 `bun run test` 完成构建，集成 83/84 通过；当前 Shell `umask=0077` 将既有权限测试显式请求的 0644 文件创建为 0600，导致 `phase6.test.mjs` 的前置权限断言失败，UI 尚未执行。日志：`/tmp/hhu-user-message-full-test.log`。不修改无关测试；完整重跑仅在测试进程中设置 `umask 022`，不更改用户 Shell 配置。
+- `umask 022; bun run test` 重跑：构建通过，集成 **84/84**，UI **65/67**；本轮用户灰底用例通过。执行期间发现同一渲染文件及测试被其他操作并行编辑，新增 Agent / 工具样式和用例；两项新增用例失败，最终工作区类型检查也因并行新增的 `span fg` 属性报错。本轮保留这些外部改动，不覆盖或修复其语义；不能宣称最终合并工作区全量通过。日志：`/tmp/hhu-user-message-full-test-final.log`、`/tmp/hhu-user-message-typecheck-final.log`；最终 lint 退出 0，但并行新增测试有两处非空断言警告。需完成并行修改后重新构建和验收。
+- Windows Terminal / VS Code WSL 物理终端外观本轮**未验证**。手动步骤：打开历史会话及发送新消息，检查用户块灰底/留白、Agent 回复无灰底，再缩窄窗口检查多行中文及代码。无需调用真实 Agent 验证本次纯样式改动；不扩大既有真实 ACP 验收结论。
+- 未覆盖全局安装。`bun run build` 不更新已安装的独立发布；用户按 `docs/OPERATIONS.md` 的安全升级流程执行 `bun run install:local` 后，再从全局 `hhu` 验收。未进入新阶段。

@@ -168,9 +168,17 @@ export function NativeEvents(props: {
         >
           <For each={visible()}>
             {(row) => (
-              <box id={`native-${row.id}`} flexDirection="column" flexShrink={0} marginBottom={1}>
+              <box
+                id={`native-${row.id}`}
+                flexDirection="column"
+                flexShrink={0}
+                marginBottom={1}
+                backgroundColor={row.value().label === "You" ? "#2d2d30" : "transparent"}
+                paddingX={row.value().label === "You" ? 1 : 0}
+                paddingY={row.value().label === "You" ? 1 : 0}
+              >
                 <text
-                  fg={row.value().label === "You" ? "#80cbc4" : "#8b949e"}
+                  fg={row.value().label === "You" ? "#b7bdc8" : "#8b949e"}
                 >{`${selectedRow()?.id === row.id ? "▶ " : ""}${row.value().kind === "tool" ? (row.value().tool?.title ?? row.value().tool?.toolCallId) : row.value().label} · #${row.sources[0]?.seq}`}</text>
                 <Show when={row.value().kind === "text"}>
                   <Markdown text={row.value().text} streaming={row.value().streaming} />
