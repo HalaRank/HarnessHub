@@ -966,6 +966,39 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
   }
 }, 20000);
 
+test("two Delete presses confirm Conversation and Project deletion", async () => {
+  for (const kind of ["Conversation", "Project"] as const) {
+    const { p, c, root } = await setup(`Double Delete ${kind}`);
+    const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+    try {
+      await frame(screen, "m Message");
+      if (kind === "Project") {
+        screen.mockInput.pressArrow("up");
+        await frame(screen, "Press n to create");
+      }
+      screen.mockInput.pressKey("DELETE");
+      await frame(screen, `Confirm ${kind} deletion`);
+      await frame(screen, "Delete to delete");
+      expect((await api<{ id: string }>(`/v1/projects/${p.id}`)).id).toBe(p.id);
+      expect((await api<Conversation>(`/v1/conversations/${c.id}`)).id).toBe(c.id);
+      screen.mockInput.pressKey("DELETE");
+      await waitFor(async () => {
+        const snapshot = await api<{
+          projects: { id: string }[];
+          conversations: Conversation[];
+        }>("/v1/snapshot");
+        return (
+          !snapshot.conversations.some((v) => v.id === c.id) &&
+          snapshot.projects.some((v) => v.id === p.id) === (kind === "Conversation")
+        );
+      }, `${kind} removed after second Delete`);
+      expect(spawnSync("test", ["-d", root]).status).toBe(0);
+    } finally {
+      await screen.dispose();
+    }
+  }
+}, 20000);
+
 test("compact layout gives transcript most rows; input grows and narrow sidebar collapses", async () => {
   await setup("Layout refinement");
   const screen = await testRender(() => <App onExit={() => {}} />, {

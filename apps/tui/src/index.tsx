@@ -324,6 +324,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     }
     if (key.name === "delete" && row()) {
       key.preventDefault();
+      key.stopPropagation();
       requestDelete(row()?.value);
     }
   });

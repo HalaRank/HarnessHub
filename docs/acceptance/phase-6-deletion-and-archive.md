@@ -40,3 +40,16 @@ bun test tests/e2e/tui.test.tsx tests/e2e/phase4.test.tsx tests/e2e/phase5.test.
 2. 运行中会话可归档，不能删除；先正常取消并等待真实结束再删除。UNCERTAIN 不提供绕过删除，不清除不确定执行证据。
 3. 本轮未发送真实 Harness 模型 Prompt；Mock ACP 验证安全退出和故障，不能扩大为四种真实 Harness 的退出兼容性全部通过。原生模型配置及权限策略不变，沿用既有真实兼容性记录。
 4. 未自动安装新版 `hhu`、替用户删除现有数据或宣布 MVP 最终验收通过。源码构建不会替换已有独立安装发布；需要更新安装时按 OPERATIONS 先安全停 Daemon 再安装。
+
+## 连按两次 Delete 确认补充（2026-11-01）
+
+- `apps/tui/src/delete-confirmation.tsx`：项目和会话的确认框支持再次按 Delete 直接执行删除，并显示快捷键提示；仍默认选中 Cancel，保留 Enter、Tab / 方向键、Esc 和鼠标操作，busy 时不重复提交。
+- `apps/tui/src/index.tsx`：打开确认框的 Delete 阻止事件继续传播，避免同一次按键进入确认逻辑。
+- `tests/e2e/phase4.test.tsx`：新增真实 Daemon + OpenTUI 回归，分别选择 Conversation / Project，断言第一次 Delete 后项目和会话仍存在，第二次 Delete 后对应应用数据删除且项目目录保留。既有键盘取消、Tab + Enter、鼠标确认和双客户端同步测试保留。
+- README 与 OPERATIONS 同步快捷操作说明。属于 Phase 6 现有交互调整，无数据库或 ACP 协议变更。
+
+验证：最终 `bun run typecheck`、`bun run lint`、`bun run build`、`git diff --check` 通过。新增两次 Delete 用例及既有删除确认、取消、归档回归连续通过。首轮 `bun run test` 的 Node 集成 **83/83 通过**，UI **39/42 通过**；完整日志 `/tmp/hhu-double-delete-tests.log`。后续 UI 重跑 **40/42 通过**（`/tmp/hhu-double-delete-ui-rerun.log`）；最终构建后再次运行全部四份 UI 文件仍为 **40/42 通过**（`/tmp/hhu-double-delete-ui-final.log`），失败项为 `Solid view registers real workspace and empty conversation through authenticated Daemon` 和 `mouse rename targets the clicked conversation, supports cancel and syncs another TUI`，均在重命名相关交互中失败。本轮工作期间工作区出现其他重命名相关改动，保留其改动，不将这些失败判定为本功能回归或声称全套通过；Node 结果对应首轮执行时的代码。另有临时恢复两个 TUI 文件至 HEAD 的定向对照（`/tmp/hhu-double-delete-baseline-ui.log`），但因并行变更的测试和其他文件未同步还原，不据此判断基线是否通过。测试使用隔离临时 XDG 数据，不操作用户现有项目或全局安装。
+
+最终定向命令 `bun test tests/e2e/phase4.test.tsx -t 'two Delete presses|action menu archives|archive, restore'`：**3/3 通过**，日志 `/tmp/hhu-double-delete-targeted.log`，证据 `/tmp/hhu-phase4-ui-ooEL5v`。
+
+Windows Terminal / VS Code WSL 物理键盘仍**未验证**：在新构建 TUI 中分别选择项目和会话，第一次按 Delete 应只显示确认框，第二次按 Delete 执行删除；另检查 Enter 默认取消和 Esc 取消。运行/审批/UNCERTAIN 等服务端删除保护继续适用。

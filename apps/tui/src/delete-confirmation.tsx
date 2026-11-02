@@ -17,6 +17,10 @@ export function DeleteConfirmation(props: {
       key.preventDefault();
       key.stopPropagation();
       setConfirm((value) => !value);
+    } else if (key.name === "delete") {
+      key.preventDefault();
+      key.stopPropagation();
+      props.onDelete();
     } else if (key.name === "return") {
       key.preventDefault();
       key.stopPropagation();
@@ -63,7 +67,7 @@ export function DeleteConfirmation(props: {
           </text>
         </box>
       </box>
-      <text fg="#8b949e">Tab / ← → choose · Enter confirm · Esc cancel</text>
+      <text fg="#8b949e">Delete to delete · Tab / ← → choose · Enter confirm · Esc cancel</text>
     </box>
   );
 }
