@@ -34,6 +34,7 @@ export function NativeEvents(props: {
   model?: Transcript;
   disabled: boolean;
   running?: boolean;
+  followRequest?: number;
   view?: ViewState;
   onModalChange?: (open: boolean) => void;
 }) {
@@ -125,6 +126,13 @@ export function NativeEvents(props: {
     );
     props.onModalChange?.(true);
   };
+  const followLatest = () => {
+    setPage(null);
+    scroll?.afterLayout(() => scroll?.scrollTo(Infinity));
+  };
+  createEffect(() => {
+    if (props.followRequest) followLatest();
+  });
   useKeyboard((key) => {
     if (key.defaultPrevented || key.propagationStopped) return;
     if (source() || props.disabled) return;
@@ -155,10 +163,10 @@ export function NativeEvents(props: {
         scroll?.scrollTo(key.name === "pageup" ? Infinity : 0);
       } else scroll?.scrollBy(key.name === "pageup" ? -0.8 : 0.8, "viewport");
     }
-    if (key.name === "end") {
+    if (key.name === "end" || key.name === "escape") {
       key.preventDefault();
-      setPage(null);
-      scroll?.scrollTo(Infinity);
+      key.stopPropagation();
+      followLatest();
     }
   });
   return (
@@ -174,6 +182,7 @@ export function NativeEvents(props: {
         minHeight={2}
         stickyScroll
         stickyStart="bottom"
+        scrollAcceleration={{ tick: () => 5, reset() {} }}
         viewportCulling
       >
         <Show
@@ -282,7 +291,7 @@ export function NativeEvents(props: {
         flexShrink={0}
         height={1}
         fg="#8b949e"
-      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · r details · y copy · PgUp/PgDn scroll · End follow`}</text>
+      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · r details · y copy · PgUp/PgDn scroll · Esc/End latest`}</text>
       <Show when={source()}>{(parts) => <SourceViewer parts={parts()} onClose={close} />}</Show>
     </box>
   );

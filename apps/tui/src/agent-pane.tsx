@@ -90,6 +90,7 @@ export function AgentPane(props: {
     textarea: TextareaRenderable | undefined;
   const copyText = useClipboard();
   const [inputLines, setInputLines] = createSignal(1);
+  const [followRequest, setFollowRequest] = createSignal(0);
   const dimensions = useTerminalDimensions();
   const [editorRevision, setEditorRevision] = createSignal(0),
     [slashDismissedText, setSlashDismissedText] = createSignal<string | null>(null),
@@ -346,7 +347,10 @@ export function AgentPane(props: {
       key.preventDefault();
       key.stopPropagation();
       if (slashOpen()) setSlashDismissedText(textarea?.plainText ?? "");
-      else props.setForm(null);
+      else {
+        props.setForm(null);
+        setFollowRequest((value) => value + 1);
+      }
       return;
     }
     if (key.name === "escape" && (props.form === "settings" || handoffMenu() || rawConfirm())) {
@@ -524,6 +528,7 @@ export function AgentPane(props: {
         fallback={
           <NativeEvents
             model={transcript}
+            followRequest={followRequest()}
             running={["PREPARING", "RUNNING", "CANCELLING", "HANDOFF"].includes(
               props.conversation.runtimeStatus,
             )}

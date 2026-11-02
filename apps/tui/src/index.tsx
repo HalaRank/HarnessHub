@@ -306,8 +306,6 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     }
     if (form() === "message") return; // Slash/textarea owns Esc and editing.
     if (key.name === "escape") {
-      key.preventDefault();
-      key.stopPropagation();
       setForm(null);
       setError("");
       return;

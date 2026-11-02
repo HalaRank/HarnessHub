@@ -444,6 +444,69 @@ test("long history has bounded mounted rows, incremental content, scroll lock, b
   }
 }, 20000);
 
+test("App Esc returns chat to the bottom from navigation or the editor without discarding drafts; modals take priority", async () => {
+  const { c } = await setup("Chat scroll shortcuts");
+  const turn = await api<{ id: string }>(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "mock",
+    message: Array.from({ length: 80 }, (_, index) => `scroll line ${index}`).join("\n"),
+  });
+  await waitFor(
+    async () => (await api<{ endedAt: number | null }>(`/v1/turns/${turn.id}`)).endedAt !== null,
+  );
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  try {
+    await frame(screen, "Chat · History");
+    await frame(screen, "Connected");
+    await frame(screen, "Exact Native Tool Name");
+    for (let count = 0; count < 4; count++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      await screen.renderOnce();
+    }
+    const scroll = screen.renderer.root.findDescendantById("native-history") as ScrollBoxRenderable;
+    const atBottom = () => scroll.scrollTop + scroll.viewport.height >= scroll.scrollHeight - 1;
+    scroll.scrollTo(10);
+    await screen.renderOnce();
+    expect(atBottom()).toBe(false);
+    screen.mockInput.pressEscape();
+    await waitFor(async () => {
+      await screen.renderOnce();
+      return atBottom();
+    }, "Esc from chat navigation");
+    screen.mockInput.pressEnter();
+    const editor = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
+    await waitFor(() => editor.focused);
+    await screen.mockInput.typeText("unsent draft");
+    scroll.scrollTo(10);
+    await screen.renderOnce();
+    expect(atBottom()).toBe(false);
+    screen.mockInput.pressEscape();
+    await waitFor(async () => {
+      await screen.renderOnce();
+      return !editor.focused && atBottom();
+    }, "Esc from message editor");
+    expect(editor.plainText).toBe("unsent draft");
+    scroll.scrollTo(10);
+    await screen.renderOnce();
+    screen.mockInput.pressKey("p", { ctrl: true });
+    await frame(screen, "Command palette");
+    screen.mockInput.pressEscape();
+    await waitFor(async () => {
+      await screen.renderOnce();
+      return !screen.captureCharFrame().includes("Command palette");
+    });
+    expect(scroll.scrollTop).toBe(10);
+    expect(editor.plainText).toBe("unsent draft");
+    expect(
+      (
+        await api<{ events: ConversationEvent[] }>(`/v1/conversations/${c.id}/events`)
+      ).events.filter((event) => event.kind === "user.message"),
+    ).toHaveLength(1);
+  } finally {
+    await screen.dispose();
+  }
+}, 20000);
+
 test("Enter sends once, Kitty Shift+Enter and Ctrl+J insert newlines without submitting", async () => {
   const { c } = await setup("Keyboard compatibility");
   await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "mock" });
