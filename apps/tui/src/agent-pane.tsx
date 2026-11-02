@@ -393,6 +393,9 @@ export function AgentPane(props: {
         fallback={
           <NativeEvents
             model={transcript}
+            running={["PREPARING", "RUNNING", "CANCELLING", "HANDOFF"].includes(
+              props.conversation.runtimeStatus,
+            )}
             disabled={!!props.form}
             {...(props.view ? { view: props.view } : {})}
             onModalChange={(open) => props.setForm(open ? "details" : null)}

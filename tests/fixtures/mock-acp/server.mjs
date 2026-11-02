@@ -37,10 +37,14 @@ const app = new AgentApp()
       },
     };
   })
-  .onRequest("session/new", ({ params }) => {
+  .onRequest("session/new", async ({ params, client }) => {
     if (process.env.HHU_MOCK_NEW_FAIL) throw new Error("mock new failed");
     if (params.cwd !== process.cwd() || !params.cwd.startsWith("/"))
       throw new Error("Incorrect cwd");
+    if (process.env.HHU_MOCK_CHAT_DIAGNOSTICS)
+      await client.notify("_auth/status_update", {
+        authStatus: { kind: "gateway", label: "Custom model gateway", detail: "codeforce" },
+      });
     return {
       sessionId,
       configOptions,
@@ -69,6 +73,10 @@ const app = new AgentApp()
     prompts++;
     cancelled = false;
     let message = params.prompt[0].text;
+    if (process.env.HHU_MOCK_CHAT_DIAGNOSTICS && message === "hello") {
+      await text(client, "Hello from Agent.");
+      return { stopReason: "end_turn" };
+    }
     if (message.startsWith("[HarnessHub internal context handoff")) {
       if (process.env.HHU_MOCK_REPORT_DELAY)
         await new Promise((r) => setTimeout(r, Number(process.env.HHU_MOCK_REPORT_DELAY)));

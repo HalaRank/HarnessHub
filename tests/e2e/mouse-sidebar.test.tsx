@@ -205,7 +205,7 @@ test("large sidebar wheel is isolated from chat, selection and metadata refresh;
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 30 });
   try {
     await current(screen, a);
-    await frame(screen, "runtime.turn_finished");
+    await frame(screen, "completed · e expand/collapse");
     const tree = node(screen, "project-tree") as ScrollBoxRenderable;
     const history = node(screen, "native-history") as ScrollBoxRenderable;
     history.scrollTo(4);

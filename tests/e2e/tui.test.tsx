@@ -85,7 +85,7 @@ test("Solid view registers real workspace and empty conversation through authent
     screen.mockInput.pressEnter();
     await waitFor("Conversation · Real empty conversation");
     await waitFor("· IDLE");
-    expect(screen.captureCharFrame()).toContain("No Agent output yet");
+    expect(screen.captureCharFrame()).toContain("Start a conversation");
     const client = await connect();
     const snapshot = await client?.request<{
       projects: { rootPath: string }[];
@@ -214,7 +214,7 @@ test("minimal ACP view sends once, preserves native choices and waits for a user
     await waitFor("UI ACP permission");
     screen.mockInput.pressArrow("down");
     screen.mockInput.pressArrow("down");
-    await waitFor("No Agent output yet");
+    await waitFor("Start a conversation");
     await waitFor("m Message");
     for (let i = 0; i < 4; i++) screen.mockInput.pressKey("h");
     await waitFor("ACP · mock");

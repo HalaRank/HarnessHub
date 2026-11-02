@@ -64,6 +64,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   const [worktrees, setWorktrees] = createSignal<ManagedWorktree[]>([]);
   const [cleanupTarget, setCleanupTarget] = createSignal<ManagedWorktree | null>(null);
   const [notice, setNotice] = createSignal("");
+  createEffect(() => {
+    if (!notice()) return;
+    const timer = setTimeout(() => setNotice(""), 5000);
+    onCleanup(() => clearTimeout(timer));
+  });
   const [showArchived, setShowArchived] = createSignal(false);
   let clearInput: (() => boolean) | undefined;
   const [deleteTarget, setDeleteTarget] = createSignal<Omit<ProjectRow, "id"> | null>(null);

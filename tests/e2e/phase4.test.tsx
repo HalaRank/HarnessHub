@@ -7,9 +7,10 @@ import { RGBA, type ScrollBoxRenderable, type TextareaRenderable } from "@opentu
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
 import { HISTORY_PAGE_SIZE, NativeEvents } from "../../apps/tui/src/native-events";
+import { RawEvents } from "../../apps/tui/src/raw-events";
 import { Markdown, sourceParts, UnifiedDiff } from "../../apps/tui/src/rich-content";
 import { SourceViewer } from "../../apps/tui/src/source-viewer";
-import { newViewState, Transcript } from "../../apps/tui/src/transcript";
+import { chatVisible, newViewState, projectEvent, Transcript } from "../../apps/tui/src/transcript";
 import { connect } from "../../packages/shared/src/client";
 import type { Conversation, ConversationEvent } from "../../packages/shared/src/index";
 
@@ -62,6 +63,10 @@ const event = (
 });
 const textEvent = (seq: number, text: string, kind = "agent_message_chunk") =>
   event(seq, kind, { sessionUpdate: kind, content: { type: "text", text } });
+const messageEvent = (seq: number, text: string) => ({
+  ...event(seq, "user.message", { text }),
+  turnId: `turn-${seq}`,
+});
 async function waitFor(check: () => boolean | Promise<boolean>, label = "state") {
   for (let i = 0; i < 300; i++) {
     if (await check()) return;
@@ -110,7 +115,7 @@ test("native projection preserves Markdown, public thinking, tools, plans, unkno
       rawOutput: "  native\n\noutput",
     }),
     event(7, "plan", { entries: [{ content: "原始计划", status: "pending", priority: "high" }] }),
-    event(8, "custom", { futureKind: "exact payload" }),
+    event(8, "custom", { text: "exact payload", futureKind: "metadata stays in source" }),
     event(
       9,
       "tool_call",
@@ -299,7 +304,7 @@ test("source viewer copies exact original Markdown, code and native tool output 
 
 test("unknown events expose raw and normalized payloads with event IDs and sequence numbers", async () => {
   const model = new Transcript();
-  model.append([event(1, "custom", { future: "UNCHANGED_FUTURE" })]);
+  model.append([event(1, "custom", { content: { type: "text", text: "UNCHANGED_FUTURE" } })]);
   const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
     width: 140,
     height: 35,
@@ -335,9 +340,12 @@ test("long history has bounded mounted rows, incremental content, scroll lock, b
   const long = new Transcript();
   long.append(
     Array.from({ length: 10000 }, (_, i) =>
-      event(i + 1, "custom", { native: `row-${i}`, value: "content\n".repeat(5) }),
+      messageEvent(i + 1, `row-${i}\n${"content\n".repeat(5)}`),
     ),
   );
+  expect(long.rows.length).toBe(10000);
+  expect(long.rows[0]?.value().text).toContain("row-0");
+  expect(long.rows[9999]?.value().text).toContain("row-9999");
   let screen = await testRender(() => <NativeEvents model={long} view={view} disabled={false} />, {
     width: 150,
     height: 35,
@@ -350,7 +358,7 @@ test("long history has bounded mounted rows, incremental content, scroll lock, b
     scroll().scrollTo(20);
     await screen.renderOnce();
     const top = scroll().scrollTop;
-    long.append([event(10001, "custom", { native: "last-row-new" })]);
+    long.append([messageEvent(10001, "last-row-new")]);
     await screen.renderOnce();
     expect(scroll().scrollTop).toBe(top);
     await screen.dispose();
@@ -363,7 +371,7 @@ test("long history has bounded mounted rows, incremental content, scroll lock, b
     expect(scroll().scrollTop).toBe(top);
     screen.mockInput.pressKey("END");
     await frame(screen, "last-row-new");
-    long.append([event(10002, "custom", { native: "FOLLOW_LATEST" })]);
+    long.append([messageEvent(10002, "FOLLOW_LATEST")]);
     await frame(screen, "FOLLOW_LATEST");
     screen.mockInput.pressKey("\x1b[5;5~");
     await screen.renderOnce();
@@ -564,7 +572,7 @@ test("Changes panel reads actual workspace Git state and exposes an inline patch
     await frame(screen, "export const hello");
     expect(screen.captureCharFrame()).toContain("Untracked");
     screen.mockInput.pressKey("d", { ctrl: true });
-    await frame(screen, "No Agent output yet");
+    await frame(screen, "Start a conversation");
   } finally {
     await screen.dispose();
   }
@@ -705,9 +713,10 @@ test("a new history page cannot replace the page being read after the user scrol
   const model = new Transcript();
   model.append(
     Array.from({ length: 120 }, (_, i) =>
-      event(i + 1, "custom", { text: `boundary-${i}\n${"native line\n".repeat(4)}` }),
+      messageEvent(i + 1, `boundary-${i}\n${"native line\n".repeat(4)}`),
     ),
   );
+  expect(model.rows.length).toBe(120);
   const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
     width: 140,
     height: 30,
@@ -718,7 +727,7 @@ test("a new history page cannot replace the page being read after the user scrol
     scroll.scrollTo(10);
     await screen.renderOnce();
     const before = scroll.scrollTop;
-    model.append([event(121, "custom", { text: "DO_NOT_JUMP_NEW_PAGE" })]);
+    model.append([messageEvent(121, "DO_NOT_JUMP_NEW_PAGE")]);
     await screen.renderOnce();
     expect(screen.captureCharFrame()).toContain("History 2/3");
     expect(screen.captureCharFrame()).not.toContain("DO_NOT_JUMP_NEW_PAGE");
@@ -742,7 +751,7 @@ test("refinement hides ACP control traffic, retains real errors and all raw sour
       ...event(6, "acp.response", { message: "REAL_PROTOCOL_ERROR" }),
       raw: { id: 2, error: { code: -1, message: "REAL_PROTOCOL_ERROR" } },
     },
-    event(7, "custom", { meaningful: "UNKNOWN_VISIBLE" }),
+    event(7, "custom", { message: "UNKNOWN_VISIBLE" }),
     event(8, "runtime.session_error", { message: "REAL_RUNTIME_ERROR" }),
   ];
   model.append(events);
@@ -1160,5 +1169,375 @@ test("clearing an unconfirmed draft persists empty input while retaining the res
     expect((await second.prepare("mock")).requestId).toBe(reserved.requestId);
   } finally {
     await second.dispose();
+  }
+});
+
+test("semantic projection classifies chat, activity, actions, notices, diagnostics and unknown extensions", () => {
+  const cases = [
+    [event(1, "user.message", { text: "hello" }), "CHAT_CONTENT", true],
+    [textEvent(1, "Hello"), "CHAT_CONTENT", true],
+    [textEvent(1, "Thinking", "agent_thought_chunk"), "AGENT_ACTIVITY", true],
+    [event(1, "tool_call", { toolCallId: "t" }), "AGENT_ACTIVITY", true],
+    [event(1, "tool_call_update", { toolCallId: "t", status: "failed" }), "AGENT_ACTIVITY", true],
+    [event(1, "plan", { entries: [] }), "AGENT_ACTIVITY", true],
+    [event(1, "approval.requested", { request: { options: [] } }), "USER_ACTION_REQUIRED", true],
+    [event(1, "handoff.record", { status: "FAILED" }), "USER_ACTION_REQUIRED", true],
+    [event(1, "runtime.context_ended", {}), "USER_NOTICE", true],
+    [event(1, "runtime.worker_lost", {}), "USER_NOTICE", true],
+    [event(1, "runtime.interrupted", { state: "UNCERTAIN" }), "USER_NOTICE", true],
+    [event(1, "runtime.turn_finished", { state: "UNCERTAIN" }), "USER_NOTICE", true],
+    [event(1, "runtime.session_error", { reason: "Actual native failure" }), "USER_NOTICE", true],
+    [
+      {
+        ...event(1, "custom", { reason: "Native extension failure" }),
+        raw: { method: "_auth/error" },
+      },
+      "USER_NOTICE",
+      true,
+    ],
+    [event(1, "runtime.warning", { message: "Important runtime warning" }), "USER_NOTICE", true],
+    [event(1, "custom", { error: { message: "Actual extension error" } }), "USER_NOTICE", true],
+    [
+      event(1, "custom", { error: { detail: "Opaque native failure" }, authStatus: {} }),
+      "USER_NOTICE",
+      true,
+    ],
+    [
+      event(1, "future_warning", { severity: "warning", message: "Important warning" }),
+      "USER_NOTICE",
+      true,
+    ],
+    [
+      event(1, "runtime.worker_started", {
+        workerPid: 42,
+        processGroupId: 42,
+        epoch: "e",
+        harnessId: "codex",
+        cwd: "/project",
+      }),
+      "INTERNAL_DIAGNOSTIC",
+      false,
+    ],
+    [
+      event(1, "custom", {
+        authStatus: { kind: "gateway", label: "Custom model gateway", detail: "codeforce" },
+      }),
+      "INTERNAL_DIAGNOSTIC",
+      false,
+    ],
+    [
+      event(1, "custom", { configOptions: [], text: "Configuration metadata" }),
+      "INTERNAL_DIAGNOSTIC",
+      false,
+    ],
+    [
+      event(1, "custom", { capabilities: {}, message: "Capability metadata" }),
+      "INTERNAL_DIAGNOSTIC",
+      false,
+    ],
+    [
+      event(1, "custom", { sessionUpdate: "model_gateway", text: "Gateway metadata" }),
+      "INTERNAL_DIAGNOSTIC",
+      false,
+    ],
+    ...[
+      "initialize",
+      "initialized",
+      "acp.response",
+      "session/new",
+      "session/load",
+      "session/prompt",
+      "session/cancel",
+      "session/set_config_option",
+      "runtime.session_ready",
+      "runtime.turn_finished",
+      "config_option_update",
+      "usage_update",
+    ].map(
+      (kind) =>
+        [event(1, kind, { message: "Control metadata" }), "INTERNAL_DIAGNOSTIC", false] as const,
+    ),
+    [
+      event(1, "future_extension", { content: { type: "text", text: "Public extension text" } }),
+      "UNKNOWN_EXTENSION",
+      true,
+    ],
+    [
+      event(1, "custom", { label: "Metadata label", detail: "metadata", workerPid: 42 }),
+      "UNKNOWN_EXTENSION",
+      false,
+    ],
+    [
+      event(1, "future_extension", {
+        revision: 1,
+        nested: { text: "Not explicit public content" },
+      }),
+      "UNKNOWN_EXTENSION",
+      false,
+    ],
+  ] as const;
+  expect(
+    projectEvent({
+      ...event(1, "custom", { reason: "Native extension failure" }),
+      raw: { method: "_auth/error" },
+    }).text,
+  ).toBe("Native extension failure");
+  for (const [source, category, visible] of cases) {
+    expect(projectEvent(source).category).toBe(category);
+    expect(chatVisible(source)).toBe(visible);
+  }
+});
+
+test("diagnostic floods and legacy history replay produce the same clean chat without changing sources", () => {
+  const diagnostics = Array.from({ length: 10000 }, (_, i) =>
+    event(
+      i + 1,
+      i % 2 ? "custom" : "runtime.worker_started",
+      i % 2
+        ? { authStatus: { kind: "gateway", label: "Custom model gateway", detail: "codeforce" } }
+        : { workerPid: i, processGroupId: i, epoch: "epoch", harnessId: "codex", cwd: "/project" },
+    ),
+  );
+  const events = [
+    ...diagnostics,
+    messageEvent(10001, "hello"),
+    textEvent(10002, "Hello!"),
+    event(10003, "runtime.turn_finished", { state: "COMPLETED" }),
+  ];
+  const original = JSON.stringify(events);
+  const live = new Transcript();
+  live.append(diagnostics);
+  expect(live.rows).toHaveLength(0);
+  live.append(events.slice(10000));
+  const history = new Transcript();
+  history.append(JSON.parse(original) as ConversationEvent[]);
+  expect(live.rows.map((row) => row.value())).toEqual(history.rows.map((row) => row.value()));
+  expect(history.rows.map((row) => row.value().text)).toEqual(["hello", "Hello!"]);
+  expect(history.rows[1]?.value().streaming).toBe(false);
+  expect(history.events).toEqual(events);
+  expect(live.events).toEqual(events);
+  expect(JSON.stringify(events)).toBe(original);
+});
+
+test("public thinking, plans, tools, permission options and context/error notices render without metadata JSON", async () => {
+  const model = new Transcript();
+  model.append([
+    textEvent(1, "Public thinking content", "agent_thought_chunk"),
+    event(2, "plan", {
+      entries: [{ content: "Public plan content", status: "pending", priority: "high" }],
+    }),
+    event(3, "tool_call", {
+      toolCallId: "t",
+      title: "Native.exec",
+      status: "in_progress",
+      rawInput: { command: "pwd" },
+    }),
+    event(4, "approval.requested", {
+      id: "a",
+      request: {
+        toolCall: { toolCallId: "t" },
+        options: [{ optionId: "deny", name: "Deny exact native option", kind: "reject_once" }],
+      },
+    }),
+    event(5, "runtime.context_ended", {
+      message: "Native context ended. Next message starts fresh.",
+      nativeSessionRecovered: false,
+    }),
+    event(6, "runtime.session_error", { reason: "NATIVE_PREPARATION_FAILURE", stderrBytes: 42 }),
+    {
+      ...event(7, "acp.response", {}),
+      raw: {
+        id: 8,
+        error: {
+          code: -9,
+          message: "NATIVE_PROTOCOL_FAILURE",
+          data: { source: "FULL_ERROR_SOURCE" },
+        },
+      },
+    },
+  ]);
+  const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+    width: 150,
+    height: 50,
+  });
+  try {
+    await frame(screen, "NATIVE_PROTOCOL_FAILURE");
+    await frame(screen, "Public thinking content");
+    await frame(screen, "Public plan content");
+    for (const text of [
+      "Public thinking content",
+      "Public plan content",
+      "Native.exec",
+      "WAITING_APPROVAL",
+      "Deny exact native option",
+      "Native context ended",
+      "NATIVE_PREPARATION_FAILURE",
+    ])
+      expect(screen.captureCharFrame()).toContain(text);
+    expect(screen.captureCharFrame()).not.toContain('"stderrBytes"');
+    expect(screen.captureCharFrame()).not.toContain('"nativeSessionRecovered"');
+    for (let i = 0; i < model.rows.length - 1; i++) screen.mockInput.pressKey("]");
+    screen.mockInput.pressKey("r");
+    await frame(screen, "FULL_ERROR_SOURCE");
+    expect(screen.captureCharFrame()).toContain('"code": -9');
+    model.append([event(8, "approval.decided", { approvalId: "a", optionId: "deny" })]);
+    expect(model.tools.get("native:t")?.value().waiting).toBe(false);
+    expect(model.rows).toHaveLength(7);
+  } finally {
+    await screen.dispose();
+  }
+}, 10000);
+
+test("unknown visible text is concise by default, expandable, and linked to its full source", async () => {
+  const model = new Transcript();
+  const text = `PUBLIC_EXTENSION ${"native text ".repeat(30)}EXPANDED_EXTENSION_END`;
+  model.append([
+    event(1, "future_extension", {
+      content: { type: "text", text },
+      extra: "SOURCE_ONLY_METADATA",
+    }),
+  ]);
+  const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+    width: 140,
+    height: 35,
+  });
+  try {
+    await frame(screen, "PUBLIC_EXTENSION");
+    expect(screen.captureCharFrame()).not.toContain("EXPANDED_EXTENSION_END");
+    expect(screen.captureCharFrame()).not.toContain("SOURCE_ONLY_METADATA");
+    screen.mockInput.pressKey("e");
+    await frame(screen, "EXPANDED_EXTENSION_END");
+    screen.mockInput.pressKey("r");
+    await frame(screen, "SOURCE_ONLY_METADATA");
+    expect(screen.captureCharFrame()).toContain('"eventId": "event-1"');
+    const row = model.rows[0];
+    if (!row) throw new Error("Missing extension notice");
+    expect(model.source(row)).toBe(text);
+  } finally {
+    await screen.dispose();
+  }
+});
+
+test("Raw Events Debug retains and copies full worker and authStatus sources hidden from chat", async () => {
+  const model = new Transcript();
+  const sources = [
+    event(1, "runtime.worker_started", {
+      workerPid: 1234,
+      processGroupId: 1234,
+      epoch: "epoch-original",
+      harnessId: "codex",
+      cwd: "/project",
+    }),
+    event(2, "custom", {
+      authStatus: { kind: "gateway", label: "Custom model gateway", detail: "codeforce" },
+    }),
+  ];
+  model.append(sources);
+  expect(model.rows).toHaveLength(0);
+  const screen = await testRender(
+    () => <RawEvents events={model.events} count={model.eventCount()} onClose={() => {}} />,
+    { width: 150, height: 50 },
+  );
+  const copied: string[] = [];
+  Object.defineProperty(screen.renderer, "capabilities", {
+    get: () => ({ remote: true, osc52_support: "supported" }),
+    configurable: true,
+  });
+  screen.renderer.copyToClipboardOSC52 = (value) => {
+    copied.push(value);
+    return true;
+  };
+  try {
+    await frame(screen, '"workerPid": 1234');
+    screen.mockInput.pressEnter();
+    await waitFor(() => copied.length === 1);
+    expect(JSON.parse(copied[0] ?? "null")).toEqual(sources[0]);
+    screen.mockInput.pressArrow("down");
+    await frame(screen, '"authStatus"');
+    screen.mockInput.pressEnter();
+    await waitFor(() => copied.length === 2);
+    expect(JSON.parse(copied[1] ?? "null")).toEqual(sources[1]);
+    expect(screen.captureCharFrame()).toContain("Custom model gateway");
+    expect(screen.captureCharFrame()).toContain("codeforce");
+  } finally {
+    await screen.dispose();
+  }
+});
+
+test("new Conversation stays empty after worker/auth startup, shows hello and reloads clean persisted history", async () => {
+  await api("/v1/harness-profiles", "POST", {
+    id: "projection-mock",
+    name: "Codex diagnostic reproduction",
+    command: "node",
+    args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+    envOverrides: { HHU_MOCK_CHAT_DIAGNOSTICS: "1" },
+  });
+  const { c } = await setup("Clean new chat");
+  let screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 45 });
+  try {
+    await frame(screen, "Start a conversation");
+    await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "projection-mock" });
+    await frame(screen, "Model (ACP): mock-model");
+    expect(screen.captureCharFrame()).toContain("Start a conversation");
+    expect(screen.captureCharFrame()).toContain("0 items");
+    screen.mockInput.pressKey("m");
+    await frame(screen, "Esc navigate");
+    await screen.mockInput.typeText("hello");
+    screen.mockInput.pressEnter();
+    await frame(screen, "Hello from Agent.");
+    expect(screen.captureCharFrame()).toContain("2 items");
+    const stored = (
+      await api<{ events: ConversationEvent[] }>(`/v1/conversations/${c.id}/events?limit=1000`)
+    ).events;
+    expect(stored.some((e) => e.kind === "runtime.worker_started")).toBe(true);
+    const auth = stored.find(
+      (e) => e.kind === "custom" && (e.payload as { authStatus?: unknown }).authStatus,
+    );
+    expect(auth?.payload).toEqual({
+      authStatus: { kind: "gateway", label: "Custom model gateway", detail: "codeforce" },
+    });
+    if (!auth) throw new Error("Missing persisted authStatus");
+    expect((auth.raw as { params: unknown }).params).toEqual(auth.payload);
+    await screen.dispose();
+    screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 45 });
+    await frame(screen, "Hello from Agent.");
+    expect(screen.captureCharFrame()).toContain("2 items");
+    for (const marker of [
+      "runtime.worker_started",
+      "workerPid",
+      "processGroupId",
+      "authStatus",
+      "Custom model gateway",
+      "codeforce",
+    ])
+      expect(screen.captureCharFrame()).not.toContain(marker);
+    expect(
+      (await api<{ events: ConversationEvent[] }>(`/v1/conversations/${c.id}/events?limit=1000`))
+        .events,
+    ).toEqual(stored);
+  } finally {
+    await screen.dispose();
+    await api(`/v1/conversations/${c.id}/session/stop`, "POST", {});
+  }
+}, 15000);
+
+test("diagnostic-only chat has a clean empty state and a concise running indicator", async () => {
+  const model = new Transcript();
+  model.append([
+    event(1, "runtime.worker_started", { workerPid: 42 }),
+    event(2, "custom", { capabilities: {} }),
+  ]);
+  const screen = await testRender(() => <NativeEvents model={model} running disabled={false} />, {
+    width: 120,
+    height: 30,
+  });
+  try {
+    await frame(screen, "Agent is working");
+    expect(screen.captureCharFrame()).toContain("Start a conversation");
+    expect(screen.captureCharFrame()).toContain("0 items");
+    expect(screen.captureCharFrame()).not.toContain("workerPid");
+    expect(screen.renderer.root.findDescendantById("native-history")?.getChildrenCount()).toBe(1);
+  } finally {
+    await screen.dispose();
   }
 });

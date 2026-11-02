@@ -19,6 +19,7 @@ export function NativeEvents(props: {
   events?: ConversationEvent[];
   model?: Transcript;
   disabled: boolean;
+  running?: boolean;
   view?: ViewState;
   onModalChange?: (open: boolean) => void;
 }) {
@@ -161,7 +162,7 @@ export function NativeEvents(props: {
       >
         <Show
           when={model.size()}
-          fallback={<text>No Agent output yet. Press m to send a message.</text>}
+          fallback={<text>Start a conversation. Press m to write a message.</text>}
         >
           <For each={visible()}>
             {(row) => (
@@ -189,41 +190,48 @@ export function NativeEvents(props: {
                     </Show>
                   </box>
                 </Show>
-                <Show when={row.value().kind === "raw"}>
-                  <Show
-                    when={
-                      row.value().label === "plan" &&
+                <Show when={row.value().kind === "notice"}>
+                  <text selectable fg="#ffcc80">
+                    {manual()[row.id]
+                      ? row.value().text.slice(0, 24000)
+                      : row
+                          .value()
+                          .text.slice(0, 180)
+                          .replace(/\s*\n\s*/g, " ") +
+                        (row.value().text.length > 180 ? " … (e expand · r source)" : "")}
+                  </text>
+                </Show>
+                <Show when={row.value().kind === "plan"}>
+                  <For
+                    each={
                       Array.isArray(object(row.sources[0]?.payload).entries)
-                    }
-                    fallback={
-                      <text selectable fg="#a0aab4">
-                        {manual()[row.id]
-                          ? row.value().text.slice(0, 24000)
-                          : row.value().text.slice(0, 180) +
-                            (row.value().text.length > 180 ? " … (r: full raw details)" : "")}
-                      </text>
+                        ? (object(row.sources[0]?.payload).entries as unknown[])
+                        : []
                     }
                   >
-                    <For each={object(row.sources[0]?.payload).entries as unknown[]}>
-                      {(raw) => (
-                        <box flexDirection="column" flexShrink={0}>
-                          <text fg="#80cbc4">{`[${String(object(raw).status ?? "")}] ${String(object(raw).priority ?? "")}`}</text>
-                          <Markdown text={String(object(raw).content ?? "")} />
-                        </box>
-                      )}
-                    </For>
-                  </Show>
+                    {(entry) => (
+                      <box flexDirection="column" flexShrink={0}>
+                        <text fg="#80cbc4">{`[${String(object(entry).status ?? "")}] ${String(object(entry).priority ?? "")}`}</text>
+                        <Markdown text={String(object(entry).content ?? "")} />
+                      </box>
+                    )}
+                  </For>
                 </Show>
               </box>
             )}
           </For>
         </Show>
       </scrollbox>
+      <Show when={props.running}>
+        <text fg="#80cbc4" height={1} flexShrink={0}>
+          Agent is working…
+        </text>
+      </Show>
       <text
         flexShrink={0}
         height={1}
         fg="#8b949e"
-      >{`History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · r details · y copy · PgUp/PgDn scroll · End follow`}</text>
+      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · r details · y copy · PgUp/PgDn scroll · End follow`}</text>
       <Show when={source()}>{(parts) => <SourceViewer parts={parts()} onClose={close} />}</Show>
     </box>
   );

@@ -9,7 +9,7 @@ export type NativeTool = {
 };
 export type TerminalContent = { output: string; info: unknown; exit: unknown };
 export type RowData = {
-  kind: "text" | "tool" | "raw" | "handoff";
+  kind: "text" | "tool" | "plan" | "notice" | "handoff";
   label: string;
   text: string;
   tool: NativeTool | null;
@@ -33,56 +33,187 @@ export function pretty(value: unknown): string {
   return typeof value === "string" ? value : (JSON.stringify(value, null, 2) ?? "null");
 }
 
-const controlEvents = new Set([
-  "handoff.selection",
-  "initialize",
-  "initialized",
-  "authenticate",
-  "acp.response",
-  "$/cancel_request",
-  "session/new",
-  "session/load",
-  "session/resume",
-  "session/list",
-  "session/close",
-  "session/prompt",
-  "session/cancel",
-  "session/set_mode",
-  "session/set_model",
-  "session/set_config_option",
-  "session/request_permission",
-  "fs/read_text_file",
-  "fs/write_text_file",
-  "terminal/create",
-  "terminal/output",
-  "terminal/wait_for_exit",
-  "terminal/kill",
-  "terminal/release",
+export type EventCategory =
+  | "CHAT_CONTENT"
+  | "AGENT_ACTIVITY"
+  | "USER_ACTION_REQUIRED"
+  | "USER_NOTICE"
+  | "INTERNAL_DIAGNOSTIC"
+  | "UNKNOWN_EXTENSION";
+export type EventProjection = {
+  category: EventCategory;
+  label?: string;
+  text?: string | undefined;
+};
+
+const contentEvents = new Set(["user.message", "user_message_chunk", "agent_message_chunk"]);
+const activityEvents = new Set(["agent_thought_chunk", "tool_call", "tool_call_update", "plan"]);
+const metadataEvents = new Set([
   "available_commands_update",
   "current_mode_update",
   "config_option_update",
   "session_info_update",
   "usage_update",
-  "runtime.session_ready",
+]);
+const metadataKeys = new Set([
+  "authStatus",
+  "authMethods",
+  "authentication",
+  "config",
+  "configuration",
+  "configOptions",
+  "capabilities",
+  "agentCapabilities",
+  "clientCapabilities",
+  "models",
+  "modelId",
+  "modelGateway",
+  "gateway",
+  "currentModelId",
+  "availableModels",
 ]);
 
-// Keep wire/control traffic in the debug stream, never discard the persisted source.
-export function chatVisible(event: ConversationEvent) {
+// Only explicit text fields are evidence of user-facing extension content. Labels, detail,
+// arbitrary nested strings and JSON serialization are never a chat fallback.
+function visibleText(payload: unknown): string | undefined {
+  const p = object(payload),
+    content = object(p.content);
+  for (const value of [content.text, p.text, p.message])
+    if (typeof value === "string" && value.trim()) return value;
+  return undefined;
+}
+function errorText(error: unknown): string | undefined {
+  if (typeof error === "string" && error.trim()) return error;
+  const value = object(error);
+  if (typeof value.message === "string") return value.message;
+  if (value.code !== undefined) return `Error code: ${String(value.code)}`;
+  return undefined;
+}
+
+// This projection is shared by live append and history replay. It never changes the event,
+// the runtime state machine, or the complete source retained for Raw Events / Debug.
+export function projectEvent(event: ConversationEvent): EventProjection {
+  const p = object(event.payload),
+    raw = object(event.raw);
+  const diagnostic: EventProjection = { category: "INTERNAL_DIAGNOSTIC" };
   if (
     event.purpose === "handoff_internal" ||
     (event.purpose === "handoff_delivery" && event.kind === "user_message_chunk")
   )
-    return false;
-  const payload = object(event.payload),
-    raw = object(event.raw);
+    return diagnostic;
+  if (contentEvents.has(event.kind)) return { category: "CHAT_CONTENT" };
+  if (activityEvents.has(event.kind)) return { category: "AGENT_ACTIVITY" };
+  if (event.kind === "approval.requested") {
+    const request = object(p.request);
+    const options = Array.isArray(request.options) ? request.options.map(object) : [];
+    return {
+      category: "USER_ACTION_REQUIRED",
+      label: "Native permission · user decision required",
+      text:
+        options.map((option) => String(option.name ?? option.optionId)).join(" · ") ||
+        "The Agent is waiting for your permission. Press a to review the native options.",
+    };
+  }
+  if (event.kind === "handoff.record")
+    return {
+      category: p.status === "FAILED" ? "USER_ACTION_REQUIRED" : "USER_NOTICE",
+    };
+  const extension = String(p.sessionUpdate ?? raw.method ?? event.kind);
+  const failureKind = /(?:^|[._/])(error|failed|failure|fatal)(?:$|[._/])/i;
+  const error = errorText(raw.error) ?? errorText(p.error);
   if (
-    raw.error != null ||
-    payload.error != null ||
-    /error|fail|interrupt|lost/i.test(event.kind) ||
-    ["error", "fatal"].includes(String(payload.level ?? payload.severity))
+    (raw.error != null && raw.error !== false) ||
+    (p.error != null && p.error !== false) ||
+    ["error", "fatal"].includes(String(p.level ?? p.severity)) ||
+    failureKind.test(event.kind) ||
+    failureKind.test(extension)
+  ) {
+    return {
+      category: "USER_NOTICE",
+      label: `Error · ${event.kind}`,
+      text:
+        error ??
+        visibleText(p) ??
+        errorText(event.payload) ??
+        errorText(p.reason) ??
+        "Agent operation failed. Inspect the source events for details.",
+    };
+  }
+  if (
+    ["warn", "warning"].includes(String(p.level ?? p.severity)) ||
+    [event.kind, extension].some((kind) => /(?:^|[._/])warn(?:ing)?(?:$|[._/])/i.test(kind))
   )
-    return true;
-  return !controlEvents.has(event.kind);
+    return {
+      category: "USER_NOTICE",
+      label: `Warning · ${event.kind}`,
+      text: visibleText(p) ?? "Agent reported a warning. Press r to inspect the source.",
+    };
+  if (event.kind === "runtime.context_ended")
+    return {
+      category: "USER_NOTICE",
+      label: "Native context ended",
+      text:
+        visibleText(p) ??
+        "Native context ended. The next message starts a new native session without the previous native context.",
+    };
+  if (["runtime.interrupted", "runtime.worker_lost"].includes(event.kind))
+    return {
+      category: "USER_NOTICE",
+      label: "Agent interrupted",
+      text:
+        visibleText(p) ??
+        (p.state === "UNCERTAIN"
+          ? `Execution result unknown (${String(p.reason ?? "worker connection lost")}). Inspect history and workspace; no task will be replayed.`
+          : `Native session interrupted (${String(p.reason ?? "worker connection lost")}). The next message starts a new native session.`),
+    };
+  if (event.kind === "runtime.workspace_warning")
+    return {
+      category: "USER_NOTICE",
+      label: "Workspace warning",
+      text: visibleText(p),
+    };
+  if (
+    event.kind === "runtime.turn_finished" &&
+    ["ERROR", "UNCERTAIN", "CANCELLED"].includes(String(p.state))
+  )
+    return {
+      category: "USER_NOTICE",
+      label: `Turn ${String(p.state)}`,
+      text:
+        visibleText(p) ??
+        `${String(p.stopReason ?? p.reason ?? p.state)}${p.state === "UNCERTAIN" ? ". Execution result unknown; no task will be replayed." : ""}`,
+    };
+  if (
+    event.kind.startsWith("runtime.") ||
+    event.kind.startsWith("approval.") ||
+    event.kind.startsWith("handoff.") ||
+    metadataEvents.has(event.kind) ||
+    /^(initialize|initialized|authenticate|acp\.response)$/.test(event.kind) ||
+    /^(session|fs|terminal)\//.test(event.kind) ||
+    event.kind.startsWith("$/")
+  )
+    return diagnostic;
+
+  // Runtime normalizes unrecognized Agent notifications to custom. Inspect their semantic
+  // envelope as well as their kind, without exposing auth/config/capability metadata.
+  if (
+    Object.keys(p).some((key) => metadataKeys.has(key)) ||
+    metadataEvents.has(extension) ||
+    /auth|config|capabilit|model|gateway|usage/i.test(extension)
+  )
+    return diagnostic;
+  return {
+    category: "UNKNOWN_EXTENSION",
+    label: `Agent notice · ${event.kind}`,
+    text: visibleText(p),
+  };
+}
+export function chatVisible(event: ConversationEvent) {
+  const projection = projectEvent(event);
+  return (
+    projection.category !== "INTERNAL_DIAGNOSTIC" &&
+    (projection.category !== "UNKNOWN_EXTENSION" || !!projection.text)
+  );
 }
 
 // Stable row identities and per-row signals: a streaming chunk updates its row, not the history.
@@ -165,8 +296,29 @@ export class Transcript {
     return row;
   }
   private add(event: ConversationEvent) {
-    if (!chatVisible(event)) return;
     const p = object(event.payload);
+    // Completion must settle streaming even when it has no chat row.
+    if (
+      ["runtime.turn_finished", "runtime.interrupted", "runtime.worker_lost"].includes(event.kind)
+    ) {
+      this.tail?.update((v) => ({ ...v, streaming: false }));
+      this.tail = undefined;
+      this.group = "";
+    }
+    if (event.kind.startsWith("approval.") && event.kind !== "approval.requested") {
+      const row = this.approvals.get(String(p.approvalId));
+      if (row) {
+        row.sources.push(event);
+        row.update((v) => ({ ...v, waiting: false }));
+      }
+      this.approvals.delete(String(p.approvalId));
+    }
+    const projection = projectEvent(event);
+    if (
+      projection.category === "INTERNAL_DIAGNOSTIC" ||
+      (projection.category === "UNKNOWN_EXTENSION" && !projection.text)
+    )
+      return;
     if (event.kind === "handoff.record") {
       const value: RowData = {
         kind: "handoff",
@@ -187,9 +339,6 @@ export class Transcript {
     const chunk = ["agent_message_chunk", "agent_thought_chunk", "user_message_chunk"].includes(
       event.kind,
     );
-    if (event.kind === "runtime.turn_finished" || event.kind === "runtime.interrupted") {
-      this.tail?.update((v) => ({ ...v, streaming: false }));
-    }
     if (event.kind === "user.message" || (chunk && typeof object(p.content).text === "string")) {
       const text =
         event.kind === "user.message" ? String(p.text ?? "") : String(object(p.content).text);
@@ -263,16 +412,16 @@ export class Transcript {
         row.update((v) => ({ ...v, waiting: true }));
         this.approvals.set(String(p.id), row);
       }
-    } else if (event.kind.startsWith("approval.")) {
-      const row = this.approvals.get(String(p.approvalId));
-      row?.update((v) => ({ ...v, waiting: false }));
-      this.approvals.delete(String(p.approvalId));
     }
-    // Every other event is reachable, including protocol responses and future extensions.
     this.row(event, {
-      kind: "raw",
-      label: event.kind,
-      text: pretty(event.payload),
+      kind: event.kind === "plan" ? "plan" : "notice",
+      label: projection.label ?? (event.kind === "plan" ? "Plan" : event.kind),
+      text:
+        projection.text ??
+        (event.kind === "plan"
+          ? pretty(event.payload)
+          : (visibleText(p) ??
+            `Agent sent ${String(object(p.content).type ?? "non-text")} content. Press r to inspect the source.`)),
       tool: null,
       waiting: false,
       streaming: false,
