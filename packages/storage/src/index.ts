@@ -66,7 +66,7 @@ export class Store {
   }
   private assertProjectAvailable(id: string) {
     if (this.projectOperations.has(id))
-      throw new AppError(409, "Project has a pending Git operation; wait for it to finish");
+      throw new AppError(409, "Project has a pending operation; wait for it to finish");
   }
   constructor(
     readonly sqlite: Database.Database,
@@ -174,6 +174,7 @@ export class Store {
     return value;
   }
   addConversation(projectId: string, title: string, workspace?: { id: string; path: string }) {
+    this.assertProjectAvailable(projectId);
     const project = this.getProject(projectId);
     this.assertWorkspaceAvailable(workspace?.path ?? project.rootPath);
     const now = Date.now();

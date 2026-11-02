@@ -146,7 +146,7 @@ test("Project/Conversation CRUD validates actual paths, canonicalizes duplicates
   await api(`/v1/projects/${other.id}/conversations`, "POST", { title: "To be cascaded" });
   await api(`/v1/projects/${other.id}`, "PATCH", { rootPath: rebound });
   assert.equal((await api(`/v1/projects/${other.id}/conversations`))[0].workspacePath, rebound);
-  await api(`/v1/projects/${other.id}`, "DELETE");
+  await api(`/v1/projects/${other.id}`, "DELETE", { confirmed: true });
   assert.ok(existsSync(rebound));
   const extra = await api(`/v1/projects/${project.id}/conversations`, "POST", {
     title: "Delete metadata",

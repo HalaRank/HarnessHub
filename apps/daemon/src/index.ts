@@ -14,6 +14,7 @@ import {
   type Instance,
   PROTOCOL_VERSION,
   preferencesPatch,
+  projectDeleteInput,
   projectInput,
   projectPatch,
   VERSION,
@@ -180,8 +181,9 @@ async function main() {
     publish(result.event);
     return c.json(result.value);
   });
-  app.delete("/v1/projects/:id", (c) => {
-    publish(store.deleteProject(c.req.param("id")));
+  app.delete("/v1/projects/:id", async (c) => {
+    projectDeleteInput.parse(await c.req.json());
+    publish(await runtime.deleteProject(c.req.param("id")));
     return c.json({ deleted: true, projectFilesDeleted: false });
   });
   app.get("/v1/projects/:id/conversations", (c) => {

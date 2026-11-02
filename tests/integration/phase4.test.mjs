@@ -337,7 +337,10 @@ test("running, pending approval and UNCERTAIN conversations cannot be deleted or
             ),
     );
     await assert.rejects(api(path, "DELETE", { confirmed: true }), (e) => e.status === 409);
-    await assert.rejects(api(`/v1/projects/${p.id}`, "DELETE"), (e) => e.status === 409);
+    await assert.rejects(
+      api(`/v1/projects/${p.id}`, "DELETE", { confirmed: true }),
+      (e) => e.status === 409,
+    );
     // Archiving a running task only changes list visibility, never cancels its Turn.
     await api(path, "PATCH", { archived: true });
     if (message !== "crash") {

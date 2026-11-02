@@ -39,7 +39,7 @@ Ctrl+P 打开命令面板，搜索 Project / Conversation 或执行常见操作�
 
 聊天区用 `[` / `]` 选择展示项，`t` 选择工具，`e` 展开/折叠，`r` 查看对应事件序号、原始 ACP 和 normalized payload。`y` 查看并复制原始 Markdown、代码块、原生参数/结果及 Codex 终端分块；来源选择器中 Enter 复制完整原文，通过 OpenTUI Clipboard Service 优先写入可用的系统剪贴板，终端 OSC52 作为备用（是否接受由终端策略决定）。鼠标拖选松开自动复制，双击选词、三击选行；Ctrl+C / Ctrl+Y 也可复制有效选区。源视图 PgUp/PgDn 滚动、Ctrl+←/→ 分页。代码缩进和换行不做格式化，未知内容可展开查看完整原始详情。握手、控制响应和调试元数据默认不显示在正常聊天；Ctrl+P → Raw Events / Debug 可查看全部已补拉的原始协议事件，每页 100 项，Ctrl+PgUp/PgDn 翻页。
 
-Ctrl+P → Archive Conversation 只隐藏会话，View Archived Conversations 查看归档，Restore Archived Conversation 恢复。Delete Conversation 必须再次输入 DELETE 确认；服务端拒绝活动任务、待审批及 UNCERTAIN 历史，安全关闭空闲原生会话后删除关联应用数据，不删除源码、工作目录或 Git 分支。归档与删除经现有 WebSocket 快照同步到其他客户端。
+选中项目或会话后按 `o`（或点击侧栏 `⋯ Actions`）打开操作菜单，Ctrl+P 命令面板也提供相同操作。`Archive Conversation` 直接归档，从主列表隐藏，保留历史、草稿和后台任务；`View Archived Conversations` 只显示归档会话，`Restore Archived Conversation` 恢复到主列表，`Hide Archived Conversations` 返回主列表。`Delete Conversation` / `Delete Project` 或浏览时按 Delete 打开“取消 / 删除”确认框，默认选中取消，Tab / 左右键切换，Enter 确认，也可鼠标点击；无需输入 DELETE。删除项目包含其全部会话（含归档）、历史和草稿；服务端拒绝包含活动任务、待审批及 UNCERTAIN 历史的删除，确认空闲 Worker 安全退出后才清理应用数据。项目目录、Worktree 和 Git 分支均保留。归档与删除经 WebSocket 快照同步到其他客户端。
 
 聊天 PgUp/PgDn 滚动，Ctrl+PgUp/PgDn 翻历史页，End 回到底部并跟随。用户向上阅读时暂停跟随；跨会话保留本次 TUI 的滚动位置和工具展开状态，不存 UI 快照。历史每页最多挂载 60 个展示项，极长消息按约 16,000 字符分段，跨段 Markdown 格式可能重新解析，`y` 仍复制完整连续消息。较大工具/原始详情有明确预览限制，源视图可逐页阅读或一次复制全文。
 

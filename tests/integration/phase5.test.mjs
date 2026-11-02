@@ -309,6 +309,9 @@ test("isolated worktrees bind actual cwd, preserve on Conversation deletion, rej
     c.workspacePath,
   );
   await settled(await submit(c, "b"));
+  // Turn completion precedes cooperative release of the source Handoff Worker.
+  // Deletion must continue to respect that guard; wait for the actual closed state.
+  await until(async () => (await sessions(c)).find((s) => s.id === ss.id)?.status === "CLOSED");
   assert.ok((await sessions(c)).every((s) => s.cwd === w.path));
   assert.equal((await api(`${path(c)}/changes`)).workspace, w.path);
   await conflict(api(`/v1/worktrees/${w.id}/cleanup`, "POST", { confirmed: true }));

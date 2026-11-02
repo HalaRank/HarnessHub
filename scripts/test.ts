@@ -14,13 +14,20 @@ const integration = spawnSync(
     "tests/integration/phase5.test.mjs",
     "tests/integration/phase6.test.mjs",
     "tests/integration/audit-fixes.test.mjs",
+    "tests/integration/deletion.test.mjs",
   ],
   { stdio: "inherit", env: { ...process.env, HARNESSHUB_BUN: process.execPath } },
 );
 if (integration.status !== 0) process.exit(integration.status ?? 1);
 const ui = spawnSync(
   process.execPath,
-  ["test", "tests/e2e/tui.test.tsx", "tests/e2e/phase4.test.tsx", "tests/e2e/phase5.test.tsx"],
+  [
+    "test",
+    "tests/e2e/tui.test.tsx",
+    "tests/e2e/phase4.test.tsx",
+    "tests/e2e/phase5.test.tsx",
+    "tests/e2e/mouse-sidebar.test.tsx",
+  ],
   { stdio: "inherit" },
 );
 process.exitCode = ui.status ?? 1;

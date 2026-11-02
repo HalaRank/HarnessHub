@@ -501,7 +501,7 @@ test("slow Git creation/removal leaves Daemon responsive and reservations block 
     assert.ok(Date.now() - began < 1000, "Git must not block the event loop");
     await Promise.all(
       [
-        local.request(`/v1/projects/${p.id}`, "DELETE"),
+        local.request(`/v1/projects/${p.id}`, "DELETE", { confirmed: true }),
         local.request(`/v1/projects/${p.id}`, "PATCH", { rootPath: root }),
         local.request("/v1/daemon/stop", "POST", {}),
         local.request(`/v1/projects/${p.id}/conversations`, "POST", {

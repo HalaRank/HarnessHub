@@ -53,7 +53,7 @@ export class Runtime {
     if (this.deleting.has(id)) throw new AppError(409, "Conversation deletion is in progress");
     this.store.assertWorkspaceAvailable(this.store.getConversation(id).workspacePath);
   }
-  async deleteConversation(id: string) {
+  private assertDeletable(id: string) {
     this.assertAvailable(id);
     this.store.assertConversationDeletable(id);
     if (
@@ -64,12 +64,38 @@ export class Runtime {
     const live = this.live.get(id);
     if (live && (!live.session || live.configuring))
       throw new AppError(409, "Wait for session operation to finish");
+  }
+  async deleteConversation(id: string) {
+    if (this.closing) throw new AppError(503, "Runtime is stopping");
+    this.assertDeletable(id);
     this.deleting.add(id);
     try {
       await this.closeSession(id, false);
       return this.store.deleteConversation(id);
     } finally {
       this.deleting.delete(id);
+    }
+  }
+  async deleteProject(id: string) {
+    if (this.closing) throw new AppError(503, "Runtime is stopping");
+    this.store.getProject(id);
+    if (this.store.projectOperations.has(id))
+      throw new AppError(409, "Project has a pending operation; wait for it to finish");
+    const conversations = this.store.listConversations(id);
+    // Check every child before closing any Worker. Reserve all children and the
+    // Project across cooperative shutdown so other clients cannot start work or
+    // create a Conversation that would be silently included in the cascade.
+    for (const c of conversations) this.assertDeletable(c.id);
+    this.store.projectOperations.add(id);
+    for (const c of conversations) this.deleting.add(c.id);
+    try {
+      for (const c of conversations) await this.closeSession(c.id, false);
+      // No await between releasing the reservation and the atomic DB cascade.
+      this.store.projectOperations.delete(id);
+      return this.store.deleteProject(id);
+    } finally {
+      this.store.projectOperations.delete(id);
+      for (const c of conversations) this.deleting.delete(c.id);
     }
   }
   constructor(

@@ -34,6 +34,7 @@ export const conversationPatch = conversationInput
   .strict()
   .refine((v) => Object.keys(v).length > 0);
 export const conversationDeleteInput = z.object({ confirmed: z.literal(true) }).strict();
+export const projectDeleteInput = conversationDeleteInput;
 export type Project = {
   id: string;
   name: string;

@@ -73,7 +73,9 @@ async function frame(screen: Awaited<ReturnType<typeof testRender>>, text: strin
   await waitFor(async () => {
     await screen.renderOnce();
     return screen.captureCharFrame().includes(text);
-  }, text);
+  }, text).catch((error) => {
+    throw new Error(`${error.message}\n${screen.captureCharFrame()}`);
+  });
 }
 async function setup(title: string) {
   const root = join(temp, title);
@@ -936,6 +938,8 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
     await waitFor(
       async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt === null,
     );
+    await command(one, "Hide Archived");
+    await command(one, "Conversation · Lifecycle UI");
     await command(two, "Conversation · Lifecycle UI");
     await frame(two, "Conversation · Lifecycle UI");
     await command(one, "Delete Conversation");
@@ -945,8 +949,8 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
     await one.renderOnce();
     expect((await api<Conversation>(`/v1/conversations/${c.id}`)).id).toBe(c.id);
     await command(one, "Delete Conversation");
-    await frame(one, "Type DELETE");
-    await one.mockInput.typeText("DELETE");
+    await frame(one, "This cannot be undone");
+    one.mockInput.pressTab();
     one.mockInput.pressEnter();
     await waitFor(
       async () =>
@@ -994,6 +998,103 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
   } finally {
     await screen.dispose();
   }
+});
+
+test("action menu archives without confirmation, archive view isolates history, project deletion offers Cancel and Delete", async () => {
+  const { p, c, root } = await setup("Delete project UI");
+  const archived = await api<Conversation>(`/v1/projects/${p.id}/conversations`, "POST", {
+    title: "Previously archived",
+  });
+  await api(`/v1/conversations/${archived.id}`, "PATCH", { archived: true });
+  const one = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  const two = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  try {
+    await frame(one, "m Message");
+    await frame(two, "m Message");
+    one.mockInput.pressKey("DELETE");
+    await frame(one, "Confirm Conversation deletion");
+    one.mockInput.pressEnter(); // Cancel is selected initially.
+    await frame(one, "m Message");
+    expect((await api<Conversation>(`/v1/conversations/${c.id}`)).id).toBe(c.id);
+    one.mockInput.pressKey("o");
+    await frame(one, "Conversation / Project actions");
+    await one.mockInput.typeText("Archive Conversation");
+    one.mockInput.pressEnter();
+    await waitFor(
+      async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt,
+      "archive from action menu",
+    );
+    await frame(two, "Press n to create");
+    expect(two.captureCharFrame()).not.toContain("Previously archived");
+    await command(one, "View Archived");
+    await frame(one, "Previously archived");
+    await command(one, "Conversation · Delete project UI / Delete project UI");
+    await command(one, "Restore Archived Conversation");
+    await waitFor(
+      async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt === null,
+    );
+    await frame(one, "Press n to create");
+    expect(one.captureCharFrame()).not.toContain("Delete project UI [archived]");
+    await frame(one, "Previously archived");
+    await command(one, "Delete Project");
+    await frame(one, "Confirm Project deletion");
+    await frame(one, "all 2 Conversations (including archived)");
+    await one.renderOnce();
+    const cancelButton = one.renderer.root.findDescendantById("delete-cancel");
+    if (!cancelButton) throw new Error("Missing Cancel button");
+    await one.mockMouse.click(cancelButton.x + 2, cancelButton.y);
+    expect((await api<{ id: string }>(`/v1/projects/${p.id}`)).id).toBe(p.id);
+    one.mockInput.pressKey("DELETE");
+    await frame(one, "Confirm Project deletion");
+    await one.renderOnce();
+    const deleteButton = one.renderer.root.findDescendantById("delete-confirm");
+    if (!deleteButton) throw new Error("Missing Delete button");
+    await one.mockMouse.click(deleteButton.x + 2, deleteButton.y);
+    await waitFor(
+      async () =>
+        !(await api<{ projects: { id: string }[] }>("/v1/snapshot")).projects.some(
+          (v) => v.id === p.id,
+        ),
+      "project removed after mouse confirmation",
+    ).catch((error) => {
+      console.error(one.captureCharFrame());
+      throw error;
+    });
+    await waitFor(async () => {
+      await two.renderOnce();
+      return !two.captureCharFrame().includes("Delete project UI");
+    }, "other TUI removed deleted project");
+    expect(
+      (await api<{ conversations: Conversation[] }>("/v1/snapshot")).conversations.some(
+        (v) => v.projectId === p.id,
+      ),
+    ).toBe(false);
+    expect(spawnSync("test", ["-d", root]).status).toBe(0);
+  } finally {
+    await one.dispose();
+    await two.dispose();
+  }
+}, 20000);
+
+test("a deleted Conversation retires another client's dirty draft saver without blocking remaining drafts", async () => {
+  const { DraftSession, flushDrafts } = await import("../../apps/tui/src/draft-session");
+  const { c } = await setup("Deleted draft saver");
+  const draft = new DraftSession(
+    c.id,
+    () => {},
+    () => {},
+  );
+  await draft.load();
+  draft.update("unsaved in a second client");
+  await api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+  await draft.flush();
+  await draft.dispose();
+  await flushDrafts();
+  expect(
+    (await api<{ conversations: Conversation[] }>("/v1/snapshot")).conversations.some(
+      (v) => v.id === c.id,
+    ),
+  ).toBe(false);
 });
 
 test("clearing an unconfirmed draft persists empty input while retaining the reserved requestId", async () => {

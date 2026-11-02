@@ -1,7 +1,11 @@
 import { useKeyboard } from "@opentui/solid";
 import { createMemo, createSignal } from "solid-js";
 export type Command = { id: string; name: string; run: () => void };
-export function CommandPalette(props: { commands: Command[]; onClose: () => void }) {
+export function CommandPalette(props: {
+  commands: Command[];
+  onClose: () => void;
+  title?: string;
+}) {
   const [query, setQuery] = createSignal(""),
     [selected, setSelected] = createSignal(0);
   const options = createMemo(() =>
@@ -37,7 +41,7 @@ export function CommandPalette(props: { commands: Command[]; onClose: () => void
       padding={1}
       flexDirection="column"
       gap={1}
-      title="Command palette · ↑/↓ choose · Enter execute · Esc close"
+      title={`${props.title ?? "Command palette"} · ↑/↓ choose · Enter execute · Esc close`}
     >
       <input
         focused

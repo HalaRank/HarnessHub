@@ -3,38 +3,33 @@ import {
   type Conversation,
   type ManagedWorktree,
   type Preferences,
-  type Project,
   type Shortcuts,
   type Snapshot,
   shortcutInput,
 } from "@harnesshub/shared";
 import { connect, watchSnapshot } from "@harnesshub/shared/client";
-import { createCliRenderer, type ScrollBoxRenderable } from "@opentui/core";
+import { createCliRenderer } from "@opentui/core";
 import { render, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid";
-import {
-  batch,
-  createEffect,
-  createMemo,
-  createSignal,
-  For,
-  onCleanup,
-  onMount,
-  Show,
-} from "solid-js";
+import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type AgentAction, AgentPane } from "./agent-pane";
 import { interruptTui, useClipboard } from "./clipboard";
 import { type Command, CommandPalette } from "./command-palette";
+import { DeleteConfirmation } from "./delete-confirmation";
 import { flushDrafts } from "./draft-session";
+import { ProjectDirectory } from "./project-directory";
 import { expandProjectPath } from "./project-path";
 import { ProjectPathInput } from "./project-path-input";
+import {
+  ConversationActions,
+  conversationKey,
+  mouseClick,
+  type ProjectRow,
+  ProjectTree,
+  projectKey,
+} from "./project-tree";
 import { matches, shortcuts } from "./shortcuts";
 import { newViewState, type ViewState } from "./transcript";
 
-type Row = {
-  name: string;
-  description: string;
-  value: { project: Project; conversation?: Conversation };
-};
 export function App(props: { initialProjectId?: string | undefined; onExit: () => void }) {
   const [snapshot, setSnapshot] = createSignal<Snapshot>({
     projects: [],
@@ -43,13 +38,17 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     activity: { running: 0, waitingApproval: 0, pendingApprovals: 0, problems: 0, items: [] },
   });
   const [state, setState] = createSignal("Connecting");
-  const [selected, setSelected] = createSignal(0);
+  const [selected, setSelected] = createSignal<string | null>(null);
+  const [collapsed, setCollapsed] = createSignal<ReadonlySet<string>>(new Set());
+  const [actionsTarget, setActionsTarget] = createSignal<Conversation | null>(null);
   const [form, setForm] = createSignal<
     | "project"
     | "conversation"
     | "message"
     | "approval"
     | "palette"
+    | "conversationActions"
+    | "actions"
     | "shortcuts"
     | "details"
     | "settings"
@@ -60,13 +59,14 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   >(null);
   const renderer = useRenderer();
   const copyText = useClipboard();
+  const sidebarClick = mouseClick();
   const [workspaceMode, setWorkspaceMode] = createSignal<"shared" | "worktree">("shared");
   const [worktrees, setWorktrees] = createSignal<ManagedWorktree[]>([]);
   const [cleanupTarget, setCleanupTarget] = createSignal<ManagedWorktree | null>(null);
   const [notice, setNotice] = createSignal("");
   const [showArchived, setShowArchived] = createSignal(false);
   let clearInput: (() => boolean) | undefined;
-  const [deleteTarget, setDeleteTarget] = createSignal<Conversation | null>(null);
+  const [deleteTarget, setDeleteTarget] = createSignal<Omit<ProjectRow, "id"> | null>(null);
   const [error, setError] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const [showActivity, setShowActivity] = createSignal(true);
@@ -74,7 +74,18 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   const [showSidebar, setShowSidebar] = createSignal(true);
   const [keyOverrides, setKeyOverrides] = createSignal<Shortcuts>({});
   const keys = () => shortcuts(keyOverrides());
-  const sidebarVisible = () => showSidebar() && dimensions().width >= 90;
+  const [narrowSidebar, setNarrowSidebar] = createSignal(false);
+  const sidebarVisible = () => showSidebar() && (dimensions().width >= 90 || narrowSidebar());
+  const toggleSidebar = () => {
+    if (dimensions().width < 90) {
+      const visible = sidebarVisible();
+      setShowSidebar(true);
+      setNarrowSidebar(!visible);
+    } else setShowSidebar((value) => !value);
+  };
+  createEffect(() => {
+    if (dimensions().width >= 90) setNarrowSidebar(false);
+  });
   const [action, setAction] = createSignal<AgentAction>({ id: 0, name: "" });
   const [changesView, setChangesView] = createSignal(false);
   const views = new Map<string, ViewState>();
@@ -87,30 +98,48 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     return value;
   };
   const [ready, setReady] = createSignal(false);
-  const rows = createMemo<Row[]>(() =>
+  const allRows = createMemo<ProjectRow[]>(() =>
     snapshot().projects.flatMap((project) => [
-      { name: project.name, description: project.rootPath, value: { project } },
+      { id: projectKey(project.id), project },
       ...snapshot()
         .conversations.filter(
-          (c) => c.projectId === project.id && (showArchived() || c.archivedAt === null),
+          (c) =>
+            c.projectId === project.id &&
+            (showArchived() ? c.archivedAt !== null : c.archivedAt === null),
         )
-        .map((conversation) => ({
-          name: `  └ ${conversation.title}${conversation.archivedAt !== null ? " [archived]" : ""}`,
-          description: conversation.runtimeStatus,
-          value: { project, conversation },
-        })),
+        .map((conversation) => ({ id: conversationKey(conversation.id), project, conversation })),
     ]),
   );
-  const row = () => rows()[selected()];
-  let projectTree: ScrollBoxRenderable | undefined;
-  createEffect(() => {
-    const index = selected();
-    const count = rows().length;
-    const visible = sidebarVisible();
-    dimensions();
-    if (visible && count)
-      projectTree?.afterLayout(() => projectTree?.scrollChildIntoView(`project-tree-row-${index}`));
-  });
+  const rows = createMemo(() =>
+    allRows().filter((r) => !r.conversation || !collapsed().has(r.project.id)),
+  );
+  // Selection survives collapse, sorting and metadata object replacement.
+  const row = () => {
+    const value = allRows().find((r) => r.id === selected());
+    return value ? { value } : undefined;
+  };
+  const expand = (id: string) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+  const selectRow = (target: ProjectRow) => {
+    renderer.clearSelection();
+    batch(() => {
+      expand(target.project.id);
+      setSelected(target.id);
+      setChangesView(false);
+      setForm(null);
+    });
+  };
+  const toggleProject = (id: string) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   let initial = true;
   let recent: Preferences | undefined;
   let exiting = false;
@@ -174,20 +203,19 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         const previous = row()?.value;
         batch(() => {
           setSnapshot(next);
-          const index = rows().findIndex((r) =>
-            initial && props.initialProjectId
-              ? r.value.project.id === props.initialProjectId
-              : initial && recent?.lastConversationId
-                ? r.value.conversation?.id === recent.lastConversationId
-                : initial && recent?.lastProjectId
-                  ? r.value.project.id === recent.lastProjectId && !r.value.conversation
-                  : previous?.conversation
-                    ? r.value.conversation?.id === previous.conversation.id
-                    : previous
-                      ? r.value.project.id === previous.project.id && !r.value.conversation
-                      : false,
-          );
-          setSelected(Math.max(0, index));
+          const target =
+            allRows().find((r) =>
+              initial && props.initialProjectId
+                ? r.project.id === props.initialProjectId && !r.conversation
+                : initial && recent?.lastConversationId
+                  ? r.conversation?.id === recent.lastConversationId
+                  : initial && recent?.lastProjectId
+                    ? r.project.id === recent.lastProjectId && !r.conversation
+                    : r.id === selected(),
+            ) ??
+            allRows().find((r) => r.project.id === previous?.project.id && !r.conversation) ??
+            allRows()[0];
+          setSelected(target?.id ?? null);
           initial = false;
           setReady(true);
         });
@@ -249,7 +277,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     }
     if (matches(key, keys().sidebar)) {
       key.preventDefault();
-      setShowSidebar((value) => !value);
+      toggleSidebar();
       return;
     }
     if (key.name === "escape") {
@@ -270,9 +298,12 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     }
     if (!changesView() && (key.name === "up" || key.name === "down")) {
       key.preventDefault();
-      setSelected((index) =>
-        Math.max(0, Math.min(rows().length - 1, index + (key.name === "up" ? -1 : 1))),
-      );
+      const visible = rows();
+      let index = visible.findIndex((r) => r.id === selected());
+      if (index < 0) index = visible.findIndex((r) => r.project.id === row()?.value.project.id);
+      const target =
+        visible[Math.max(0, Math.min(visible.length - 1, index + (key.name === "up" ? -1 : 1)))];
+      if (target) selectRow(target);
     }
     if (key.name === "q") void exit();
     if (key.name === "p") {
@@ -286,12 +317,21 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       setWorkspaceMode("shared");
       setForm("conversation");
     }
+    if (key.name === "o" && row()) {
+      key.preventDefault();
+      setError("");
+      setForm("actions");
+    }
+    if (key.name === "delete" && row()) {
+      key.preventDefault();
+      requestDelete(row()?.value);
+    }
   });
   const dispatch = (name: string) => {
     if (name === "changes") setChangesView((v) => !v);
     setAction((v) => ({ id: v.id + 1, name }));
   };
-  const lifecycle = async (conversation: Conversation, operation: "archive" | "delete") => {
+  const lifecycle = async (conversation: Conversation) => {
     if (busy()) return;
     setBusy(true);
     setError("");
@@ -299,45 +339,97 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       await flushDrafts();
       const client = await connect();
       if (!client) throw new Error("Daemon disconnected");
-      await client.request(
-        `/v1/conversations/${conversation.id}`,
-        operation === "delete" ? "DELETE" : "PATCH",
-        operation === "delete"
-          ? { confirmed: true }
-          : { archived: conversation.archivedAt === null },
-      );
-      if (operation === "delete") views.delete(conversation.id);
+      await client.request(`/v1/conversations/${conversation.id}`, "PATCH", {
+        archived: conversation.archivedAt === null,
+      });
       setForm(null);
-      setDeleteTarget(null);
+      setNotice(
+        conversation.archivedAt === null ? "Conversation archived" : "Conversation restored",
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Conversation operation failed");
     } finally {
       setBusy(false);
     }
   };
-  const commands = createMemo<Command[]>(() => [
-    ...rows().map((r) => ({
-      id: r.value.conversation?.id ?? r.value.project.id,
-      name: r.value.conversation
-        ? `Conversation · ${r.value.project.name} / ${r.value.conversation.title} [${r.value.conversation.runtimeStatus}]`
-        : `Project · ${r.value.project.name} · ${r.value.project.rootPath}`,
-      run: () => {
-        setSelected(
-          rows().findIndex(
-            (value) =>
-              (value.value.conversation?.id ?? value.value.project.id) ===
-              (r.value.conversation?.id ?? r.value.project.id),
-          ),
-        );
-        setChangesView(false);
+  const requestDelete = (target: Omit<ProjectRow, "id"> | undefined) => {
+    if (!target || busy()) return;
+    setError("");
+    setDeleteTarget(target);
+    setForm("delete");
+  };
+  const deleteSelected = async () => {
+    const target = deleteTarget();
+    if (!target || busy()) return;
+    setBusy(true);
+    setError("");
+    try {
+      await flushDrafts();
+      await preferenceSave;
+      const client = await connect();
+      if (!client) throw new Error("Daemon disconnected");
+      const conversation = target.conversation;
+      await client.request(
+        conversation ? `/v1/conversations/${conversation.id}` : `/v1/projects/${target.project.id}`,
+        "DELETE",
+        { confirmed: true },
+        60000,
+      );
+      for (const c of snapshot().conversations)
+        if (conversation ? c.id === conversation.id : c.projectId === target.project.id)
+          views.delete(c.id);
+      setForm(null);
+      setDeleteTarget(null);
+      setNotice(conversation ? "Conversation deleted" : "Project deleted");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Deletion failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const contextCommands = createMemo<Command[]>(() => {
+    const target = row()?.value;
+    if (!target) return [];
+    const conversation = target.conversation;
+    return [
+      ...(conversation
+        ? [
+            {
+              id: "archive",
+              name:
+                conversation.archivedAt === null
+                  ? "Archive Conversation"
+                  : "Restore Archived Conversation",
+              run: () => void lifecycle(conversation),
+            },
+          ]
+        : []),
+      {
+        id: "delete",
+        name: conversation ? "Delete Conversation…" : "Delete Project…",
+        run: () => requestDelete(target),
       },
+    ];
+  });
+  const commands = createMemo<Command[]>(() => [
+    ...contextCommands(),
+    ...allRows().map((r) => ({
+      id: r.id,
+      name: r.conversation
+        ? `Conversation · ${r.project.name} / ${r.conversation.title} [${r.conversation.runtimeStatus}]`
+        : `Project · ${r.project.name} · ${r.project.rootPath}`,
+      run: () => selectRow(r),
     })),
     {
       id: "archives",
       name: showArchived() ? "Hide Archived Conversations" : "View Archived Conversations",
       run: () => {
-        setShowArchived((v) => !v);
-        setSelected(0);
+        const previous = row()?.value;
+        batch(() => {
+          setShowArchived((v) => !v);
+          if (!allRows().some((r) => r.id === selected()))
+            setSelected(previous ? projectKey(previous.project.id) : (allRows()[0]?.id ?? null));
+        });
       },
     },
     { id: "project", name: "Add Project", run: () => setForm("project") },
@@ -367,7 +459,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         })();
       },
     },
-    { id: "sidebar", name: "Toggle Sidebar", run: () => setShowSidebar((v) => !v) },
+    { id: "sidebar", name: "Toggle Sidebar", run: toggleSidebar },
     { id: "activity", name: "Toggle Global Activity", run: () => setShowActivity((v) => !v) },
     { id: "keys", name: "Configure Shortcuts", run: () => setForm("shortcuts") },
     {
@@ -383,28 +475,6 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             id: "raw",
             name: "Raw Events / Debug (complete ACP protocol)",
             run: () => dispatch("raw"),
-          },
-          {
-            id: "archive",
-            name:
-              row()?.value.conversation?.archivedAt === null
-                ? "Archive Conversation"
-                : "Restore Archived Conversation",
-            run: () => {
-              const c = row()?.value.conversation;
-              if (c) void lifecycle(c, "archive");
-            },
-          },
-          {
-            id: "delete",
-            name: "Delete Conversation…",
-            run: () => {
-              const c = row()?.value.conversation;
-              if (c) {
-                setDeleteTarget(c);
-                setForm("delete");
-              }
-            },
           },
           {
             id: "restore_pending",
@@ -469,47 +539,48 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             title="Projects → Conversations"
             flexDirection="column"
           >
+            <Show when={row()}>
+              <box
+                height={1}
+                flexShrink={0}
+                onMouse={(event) =>
+                  sidebarClick("sidebar-actions", event, () => {
+                    if (!form()) {
+                      setError("");
+                      setForm("actions");
+                    }
+                  })
+                }
+              >
+                <text selectable={false} fg="#80cbc4">
+                  ⋯ Actions (o)
+                </text>
+              </box>
+            </Show>
             <Show
               when={rows().length > 0}
               fallback={<text>No projects. Press p to register an existing directory.</text>}
             >
-              <scrollbox
-                ref={(element) => {
-                  projectTree = element;
+              <ProjectTree
+                rows={rows()}
+                selected={selected()}
+                activeProjectId={row()?.value.conversation?.projectId ?? null}
+                collapsed={collapsed()}
+                disabled={!!form() && form() !== "message"}
+                onSelect={selectRow}
+                onToggle={toggleProject}
+                onProjectClick={(target) => {
+                  const wasCollapsed = collapsed().has(target.project.id);
+                  batch(() => {
+                    selectRow(target);
+                    if (!wasCollapsed) toggleProject(target.project.id);
+                  });
                 }}
-                id="project-tree"
-                focused={false}
-                flexGrow={1}
-                minHeight={0}
-                scrollX={false}
-                scrollbarOptions={{ visible: false }}
-              >
-                <For each={rows()}>
-                  {(item, index) => (
-                    <box
-                      id={`project-tree-row-${index()}`}
-                      height={2}
-                      flexShrink={0}
-                      flexDirection="column"
-                      backgroundColor={selected() === index() ? "#263445" : "transparent"}
-                    >
-                      <text
-                        height={1}
-                        wrapMode="none"
-                        fg={item.value.conversation ? "#e6edf3" : "#80cbc4"}
-                      >
-                        {selected() === index() ? "▶ " : "  "}
-                        <Show when={!item.value.conversation} fallback={item.name}>
-                          <b>{item.name}</b>
-                        </Show>
-                      </text>
-                      <text height={1} wrapMode="none" fg="#8b949e">
-                        {`  ${item.description}`}
-                      </text>
-                    </box>
-                  )}
-                </For>
-              </scrollbox>
+                onActions={(conversation) => {
+                  setActionsTarget(conversation);
+                  setForm("conversationActions");
+                }}
+              />
             </Show>
           </box>
         </Show>
@@ -525,6 +596,12 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                 ? `Conversation · ${row()?.value.conversation?.title}${row()?.value.conversation?.archivedAt !== null ? " [archived]" : ""} · Workspace: ${row()?.value.conversation?.workspacePath}`
                 : `${row()?.value.project.name} · Workspace: ${row()?.value.project.rootPath} · Press n to create a conversation`}
             </text>
+          </Show>
+          <Show
+            when={row() && !row()?.value.conversation ? row()?.value.project.rootPath : undefined}
+            keyed
+          >
+            {(rootPath) => <ProjectDirectory rootPath={rootPath} />}
           </Show>
           <Show when={row()?.value.conversation?.id} keyed>
             {(conversationId) => (
@@ -671,34 +748,43 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       <Show when={form() === "palette"}>
         <CommandPalette commands={commands()} onClose={() => setForm(null)} />
       </Show>
+      <Show when={form() === "actions"}>
+        <CommandPalette
+          title="Conversation / Project actions"
+          commands={contextCommands()}
+          onClose={() => setForm(null)}
+        />
+      </Show>
+      <Show when={form() === "conversationActions" && actionsTarget()}>
+        {(target) => (
+          <ConversationActions
+            conversation={target() as Conversation}
+            busy={busy()}
+            onArchive={() => void lifecycle(target() as Conversation)}
+            onDelete={() => {
+              const conversation = target() as Conversation;
+              const project = snapshot().projects.find((p) => p.id === conversation.projectId);
+              if (project) requestDelete({ project, conversation });
+            }}
+            onClose={() => setForm(null)}
+          />
+        )}
+      </Show>
       <Show when={form() === "delete" && deleteTarget()}>
         {(target) => (
-          <box
-            position="absolute"
-            top={3}
-            left={3}
-            width="88%"
-            height={8}
-            border
-            backgroundColor="#10151c"
-            padding={1}
-            flexDirection="column"
-            title="Confirm Conversation deletion · Esc cancel"
+          <DeleteConfirmation
+            kind={target().conversation ? "Conversation" : "Project"}
+            busy={busy()}
+            onCancel={() => setForm(null)}
+            onDelete={() => void deleteSelected()}
           >
-            <text>{`Permanently delete “${(target() as Conversation).title}” and its application history?`}</text>
             <text>
-              Project files, Git branches and workspaces are preserved. Active / pending approval /
-              UNCERTAIN tasks cannot be deleted.
+              {target().conversation
+                ? `Permanently delete “${target().conversation?.title}” and its application history?`
+                : `Permanently delete Project “${target().project.name}” and all ${snapshot().conversations.filter((c) => c.projectId === target().project.id).length} Conversations (including archived) and their history?`}
             </text>
-            <input
-              focused={!busy()}
-              placeholder="Type DELETE then Enter to confirm"
-              onSubmit={(value) => {
-                if (value === "DELETE") void lifecycle(target() as Conversation, "delete");
-                else setError("Type DELETE to confirm, or Esc to cancel");
-              }}
-            />
-          </box>
+            <text>Active, pending approval or UNCERTAIN Conversations must be resolved first.</text>
+          </DeleteConfirmation>
         )}
       </Show>
       <Show when={form() === "shortcuts"}>
@@ -747,7 +833,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         </text>
       </Show>
       <text height={1} flexShrink={0} fg="#8b949e">
-        {`${keys().palette} Commands · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
+        {`${keys().palette} Commands · o Actions · Del Delete · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
       </text>
     </box>
   );

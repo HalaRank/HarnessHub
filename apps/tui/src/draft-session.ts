@@ -16,6 +16,7 @@ export class DraftSession {
   private queue = Promise.resolve();
   private timer: ReturnType<typeof setTimeout> | undefined;
   private disposed = false;
+  private deleted = false;
   private readonly saveOnExit = async () => {
     await this.flush();
     if (this.disposed) {
@@ -68,6 +69,7 @@ export class DraftSession {
     this.changed();
   }
   update(text: string) {
+    if (this.deleted) return;
     this.text = text;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
@@ -75,17 +77,28 @@ export class DraftSession {
     }, 150);
   }
   private async save(pendingSubmission = this.value.pendingSubmission) {
-    const saved = await this.request<Draft>(
-      `/v1/conversations/${this.conversationId}/draft`,
-      "PUT",
-      {
-        text: this.text,
-        revision: this.value.revision,
-        pendingSubmission,
-      },
-    );
-    this.value = saved;
-    this.changed();
+    if (this.deleted) return;
+    try {
+      const saved = await this.request<Draft>(
+        `/v1/conversations/${this.conversationId}/draft`,
+        "PUT",
+        {
+          text: this.text,
+          revision: this.value.revision,
+          pendingSubmission,
+        },
+      );
+      this.value = saved;
+      this.changed();
+    } catch (error) {
+      if (!(error instanceof HttpError && error.status === 404)) throw error;
+      // Another client explicitly deleted this Conversation. Retire its saver
+      // rather than blocking exit or trying to recreate the deleted draft.
+      this.deleted = true;
+      clearTimeout(this.timer);
+      savers.delete(this.saveOnExit);
+      if (departing.get(this.conversationId) === this) departing.delete(this.conversationId);
+    }
   }
   private enqueue<T>(action: () => Promise<T>): Promise<T> {
     const next = this.queue.then(action);
@@ -123,6 +136,7 @@ export class DraftSession {
     return this.enqueue(() => this.save(null));
   }
   async dispose() {
+    if (this.deleted) return;
     this.disposed = true;
     departing.set(this.conversationId, this);
     // Keep a failed save registered so leaving the Conversation cannot silently drop its text.

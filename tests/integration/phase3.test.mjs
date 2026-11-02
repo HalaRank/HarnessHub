@@ -541,7 +541,7 @@ test("large Unicode drafts obey schema bounds; CAS races and metadata deletion p
   await api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
   assert.equal((await response(path)).status, 404);
   assert.equal((await api("/v1/preferences")).lastConversationId, null);
-  await api(`/v1/projects/${p.id}`, "DELETE");
+  await api(`/v1/projects/${p.id}`, "DELETE", { confirmed: true });
   assert.equal((await api("/v1/preferences")).lastProjectId, null);
   assert.equal(readFileSync(join(root, "keep.txt"), "utf8"), "user file");
   const db = new Database(dbFile, { readonly: true });
