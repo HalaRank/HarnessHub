@@ -8,6 +8,7 @@ import {
   type InputRenderable,
   RGBA,
   type ScrollBoxRenderable,
+  TextAttributes,
   type TextareaRenderable,
 } from "@opentui/core";
 import { testRender } from "@opentui/solid";
@@ -119,6 +120,59 @@ async function current(screen: Screen, conversation: Conversation) {
   await frame(screen, `Conversation · ${conversation.title} · Workspace`);
   await frame(screen, "m Message");
 }
+
+test("sidebar spacing preserves names and keeps project headings more prominent", async () => {
+  const { project, a, b } = await setup("列表 Spacing");
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  try {
+    await current(screen, a);
+    for (const width of [150, 100]) {
+      screen.resize(width, 35);
+      await screen.renderOnce();
+      const heading = node(screen, projectKey(project.id));
+      const first = node(screen, conversationKey(a.id));
+      const second = node(screen, conversationKey(b.id));
+      expect(heading.height).toBe(3);
+      expect(first.height).toBe(2);
+      expect(second.height).toBe(2);
+      expect(first.y).toBe(heading.y + heading.height);
+      expect(second.y).toBe(first.y + first.height);
+      const lines = screen.captureSpans().lines;
+      const projectLine = lines[heading.y + 1];
+      const conversationLine = lines[first.y + 1];
+      expect(projectLine?.spans.map((span) => span.text).join("")).toContain(project.name);
+      expect(conversationLine?.spans.map((span) => span.text).join("")).toContain(a.title);
+      const projectSpans = projectLine?.spans.filter((span) =>
+        span.fg.equals(RGBA.fromHex("#b2dfdb")),
+      );
+      const conversationSpans = conversationLine?.spans.filter((span) =>
+        span.fg.equals(RGBA.fromHex("#ffffff")),
+      );
+      expect(projectSpans?.length).toBeGreaterThan(0);
+      expect(conversationSpans?.length).toBeGreaterThan(0);
+      expect(projectSpans?.every((span) => (span.attributes & TextAttributes.BOLD) !== 0)).toBe(
+        true,
+      );
+      expect(
+        conversationSpans?.every((span) => (span.attributes & TextAttributes.BOLD) === 0),
+      ).toBe(true);
+      const arrow = node(screen, `arrow-${project.id}`);
+      const actions = node(screen, `actions-${a.id}`);
+      expect(arrow.y).toBe(heading.y + 1);
+      expect(arrow.x).toBe(heading.x + 1);
+      expect(actions.y).toBe(first.y + 1);
+      expect(actions.x + actions.width).toBe(first.x + first.width - 1);
+    }
+    await click(screen, conversationKey(b.id), 5);
+    await current(screen, b);
+    await click(screen, `arrow-${project.id}`);
+    expect(screen.renderer.root.findDescendantById(conversationKey(a.id))).toBeFalsy();
+    await click(screen, `arrow-${project.id}`);
+    expect(screen.renderer.root.findDescendantById(conversationKey(a.id))).toBeTruthy();
+  } finally {
+    await screen.dispose();
+  }
+});
 
 test("project arrows collapse independently; names expand/select; hover, selected highlight and keyboard/palette work", async () => {
   const one = await setup("Tree-one"),

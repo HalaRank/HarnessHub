@@ -89,9 +89,12 @@ export function ProjectTree(props: {
         {(row) => (
           <box
             id={row.id}
-            height={1}
+            height={row.conversation ? 2 : 3}
             flexShrink={0}
             flexDirection="row"
+            alignItems="center"
+            paddingLeft={1}
+            paddingRight={1}
             backgroundColor={
               props.selected === row.id
                 ? "#264b63"
@@ -140,7 +143,7 @@ export function ProjectTree(props: {
               minWidth={0}
               height={1}
               wrapMode="none"
-              fg={!row.conversation ? "#80cbc4" : props.selected === row.id ? "#ffffff" : "#c9d1d9"}
+              fg={!row.conversation ? "#b2dfdb" : props.selected === row.id ? "#ffffff" : "#c9d1d9"}
             >
               {row.conversation ? (
                 `${row.conversation.runtimeStatus !== "IDLE" ? `${row.conversation.runtimeStatus} · ` : ""}${row.conversation.title}${row.conversation.archivedAt !== null ? " [archived]" : ""}`
