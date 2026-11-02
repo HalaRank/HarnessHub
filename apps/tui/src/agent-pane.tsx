@@ -2,13 +2,15 @@ import type {
   Approval,
   Conversation,
   Handoff,
+  NativeCommand,
   NativeSession,
   Shortcuts,
   Turn,
 } from "@harnesshub/shared";
+import { sessionCommands } from "@harnesshub/shared";
 import { connect, HttpError, watchConversation } from "@harnesshub/shared/client";
 import type { TextareaRenderable } from "@opentui/core";
-import { useKeyboard, useRenderer } from "@opentui/solid";
+import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid";
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { ChangesPane } from "./changes-pane";
 import { useClipboard } from "./clipboard";
@@ -16,6 +18,7 @@ import { DraftSession } from "./draft-session";
 import { NativeEvents } from "./native-events";
 import { RawEvents } from "./raw-events";
 import { binding, matches, shortcuts } from "./shortcuts";
+import { matchingCommands, SlashCommands, slashQuery } from "./slash-commands";
 import { SourceViewer } from "./source-viewer";
 import { object, Transcript, type ViewState } from "./transcript";
 
@@ -87,6 +90,58 @@ export function AgentPane(props: {
     textarea: TextareaRenderable | undefined;
   const copyText = useClipboard();
   const [inputLines, setInputLines] = createSignal(1);
+  const dimensions = useTerminalDimensions();
+  const [editorRevision, setEditorRevision] = createSignal(0),
+    [slashDismissedText, setSlashDismissedText] = createSignal<string | null>(null),
+    [slashPasted, setSlashPasted] = createSignal(false),
+    [slashSelected, setSlashSelected] = createSignal(0),
+    [rawConfirm, setRawConfirm] = createSignal(false);
+  const commandSession = () => {
+    const session = activeSession();
+    return !openHandoffRecord() && session?.harnessId === harness() ? session : undefined;
+  };
+  const commands = () =>
+    connection() === "Connected" ? sessionCommands(commandSession()) : undefined;
+  const query = createMemo(() => {
+    editorRevision();
+    return textarea
+      ? slashQuery(textarea.plainText, textarea.getTextRange(0, textarea.cursorOffset))
+      : null;
+  });
+  const options = createMemo(() => matchingCommands(commands() ?? [], query() ?? ""));
+  const commandStatus = () => {
+    if (connection() !== "Connected")
+      return "Daemon disconnected; ACP commands cannot be executed.";
+    if (openHandoffRecord() || (activeSession() && activeSession()?.harnessId !== harness()))
+      return "Target Handoff has not completed; source commands are unavailable here.";
+    if (!commandSession())
+      return "NativeSession not initialized. Use Commands → Initialize ACP session (no Prompt).";
+    if (commandSession()?.status !== "READY" || commandSession()?.endedAt !== null)
+      return "NativeSession is no longer live. Historical commands cannot be executed.";
+    if (!commands()?.length) return "Agent has not published any ACP commands.";
+    return "No matching ACP commands.";
+  };
+  const slashOpen = () =>
+    props.form === "message" &&
+    query() !== null &&
+    slashDismissedText() !== textarea?.plainText &&
+    !slashPasted();
+  createEffect(() => {
+    query();
+    options();
+    setSlashSelected(0);
+  });
+  const chooseCommand = (command: NativeCommand) => {
+    if (!textarea || !options().includes(command)) return;
+    const token = textarea.plainText.split(/\s/, 1)[0] ?? "";
+    // Use native display offsets, including wide/combining characters. Preserve
+    // all parameters and undo history instead of resetting the editor buffer.
+    textarea.setSelection(0, textarea.editBuffer.measureText(token));
+    textarea.insertText(`/${command.name}`);
+    setSlashDismissedText(textarea.plainText);
+    props.setForm("message");
+    textarea.focus();
+  };
   props.registerClearInput?.(() => {
     if (!(textarea?.plainText ?? draft.text).length) return false;
     textarea?.setText("");
@@ -119,9 +174,10 @@ export function AgentPane(props: {
     if (!disposed) setApprovals(result);
   };
   const refreshSessions = async () => {
+    const generation = ++sessionRefresh;
     const result = await request<NativeSession[]>(`/v1/conversations/${conversationId}/sessions`);
     const conversation = await request<Conversation>(`/v1/conversations/${conversationId}`);
-    if (!disposed) {
+    if (!disposed && generation === sessionRefresh) {
       setSessions(result);
       setActiveSessionId(conversation.activeNativeSessionId ?? null);
       if (!selectionPending)
@@ -132,6 +188,11 @@ export function AgentPane(props: {
         );
     }
   };
+  let sessionRefresh = 0;
+  createEffect(() => {
+    const selected = props.conversation.selectedHarnessId;
+    if (selected && !selectionPending) setHarness(selected);
+  });
   const refreshHandoffs = async () => {
     const result = await request<Handoff[]>(`/v1/conversations/${conversationId}/handoffs`);
     if (!disposed) setHandoffs(result);
@@ -195,6 +256,8 @@ export function AgentPane(props: {
               "runtime.context_ended",
               "runtime.settings_pending",
               "runtime.settings_settled",
+              "runtime.session_error",
+              "available_commands_update",
             ].includes(e.kind),
           )
         )
@@ -267,27 +330,81 @@ export function AgentPane(props: {
     if (action.name === "cancel_switch") cancelSwitch();
     if (action.name === "handoff") openHandoff();
     if (action.name === "changes") setChanges((v) => !v);
+    if (action.name === "initialize")
+      void run(async () => {
+        await selectionQueue;
+        if (selectionFailure) throw new Error(selectionFailure);
+        await request(`/v1/conversations/${conversationId}/sessions`, "POST", {
+          harnessId: harness(),
+        });
+        await refreshSessions();
+      });
   });
   useKeyboard((key) => {
-    if (matches(key, keys().changes) && (!props.form || props.form === "message")) {
+    if (key.defaultPrevented || key.propagationStopped) return;
+    if (props.form === "message" && key.name === "escape") {
       key.preventDefault();
-      props.setForm(null);
+      key.stopPropagation();
+      if (slashOpen()) setSlashDismissedText(textarea?.plainText ?? "");
+      else props.setForm(null);
+      return;
+    }
+    if (key.name === "escape" && (props.form === "settings" || handoffMenu() || rawConfirm())) {
+      key.preventDefault();
+      key.stopPropagation();
+      const returnToMessage = rawConfirm();
+      setHandoffMenu(false);
+      setRawConfirm(false);
+      props.setForm(returnToMessage ? "message" : null);
+      return;
+    }
+    if (
+      slashOpen() &&
+      !key.ctrl &&
+      !key.meta &&
+      !key.shift &&
+      ["up", "down", "tab", "return"].includes(key.name)
+    ) {
+      key.preventDefault();
+      key.stopPropagation();
+      if (key.name === "up" || key.name === "down")
+        setSlashSelected((i) =>
+          Math.max(0, Math.min(options().length - 1, i + (key.name === "up" ? -1 : 1))),
+        );
+      else {
+        const command = options()[slashSelected()];
+        if (command) chooseCommand(command);
+        else
+          setError(
+            `${commandStatus()} Esc closes suggestions; Enter then offers sending as plain text.`,
+          );
+      }
+      return;
+    }
+    if (matches(key, keys().changes) && !props.form) {
+      key.preventDefault();
+      key.stopPropagation();
       setChanges((v) => !v);
       return;
     }
-    if (matches(key, keys().copy)) {
-      const text = renderer.getSelection()?.getSelectedText();
+    if (matches(key, keys().copy) && (!props.form || props.form === "message")) {
+      const text = renderer.getSelection()?.getSelectedText() || textarea?.getSelectedText();
       if (text) {
         key.preventDefault();
+        key.stopPropagation();
         renderer.clearSelection();
+        textarea?.clearSelection();
         void copyText(text).then(setError);
       }
       return;
     }
     if (props.form) return;
-    if (key.name === "m") {
+    if (key.ctrl || key.meta || key.shift) return;
+    if (key.name === "m" || key.name === "return") {
       key.preventDefault();
+      key.stopPropagation();
       props.setForm("message");
+      if (key.name === "return") textarea?.gotoBufferEnd();
       return;
     }
     if (busy()) return;
@@ -300,14 +417,28 @@ export function AgentPane(props: {
     if (key.name === "x") cancelSwitch();
     if (key.name === "f" && failedHandoff()) openHandoff();
   });
-  const send = () =>
+  const send = (raw = false) =>
     run(async () => {
       await selectionQueue;
       if (selectionFailure) throw new Error(selectionFailure);
       const message = textarea?.plainText ?? "";
       if (!message.trim()) return;
+      const token = message.split(/\s/, 1)[0] ?? "";
+      const command = commands()?.find((c) => `/${c.name}` === token);
+      if (!raw && message.startsWith("/") && !command) {
+        setDebug(false);
+        setRawConfirm(true);
+        props.setForm("details");
+        return;
+      }
       draft.update(message);
-      const submission = await draft.prepare(harness());
+      const session = commandSession();
+      const submission = await draft.prepare(
+        harness(),
+        !raw && command && session
+          ? { nativeSessionId: session.id, name: command.name }
+          : undefined,
+      );
       try {
         const turn = await request<Turn>(
           `/v1/conversations/${conversationId}/turns`,
@@ -451,43 +582,123 @@ export function AgentPane(props: {
         )}
       </Show>
       <Show when={draftReady()}>
+        <box flexDirection="column" height={Math.min(8, inputLines()) + 2} flexShrink={0}>
+          <Show when={slashOpen()}>
+            <SlashCommands
+              commands={options()}
+              selected={slashSelected()}
+              bottom={Math.min(8, inputLines()) + 2}
+              height={Math.max(
+                3,
+                Math.min(
+                  12,
+                  dimensions().height - Math.min(8, inputLines()) - 7,
+                  options().length ? options().length * 2 + 2 : 4,
+                ),
+              )}
+              status={commandStatus()}
+              choose={chooseCommand}
+            />
+          </Show>
+          <box
+            border
+            height={Math.min(8, inputLines()) + 2}
+            flexShrink={0}
+            borderColor={props.form === "message" ? "#80cbc4" : "#36404b"}
+            title={`Enter send · Shift+Enter / ${keys().newline} newline · Esc navigate`}
+          >
+            <textarea
+              id="message-draft"
+              onMouseDown={(event) => {
+                if (props.form && props.form !== "message") event.preventDefault();
+                else if (event.button === 0 && !busy()) props.setForm("message");
+              }}
+              initialValue={draft.text}
+              placeholder="Enter / m to write a message…"
+              onContentChange={() => {
+                const text = textarea?.plainText ?? draft.text;
+                draft.update(text);
+                setInputLines(Math.max(1, text.split("\n").length));
+                setEditorRevision((n) => n + 1);
+              }}
+              onCursorChange={() => setEditorRevision((n) => n + 1)}
+              onPaste={() => {
+                setSlashPasted(true);
+              }}
+              onKeyDown={(key) => {
+                if (
+                  !key.ctrl &&
+                  !key.meta &&
+                  key.sequence.length > 0 &&
+                  !["return", "tab", "escape", "up", "down"].includes(key.name)
+                ) {
+                  setSlashPasted(false);
+                  setSlashDismissedText(null);
+                }
+              }}
+              ref={(element) => {
+                textarea = element;
+                if (props.form === "message") textarea.gotoBufferEnd();
+                setInputLines(Math.max(1, draft.text.split("\n").length));
+              }}
+              onSizeChange={() => {
+                if (textarea && !textarea.isDestroyed)
+                  setInputLines(
+                    Math.max(1, textarea.virtualLineCount, textarea.plainText.split("\n").length),
+                  );
+              }}
+              focused={props.form === "message" && !busy()}
+              minHeight={1}
+              keyBindings={[
+                { name: "return", action: "submit" },
+                { name: "return", shift: true, action: "newline" },
+                { ...binding(keys().newline), action: "newline" },
+              ]}
+              onSubmit={() => {
+                if (slashOpen()) {
+                  const command = options()[slashSelected()];
+                  if (command) chooseCommand(command);
+                  return;
+                }
+                void send();
+              }}
+              flexGrow={1}
+            />
+          </box>
+        </box>
+      </Show>
+      <Show when={rawConfirm() && props.form === "details"}>
         <box
+          position="absolute"
+          top={2}
+          left={1}
+          width="94%"
           border
-          height={Math.min(8, inputLines()) + 2}
-          flexShrink={0}
-          borderColor={props.form === "message" ? "#80cbc4" : "#36404b"}
-          title={`Enter send · Shift+Enter / ${keys().newline} newline · Esc navigate`}
+          backgroundColor="#10151c"
+          padding={1}
+          flexDirection="column"
+          title="Unadvertised slash text"
         >
-          <textarea
-            id="message-draft"
-            initialValue={draft.text}
-            placeholder="m to write a message…"
-            onContentChange={() => {
-              const text = textarea?.plainText ?? draft.text;
-              draft.update(text);
-              setInputLines(Math.max(1, text.split("\n").length));
-            }}
-            ref={(element) => {
-              textarea = element;
-              setInputLines(Math.max(1, draft.text.split("\n").length));
-            }}
-            onSizeChange={() => {
-              if (textarea && !textarea.isDestroyed)
-                setInputLines(
-                  Math.max(1, textarea.virtualLineCount, textarea.plainText.split("\n").length),
-                );
-            }}
-            focused={props.form === "message" && !busy()}
-            minHeight={1}
-            keyBindings={[
-              { name: "return", action: "submit" },
-              { name: "return", shift: true, action: "newline" },
-              { ...binding(keys().newline), action: "newline" },
+          <text>
+            {commandStatus()} This prefix is not an advertised command in the selected session.
+          </text>
+          <text>
+            Send the exact text as an ordinary Prompt? This may start a model Turn or pending
+            Handoff.
+          </text>
+          <select
+            focused={!busy()}
+            height={4}
+            showDescription={false}
+            options={[
+              { name: "Keep editing (no Prompt)", description: "", value: false },
+              { name: "Send original text as ordinary Prompt", description: "", value: true },
             ]}
-            onSubmit={() => {
-              void send();
+            onSelect={(_index, option) => {
+              setRawConfirm(false);
+              props.setForm("message");
+              if (option?.value) void send(true);
             }}
-            flexGrow={1}
           />
         </box>
       </Show>
@@ -503,7 +714,7 @@ export function AgentPane(props: {
       <text fg="#8b949e" height={1}>
         {busy() || !draftReady()
           ? "ACP operation pending"
-          : "m Message · a Approval · c Cancel Turn"}
+          : "Enter / m Message · a Approval · c Cancel Turn"}
       </text>
       <Show when={handoffMenu() && props.form === "details"}>
         <box
@@ -589,7 +800,10 @@ export function AgentPane(props: {
               text: `${materials()?.reportText ?? "No generated report"}\n\n${materials()?.fallbackText ?? "No fallback"}\n\n${JSON.stringify(materials(), null, 2)}`,
             },
           ]}
-          onClose={() => setMaterials(null)}
+          onClose={() => {
+            setMaterials(null);
+            props.setForm(null);
+          }}
         />
       </Show>
       <Show when={debug() && props.form === "details" && !handoffMenu()}>
@@ -613,7 +827,7 @@ export function AgentPane(props: {
           backgroundColor="#10151c"
           padding={1}
           flexDirection="column"
-          title="ACP native options · Enter apply · Esc close"
+          title="HarnessHub ACP settings · Enter apply · Esc close"
         >
           <Show
             when={sessionChoices().length}

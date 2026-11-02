@@ -25,6 +25,7 @@ export function SourceViewer(props: { parts: SourcePart[]; onClose: () => void }
     void copyText(source()).then(setNotice);
   };
   useKeyboard((key) => {
+    if (key.defaultPrevented || key.propagationStopped) return;
     if (key.name === "escape") {
       key.preventDefault();
       key.stopPropagation();

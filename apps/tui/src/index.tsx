@@ -8,8 +8,8 @@ import {
   shortcutInput,
 } from "@harnesshub/shared";
 import { connect, watchSnapshot } from "@harnesshub/shared/client";
-import { createCliRenderer } from "@opentui/core";
-import { render, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid";
+import { createCliRenderer, type KeyEvent } from "@opentui/core";
+import { render, useRenderer, useTerminalDimensions } from "@opentui/solid";
 import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type AgentAction, AgentPane } from "./agent-pane";
 import { interruptTui, useClipboard } from "./clipboard";
@@ -261,9 +261,14 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       process.off("SIGINT", interrupt);
     });
   });
-  useKeyboard((key) => {
+  let paletteReturn: "message" | null = null;
+  const closePalette = () => setForm(paletteReturn);
+  const keyboard = (key: KeyEvent) => {
+    if (key.defaultPrevented || key.propagationStopped) return;
     if (key.ctrl && key.name === "q" && error()) {
       props.onExit();
+      key.preventDefault();
+      key.stopPropagation();
       return;
     }
     if (key.ctrl && key.name === "c") {
@@ -272,29 +277,48 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       interrupt();
       return;
     }
-    if (
-      matches(key, keys().palette) &&
-      !["details", "settings", "shortcuts"].includes(form() ?? "")
-    ) {
+    if (form() && form() !== "message") {
+      if (form() === "palette" && matches(key, keys().palette)) {
+        key.preventDefault();
+        key.stopPropagation();
+        closePalette();
+      } else if (key.name === "escape" && !["details", "settings"].includes(form() ?? "")) {
+        key.preventDefault();
+        key.stopPropagation();
+        if (form() === "palette") closePalette();
+        else setForm(null);
+        setError("");
+      }
+      return; // The top modal owns its editor and navigation keys.
+    }
+    if (matches(key, keys().palette)) {
       key.preventDefault();
-      setForm((current) => (current === "palette" ? null : "palette"));
+      key.stopPropagation();
+      paletteReturn = form() === "message" ? "message" : null;
+      setForm("palette");
       return;
     }
     if (matches(key, keys().sidebar)) {
       key.preventDefault();
+      key.stopPropagation();
       toggleSidebar();
       return;
     }
+    if (form() === "message") return; // Slash/textarea owns Esc and editing.
     if (key.name === "escape") {
+      key.preventDefault();
+      key.stopPropagation();
       setForm(null);
       setError("");
       return;
     }
-    if (form()) return;
     if (key.ctrl && key.name === "g") {
+      key.preventDefault();
+      key.stopPropagation();
       setShowActivity((value) => !value);
       return;
     }
+    if (key.ctrl || key.meta || key.shift) return;
     if (!changesView() && (key.name === "up" || key.name === "down")) {
       key.preventDefault();
       const visible = rows();
@@ -325,6 +349,12 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       key.stopPropagation();
       requestDelete(row()?.value);
     }
+  };
+  onMount(() => {
+    // Safety and modal routing run before child useKeyboard callbacks, regardless
+    // of Solid's mount order. Consumed events cannot fall through after a form changes.
+    renderer.keyInput.prependListener("keypress", keyboard);
+    onCleanup(() => renderer.keyInput.off("keypress", keyboard));
   });
   const dispatch = (name: string) => {
     if (name === "changes") setChangesView((v) => !v);
@@ -525,6 +555,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             run: () => dispatch("restore_pending"),
           },
           { id: "message", name: "Write Message", run: () => setForm("message") },
+          {
+            id: "initialize",
+            name: "Initialize ACP session (no Prompt)",
+            run: () => dispatch("initialize"),
+          },
           { id: "changes", name: "Toggle Changes / Chat", run: () => dispatch("changes") },
           { id: "approval", name: "Choose Native Approval", run: () => setForm("approval") },
           { id: "cancel", name: "Cancel Current Turn (ACP)", run: () => dispatch("cancel") },
@@ -543,7 +578,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             name: "Handoff Failure / Saved Context / Degraded Confirmation",
             run: () => dispatch("handoff"),
           },
-          { id: "settings", name: "ACP Native Session Options", run: () => setForm("settings") },
+          {
+            id: "settings",
+            name: "HarnessHub ACP settings · Native Session Options",
+            run: () => setForm("settings"),
+          },
         ]
       : []),
   ]);
@@ -788,7 +827,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         )}
       </Show>
       <Show when={form() === "palette"}>
-        <CommandPalette commands={commands()} onClose={() => setForm(null)} />
+        <CommandPalette commands={commands()} onClose={closePalette} />
       </Show>
       <Show when={form() === "actions"}>
         <CommandPalette

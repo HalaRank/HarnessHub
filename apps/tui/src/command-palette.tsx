@@ -21,8 +21,10 @@ export function CommandPalette(props: {
     }
   };
   useKeyboard((key) => {
+    if (key.defaultPrevented || key.propagationStopped) return;
     if (["up", "down"].includes(key.name)) {
       key.preventDefault();
+      key.stopPropagation();
       setSelected((i) =>
         Math.max(0, Math.min(options().length - 1, i + (key.name === "up" ? -1 : 1))),
       );

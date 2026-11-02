@@ -12,6 +12,7 @@ export function DeleteConfirmation(props: {
   const [confirm, setConfirm] = createSignal(false);
   const click = mouseClick();
   useKeyboard((key) => {
+    if (key.defaultPrevented || key.propagationStopped) return;
     if (props.busy) return;
     if (["tab", "left", "right", "up", "down"].includes(key.name)) {
       key.preventDefault();

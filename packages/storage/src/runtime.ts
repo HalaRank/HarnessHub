@@ -164,6 +164,28 @@ export class RuntimeStore {
         .get()?.seq ?? 0
     );
   }
+  hasObservableOutput(turnId: string) {
+    return (
+      this.db
+        .select({ kind: conversationEvents.kind })
+        .from(conversationEvents)
+        .where(
+          and(
+            eq(conversationEvents.turnId, turnId),
+            sql`(
+              ${conversationEvents.kind} in ('tool_call', 'tool_call_update')
+              or (${conversationEvents.kind} in ('agent_message_chunk', 'agent_thought_chunk') and (
+                length(trim(coalesce(json_extract(${conversationEvents.payload}, '$.content.text'), ''))) > 0
+                or json_extract(${conversationEvents.payload}, '$.content.type') <> 'text'
+              ))
+              or (${conversationEvents.kind} = 'plan' and json_array_length(json_extract(${conversationEvents.payload}, '$.entries')) > 0)
+            )`,
+          ),
+        )
+        .limit(1)
+        .get() !== undefined
+    );
+  }
   events(conversationId: string, after: number, limit: number) {
     return this.db
       .select()

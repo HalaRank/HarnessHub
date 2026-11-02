@@ -81,7 +81,9 @@ export function ChangesPane(props: {
         ].filter((s) => s.text)
       : [];
   useKeyboard((key) => {
+    if (key.defaultPrevented || key.propagationStopped) return;
     if (props.disabled || source()) return;
+    if (key.ctrl || key.meta || key.shift) return;
     if (key.name === "g") void refresh();
     if (key.name === "up" || key.name === "down") {
       key.preventDefault();

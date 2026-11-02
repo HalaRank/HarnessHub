@@ -45,6 +45,11 @@ const app = new AgentApp()
       await client.notify("_auth/status_update", {
         authStatus: { kind: "gateway", label: "Custom model gateway", detail: "codeforce" },
       });
+    if (process.env.HHU_MOCK_COMMANDS)
+      await update(client, {
+        sessionUpdate: "available_commands_update",
+        availableCommands: JSON.parse(process.env.HHU_MOCK_COMMANDS),
+      });
     return {
       sessionId,
       configOptions,
@@ -73,6 +78,21 @@ const app = new AgentApp()
     prompts++;
     cancelled = false;
     let message = params.prompt[0].text;
+    if (message === "replace-commands" || message === "clear-commands") {
+      await update(client, {
+        sessionUpdate: "available_commands_update",
+        availableCommands:
+          message === "clear-commands"
+            ? []
+            : [{ name: "fresh", description: "Replacement snapshot" }],
+      });
+      await text(client, "Commands updated");
+      return { stopReason: "end_turn" };
+    }
+    if (message === "/silent") {
+      await text(client, "");
+      return { stopReason: "end_turn" };
+    }
     if (process.env.HHU_MOCK_CHAT_DIAGNOSTICS && message === "hello") {
       await text(client, "Hello from Agent.");
       return { stopReason: "end_turn" };

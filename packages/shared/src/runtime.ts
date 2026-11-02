@@ -34,6 +34,10 @@ export const turnInput = z
     requestId: z.string().uuid(),
     harnessId: z.string().min(1).max(80),
     message: z.string().min(1).max(100000),
+    nativeCommand: z
+      .object({ nativeSessionId: z.string().uuid(), name: z.string() })
+      .strict()
+      .optional(),
   })
   .strict();
 export const decisionInput = z.object({ optionId: z.string().min(1) }).strict();

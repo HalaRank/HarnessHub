@@ -19,6 +19,8 @@ import {
   type ChangeEvent,
   type ConversationEvent,
   type HarnessProfile,
+  type NativeCommands,
+  nativeCommandList,
   type RuntimeStatus,
   sensitiveEnvKeys,
   type settingInput,
@@ -39,6 +41,7 @@ export type Live = {
   turnId: string | null;
   configuring: boolean;
   settingsOperation?: { timedOut: boolean };
+  commands?: NativeCommands;
 };
 type Pending = { live: Live; resolve: (result: RequestPermissionResponse) => void };
 export class Runtime {
@@ -188,6 +191,7 @@ export class Runtime {
               sessionUpdate?: string;
               configOptions?: SessionConfigOption[];
               currentModeId?: string;
+              availableCommands?: unknown;
             };
           }
         | undefined;
@@ -208,6 +212,17 @@ export class Runtime {
       kind =
         update?.sessionUpdate && known.has(update.sessionUpdate) ? update.sessionUpdate : "custom";
       payload = update ?? raw.params;
+      if (
+        update?.sessionUpdate === "available_commands_update" &&
+        typeof params?.sessionId === "string" &&
+        (!live.session || live.session.sessionId === params.sessionId)
+      ) {
+        const parsed = nativeCommandList.safeParse(update.availableCommands);
+        if (parsed.success) {
+          live.commands = { agentSessionId: params.sessionId, availableCommands: parsed.data };
+          this.capabilities(live);
+        }
+      }
       if (live.session && update?.sessionUpdate === "config_option_update" && update.configOptions)
         live.session.configOptions = update.configOptions;
       if (
@@ -239,6 +254,7 @@ export class Runtime {
     const snapshot = {
       initialize: live.initialize,
       session: live.session,
+      commands: live.commands,
       client: { fs: false, terminal: false },
     };
     this.data.updateSession(live.id, { capabilities: snapshot });
@@ -369,6 +385,28 @@ export class Runtime {
     const sourceId = conversation.activeNativeSessionId;
     const switching = !!sourceId && this.data.session(sourceId).harnessId !== input.harnessId;
     const current = this.live.get(conversationId);
+    if (input.nativeCommand) {
+      const command = input.nativeCommand;
+      if (
+        switching ||
+        !current ||
+        current.id !== command.nativeSessionId ||
+        current.id !== sourceId ||
+        current.harnessId !== input.harnessId ||
+        (conversation.selectedHarnessId !== null &&
+          conversation.selectedHarnessId !== input.harnessId) ||
+        current.worker?.closed ||
+        !current.session ||
+        this.data.session(current.id).status !== "READY" ||
+        current.commands?.agentSessionId !== current.session.sessionId ||
+        !current.commands.availableCommands.some((c) => c.name === command.name) ||
+        input.message.split(/\s/, 1)[0] !== `/${command.name}`
+      )
+        throw new AppError(
+          409,
+          "ACP command is no longer available in the current NativeSession; inspect and send again explicitly",
+        );
+    }
     if (
       current &&
       (!current.session || current.worker?.closed) &&
@@ -387,7 +425,11 @@ export class Runtime {
       switching ? null : live,
       conversationId,
       "user.message",
-      { text: input.message, requestId: input.requestId },
+      {
+        text: input.message,
+        requestId: input.requestId,
+        ...(input.nativeCommand ? { nativeCommand: input.nativeCommand } : {}),
+      },
       null,
       "client",
       turn.id,
@@ -426,10 +468,10 @@ export class Runtime {
       const h = this.handoffs.reserve(turn.id, input.message, sourceId);
       this.handoffs.data.patch(h.id, { sourceEventEnd: event.seq - 1 });
       void this.handoffs.generate(h.id);
-    } else void this.run(turn.id, input.message);
+    } else void this.run(turn.id, input.message, !!input.nativeCommand);
     return this.data.turn(turn.id);
   }
-  async run(turnId: string, message: string) {
+  async run(turnId: string, message: string, nativeCommand = false) {
     const turn = this.data.turn(turnId);
     let live: Live | undefined;
     let submitted = false;
@@ -452,6 +494,16 @@ export class Runtime {
       if (!response) throw new Error("Worker unavailable");
       if (this.data.turn(turnId).endedAt !== null) return;
       // The SDK wire tap commits every preceding update synchronously before this response settles.
+      if (nativeCommand) {
+        const observable = this.data.hasObservableOutput(turnId);
+        this.event(live, live.conversationId, "runtime.command_result", {
+          stopReason: response.stopReason,
+          observable,
+          message: observable
+            ? `ACP command response: ${response.stopReason}`
+            : `ACP returned ${response.stopReason} without observable command output; execution effect is not confirmed. Inspect Raw Events.`,
+        });
+      }
       this.finish(
         live,
         response.stopReason === "cancelled" ? "CANCELLED" : "COMPLETED",

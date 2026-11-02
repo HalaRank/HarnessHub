@@ -304,6 +304,57 @@ test("mouse navigation preserves unsent drafts, scroll and manual tools; backgro
   }
 }, 20000);
 
+test("Enter focuses the selected conversation at the draft end without sending it", async () => {
+  const { a, b } = await setup("Enter-focus");
+  await api(`/v1/conversations/${a.id}/harness`, "PUT", { harnessId: "mock" });
+  const screen = await testRender(() => <App onExit={() => {}} />, {
+    width: 150,
+    height: 35,
+    kittyKeyboard: true,
+  });
+  const editor = () => node(screen, "message-draft") as TextareaRenderable;
+  const messages = async () =>
+    (
+      await api<{ events: { kind: string }[] }>(`/v1/conversations/${a.id}/events?limit=1000`)
+    ).events.filter((event) => event.kind === "user.message");
+  try {
+    await current(screen, a);
+    expect(editor().focused).toBe(false);
+    screen.mockInput.pressEnter();
+    await waitFor(() => editor().focused, "Enter focuses empty editor");
+    expect(editor().plainText).toBe("");
+    const draft = "First line\n中文 👋 e\u0301";
+    editor().insertText(draft);
+    editor().gotoBufferHome();
+    screen.mockInput.pressEscape();
+    await waitFor(() => !editor().focused);
+    screen.mockInput.pressEnter();
+    await waitFor(() => editor().focused);
+    expect(editor().getTextRange(0, editor().cursorOffset)).toBe(draft);
+    await screen.mockInput.typeText(" appended");
+    expect(editor().plainText).toBe(`${draft} appended`);
+    expect(await messages()).toHaveLength(0);
+
+    await click(screen, conversationKey(b.id), 5);
+    await current(screen, b);
+    await click(screen, conversationKey(a.id), 5);
+    await current(screen, a);
+    expect(editor().focused).toBe(false);
+    screen.mockInput.pressEnter();
+    await waitFor(() => editor().focused);
+    expect(editor().getTextRange(0, editor().cursorOffset)).toBe(`${draft} appended`);
+    expect(await messages()).toHaveLength(0);
+    screen.mockInput.pressEnter({ shift: true });
+    await screen.mockInput.typeText("last line");
+    expect(editor().plainText).toBe(`${draft} appended\nlast line`);
+    expect(await messages()).toHaveLength(0);
+    screen.mockInput.pressEnter();
+    await waitFor(async () => (await messages()).length === 1, "next Enter sends once");
+  } finally {
+    await screen.dispose();
+  }
+}, 20000);
+
 test("sidebar click/drag and chat selection do not cross-trigger; Ctrl+C copies, clears then quits", async () => {
   const { a, b } = await setup("Gestures");
   const turn = await api<{ id: string }>(`/v1/conversations/${a.id}/turns`, "POST", {

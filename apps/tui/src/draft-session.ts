@@ -114,15 +114,29 @@ export class DraftSession {
       if (this.text !== this.value.text) await this.save();
     });
   }
-  prepare(harnessId: string) {
+  prepare(
+    harnessId: string,
+    nativeCommand?: NonNullable<Draft["pendingSubmission"]>["nativeCommand"],
+  ) {
     clearTimeout(this.timer);
     return this.enqueue(async () => {
       const pending = this.value.pendingSubmission;
-      if (pending && (pending.message !== this.text || pending.harnessId !== harnessId))
+      if (
+        pending &&
+        (pending.message !== this.text ||
+          pending.harnessId !== harnessId ||
+          JSON.stringify(pending.nativeCommand) !== JSON.stringify(nativeCommand))
+      )
         throw new Error(
           `Unconfirmed request ${pending.requestId}; check its status or explicitly retry the original message`,
         );
-      if (!pending) await this.save({ requestId: randomUUID(), message: this.text, harnessId });
+      if (!pending)
+        await this.save({
+          requestId: randomUUID(),
+          message: this.text,
+          harnessId,
+          ...(nativeCommand ? { nativeCommand } : {}),
+        });
       return this.value.pendingSubmission as NonNullable<Draft["pendingSubmission"]>;
     });
   }

@@ -27,6 +27,7 @@ const ui = spawnSync(
     "tests/e2e/phase4.test.tsx",
     "tests/e2e/phase5.test.tsx",
     "tests/e2e/mouse-sidebar.test.tsx",
+    "tests/e2e/slash-commands.test.tsx",
   ],
   { stdio: "inherit" },
 );

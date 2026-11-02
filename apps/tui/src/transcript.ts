@@ -156,6 +156,12 @@ export function projectEvent(event: ConversationEvent): EventProjection {
         visibleText(p) ??
         "Native context ended. The next message starts a new native session without the previous native context.",
     };
+  if (event.kind === "runtime.command_result" && p.observable === false)
+    return {
+      category: "USER_NOTICE",
+      label: "ACP command response · effect unconfirmed",
+      text: visibleText(p),
+    };
   if (["runtime.interrupted", "runtime.worker_lost"].includes(event.kind))
     return {
       category: "USER_NOTICE",

@@ -45,9 +45,11 @@ export function interruptTui(
   clearInput: () => boolean,
   exit: () => void,
 ) {
-  const selection = renderer.getSelection()?.getSelectedText();
+  const editor = renderer.currentFocusedEditor;
+  const selection = renderer.getSelection()?.getSelectedText() || editor?.getSelectedText();
   if (selection) {
     renderer.clearSelection();
+    editor?.clearSelection();
     copy(selection);
     return;
   }

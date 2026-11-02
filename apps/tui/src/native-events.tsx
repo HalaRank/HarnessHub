@@ -112,7 +112,9 @@ export function NativeEvents(props: {
     props.onModalChange?.(true);
   };
   useKeyboard((key) => {
+    if (key.defaultPrevented || key.propagationStopped) return;
     if (source() || props.disabled) return;
+    if ((key.ctrl || key.meta || key.shift) && !["pageup", "pagedown"].includes(key.name)) return;
     if (key.name === "t") {
       const candidates = model.rows
         .map((r, i) => ({ r, i }))

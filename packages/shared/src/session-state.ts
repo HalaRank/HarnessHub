@@ -27,13 +27,50 @@ export const shortcutInput = z
       .max(60),
   )
   .refine((value) => {
-    const reserved = new Set(["return", "shift+return", "escape", "ctrl+c", "ctrl+q"]);
+    // Context matters: reject editor/navigation chords even when all strings differ.
+    // Ctrl+B is the explicitly supported sidebar override of native cursor-left.
+    const editing = new Set([
+      "ctrl+a",
+      "ctrl+e",
+      "ctrl+f",
+      "ctrl+b",
+      "ctrl+w",
+      "ctrl+d",
+      "ctrl+k",
+      "ctrl+u",
+      "ctrl+h",
+      "ctrl+i",
+      "ctrl+m",
+      "ctrl+j",
+      "ctrl+shift+a",
+      "ctrl+shift+e",
+      "ctrl+shift+d",
+      "meta+a",
+      "meta+e",
+      "meta+d",
+      "meta+f",
+      "meta+b",
+      "meta+shift+a",
+      "meta+shift+e",
+    ]);
     const effective = { ...defaultShortcuts, ...value };
     return (
-      Object.values(value).every((key) => !reserved.has(key) && /^(ctrl|meta)\+/.test(key)) &&
-      new Set(Object.values(effective)).size === Object.values(effective).length
+      Object.entries(value).every(([action, key]) => {
+        if (action === "newline" && key === "meta+return") return true;
+        const name = key.split("+").at(-1) ?? "";
+        if (!/^(?:[a-z0-9]|f(?:[1-9]|1[0-2]))$/.test(name)) return false;
+        if (!/^(ctrl|meta)\+/.test(key) || /^(?:ctrl\+)?(?:meta\+)?(?:shift\+)?[cq]$/.test(key))
+          return false;
+        if (editing.has(key))
+          return (
+            (action === "sidebar" && key === "ctrl+b") ||
+            (action === "newline" && key === "ctrl+j") ||
+            (action === "changes" && key === "ctrl+d")
+          );
+        return true;
+      }) && new Set(Object.values(effective)).size === Object.values(effective).length
     );
-  }, "Use distinct Ctrl/Meta shortcuts; Enter, Shift+Enter, Esc and quit are reserved");
+  }, "Use distinct canonical Ctrl/Meta shortcuts; editor, navigation and quit keys are reserved (Changes is navigation-only)");
 export type Shortcuts = z.infer<typeof shortcutInput>;
 export const preferencesPatch = z
   .object({
