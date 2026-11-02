@@ -9,9 +9,18 @@ import {
   shortcutInput,
 } from "@harnesshub/shared";
 import { connect, watchSnapshot } from "@harnesshub/shared/client";
-import { createCliRenderer } from "@opentui/core";
+import { createCliRenderer, type ScrollBoxRenderable } from "@opentui/core";
 import { render, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid";
-import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
+import {
+  batch,
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js";
 import { type AgentAction, AgentPane } from "./agent-pane";
 import { interruptTui, useClipboard } from "./clipboard";
 import { type Command, CommandPalette } from "./command-palette";
@@ -93,6 +102,15 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     ]),
   );
   const row = () => rows()[selected()];
+  let projectTree: ScrollBoxRenderable | undefined;
+  createEffect(() => {
+    const index = selected();
+    const count = rows().length;
+    const visible = sidebarVisible();
+    dimensions();
+    if (visible && count)
+      projectTree?.afterLayout(() => projectTree?.scrollChildIntoView(`project-tree-row-${index}`));
+  });
   let initial = true;
   let recent: Preferences | undefined;
   let exiting = false;
@@ -455,14 +473,43 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
               when={rows().length > 0}
               fallback={<text>No projects. Press p to register an existing directory.</text>}
             >
-              <select
+              <scrollbox
+                ref={(element) => {
+                  projectTree = element;
+                }}
+                id="project-tree"
                 focused={false}
-                options={rows()}
-                selectedIndex={selected()}
-                onChange={(index) => setSelected(index)}
                 flexGrow={1}
-                showDescription={true}
-              />
+                minHeight={0}
+                scrollX={false}
+                scrollbarOptions={{ visible: false }}
+              >
+                <For each={rows()}>
+                  {(item, index) => (
+                    <box
+                      id={`project-tree-row-${index()}`}
+                      height={2}
+                      flexShrink={0}
+                      flexDirection="column"
+                      backgroundColor={selected() === index() ? "#263445" : "transparent"}
+                    >
+                      <text
+                        height={1}
+                        wrapMode="none"
+                        fg={item.value.conversation ? "#e6edf3" : "#80cbc4"}
+                      >
+                        {selected() === index() ? "▶ " : "  "}
+                        <Show when={!item.value.conversation} fallback={item.name}>
+                          <b>{item.name}</b>
+                        </Show>
+                      </text>
+                      <text height={1} wrapMode="none" fg="#8b949e">
+                        {`  ${item.description}`}
+                      </text>
+                    </box>
+                  )}
+                </For>
+              </scrollbox>
             </Show>
           </box>
         </Show>
