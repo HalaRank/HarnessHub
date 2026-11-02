@@ -9,7 +9,8 @@ import { HandoffStore, type Store } from "@harnesshub/storage";
 import { projectRoot } from "./index";
 
 // Await Git so slow repositories never block ACP events or approvals. Reservations below
-// protect ownership and Workspace bindings across awaits; Git is still the final safety check.
+// protect ownership and Workspace bindings across awaits. Cleanup retains files because
+// neither these reservations nor Git status can exclude external writers.
 const exec = promisify(execFile);
 async function git(cwd: string, args: string[]) {
   try {
@@ -50,7 +51,7 @@ export class Worktrees {
     this.root = join(dirname(store.sqlite.name), "worktrees");
     // Crashes leave evidence, never an implicitly usable workspace or an automatic deletion.
     for (const w of this.data.worktrees())
-      if (["CREATING", "REMOVING"].includes(w.status))
+      if (["CREATING", "REMOVING", "PRESERVING"].includes(w.status))
         this.data.updateWorktree(w.id, {
           status: "ERROR",
           error:
@@ -130,16 +131,19 @@ export class Worktrees {
   async cleanup(id: string, confirmed: boolean) {
     if (!confirmed) throw new AppError(400, "Worktree cleanup requires explicit confirmation");
     const w = this.data.worktree(id);
-    if (w.status === "REMOVED") return w;
+    if (["REMOVED", "RETAINED"].includes(w.status)) return w;
     if (this.operations.has(id) || this.store.workspaceOperations.has(w.path))
       throw new AppError(409, "Worktree operation already in progress");
     this.operations.add(id);
     this.store.workspaceOperations.add(w.path);
+    const retainedPath = join(this.root, "retained", id);
+    this.store.workspaceOperations.add(retainedPath);
     try {
       return await this.cleanupReserved(id);
     } finally {
       this.operations.delete(id);
       this.store.workspaceOperations.delete(w.path);
+      this.store.workspaceOperations.delete(retainedPath);
     }
   }
   private async cleanupReserved(id: string) {
@@ -165,6 +169,30 @@ export class Worktrees {
     )
       throw new AppError(409, "Worktree ownership/path verification failed");
     const entries = await registered(projectRoot(w.repositoryPath));
+    const retainedRoot = join(w.ownerRoot, "retained"),
+      retainedPath = join(retainedRoot, w.id);
+    const retained = entries.find((e) => e.path === retainedPath);
+    const finish = () => {
+      this.data.updateWorktree(id, {
+        path: retainedPath,
+        ownerRoot: retainedRoot,
+        status: "RETAINED",
+        error: "Files and branch retained. Inspect this directory before any manual removal.",
+      });
+      return this.data.worktree(id);
+    };
+    // A crash can occur after Git moves the directory but before SQLite records it.
+    // Reconcile only on an explicit retry, without deleting either path.
+    if (retained) {
+      if (
+        existsSync(w.path) ||
+        retained.branch !== `refs/heads/${w.branch}` ||
+        !existsSync(retainedPath) ||
+        realpathSync(retainedPath) !== retainedPath
+      )
+        throw new AppError(409, "Retained worktree ownership is uncertain; inspect both paths");
+      return finish();
+    }
     const entry = entries.find((e) => e.path === w.path);
     if (!entry) {
       if (existsSync(w.path))
@@ -183,6 +211,12 @@ export class Worktrees {
         409,
         "Worktree path, lock or branch no longer matches HarnessHub ownership",
       );
+    const flags = await git(w.path, ["ls-files", "-v", "-z"]);
+    if (flags.split("\0").some((entry) => /^[a-zS]/.test(entry)))
+      throw new AppError(
+        409,
+        "Index flags can hide changes (assume-unchanged/skip-worktree); cleanup refused",
+      );
     if (
       (
         await git(w.path, [
@@ -198,11 +232,22 @@ export class Worktrees {
         409,
         "Worktree is dirty (including untracked/ignored files); cleanup refused",
       );
-    this.data.updateWorktree(id, { status: "REMOVING" });
+    privateDir(retainedRoot);
+    if (realpathSync(retainedRoot) !== retainedRoot || existsSync(retainedPath))
+      throw new AppError(409, "Retained worktree destination is unsafe or already exists");
+    this.data.updateWorktree(id, { status: "PRESERVING" });
     try {
-      await git(w.repositoryPath, ["worktree", "remove", "--", w.path]);
-      this.data.updateWorktree(id, { status: "REMOVED", error: null });
-      return this.data.worktree(id);
+      // Move preserves even ignored/hidden data written after the preflight. Never
+      // follow this with remove: external editors can still hold open file handles.
+      await git(w.repositoryPath, ["worktree", "move", "--", w.path, retainedPath]);
+      if (
+        realpathSync(retainedPath) !== retainedPath ||
+        !(await registered(w.repositoryPath)).some(
+          (e) => e.path === retainedPath && e.branch === `refs/heads/${w.branch}`,
+        )
+      )
+        throw new AppError(409, "Retained worktree needs ownership inspection");
+      return finish();
     } catch (error) {
       this.data.updateWorktree(id, {
         status: "ERROR",

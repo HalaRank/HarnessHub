@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { testRender } from "@opentui/solid";
@@ -264,6 +264,12 @@ test("TUI creates independent Worktree with Ctrl+W; safe cleanup is independent 
     await screen.mockInput.typeText("CLEAN");
     screen.mockInput.pressEnter();
     await until(() => !existsSync(created?.workspacePath ?? ""));
+    await frame(screen, "Worktree retained:");
+    const retained = (
+      await api<{ id: string; status: string; path: string }[]>("/v1/worktrees")
+    ).find((w) => w.id === created?.worktreeId);
+    expect(retained?.status).toBe("RETAINED");
+    expect(readFileSync(join(retained?.path ?? "", "test.txt"), "utf8")).toBe("safe");
   } finally {
     screen.renderer.destroy();
   }

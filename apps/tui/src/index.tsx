@@ -549,8 +549,8 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           title="Managed Worktrees · Enter inspect cleanup · Esc cancel"
         >
           <text>
-            Conversation deletion preserves worktrees. Cleanup requires no bound Conversation, clean
-            files and matching ownership. Branches are preserved.
+            Cleanup moves an unbound, clean worktree to a retained directory. Files and branches
+            remain available for inspection; HarnessHub never physically deletes them.
           </text>
           <select
             focused
@@ -582,10 +582,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             flexDirection="column"
             title="Confirm safe Worktree cleanup · Esc cancel"
           >
-            <text>{`Remove managed directory: ${(w() as ManagedWorktree).path}`}</text>
+            <text>{`Retain managed directory: ${(w() as ManagedWorktree).path}`}</text>
             <text>{`Preserve branch: ${(w() as ManagedWorktree).branch}`}</text>
             <text>
-              Dirty, ignored, bound, locked or mismatched worktrees are refused. No force removal.
+              Dirty, hidden-index, bound, locked or mismatched worktrees are refused. Files are
+              retained.
             </text>
             <input
               focused={!busy()}
@@ -600,13 +601,15 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                   try {
                     const client = await connect();
                     if (!client) throw new Error("Daemon disconnected");
-                    await client.request(
+                    const retained = await client.request<ManagedWorktree>(
                       `/v1/worktrees/${(w() as ManagedWorktree).id}/cleanup`,
                       "POST",
                       { confirmed: true },
                     );
                     setForm(null);
-                    setNotice("Managed Worktree removed; branch preserved");
+                    setNotice(
+                      `Worktree ${retained.status.toLowerCase()}: ${retained.path}; files and branch preserved`,
+                    );
                   } catch (e) {
                     setError(e instanceof Error ? e.message : "Cleanup failed");
                   } finally {

@@ -520,7 +520,7 @@ test("slow Git creation/removal leaves Daemon responsive and reservations block 
       { confirmed: true },
       10000,
     );
-    await until(() => readFileSync(marker, "utf8") === "remove");
+    await until(() => readFileSync(marker, "utf8") === "move");
     await local.health();
     await assert.rejects(
       local.request(`/v1/worktrees/${w.id}/cleanup`, "POST", { confirmed: true }),
@@ -536,7 +536,9 @@ test("slow Git creation/removal leaves Daemon responsive and reservations block 
       local.request("/v1/daemon/stop", "POST", {}),
       (error) => error.status === 409,
     );
-    assert.equal((await removing).status, "REMOVED");
+    const retained = await removing;
+    assert.equal(retained.status, "RETAINED");
+    assert.equal(readFileSync(join(retained.path, "tracked.txt"), "utf8"), "safe fixture\n");
     assert.ok(git("branch", "--list", w.branch).includes(w.branch));
   } finally {
     run("daemon", "stop", "--cancel-active");
@@ -572,7 +574,7 @@ test("user-level installation is atomic, runnable from Home and refuses an activ
       timeout: 30000,
       stdio: ["ignore", "pipe", "pipe"],
     });
-  assert.equal(run("--version").trim(), "HarnessHub 0.6.0");
+  assert.equal(run("--version").trim(), "HarnessHub 0.6.1");
   run("daemon", "start");
   try {
     const file = join(isolated.XDG_STATE_HOME, "harnesshub/instance.json");
@@ -587,7 +589,7 @@ test("user-level installation is atomic, runnable from Home and refuses an activ
     run("daemon", "stop");
   }
   assert.match(install(), /Installed/);
-  assert.equal(run("--version").trim(), "HarnessHub 0.6.0");
+  assert.equal(run("--version").trim(), "HarnessHub 0.6.1");
 });
 
 test("unborn repositories and locked Worktrees fail safely without deleting files or branches", async () => {
@@ -621,9 +623,8 @@ test("unborn repositories and locked Worktrees fail safely without deleting file
   );
   assert.equal(readFileSync(join(w.path, "tracked.txt"), "utf8"), "preserve\n");
   git("worktree", "unlock", w.path);
-  assert.equal(
-    (await api(`/v1/worktrees/${w.id}/cleanup`, "POST", { confirmed: true })).status,
-    "REMOVED",
-  );
+  const retained = await api(`/v1/worktrees/${w.id}/cleanup`, "POST", { confirmed: true });
+  assert.equal(retained.status, "RETAINED");
+  assert.equal(readFileSync(join(retained.path, "tracked.txt"), "utf8"), "preserve\n");
   assert.ok(git("branch", "--list", w.branch).includes(w.branch));
 });

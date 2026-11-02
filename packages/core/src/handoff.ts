@@ -144,7 +144,15 @@ export class Handoffs {
     let internalId: string | undefined;
     let sent = false;
     try {
-      h = this.data.move(id, h.status, "GENERATING", { error: null, reportText: null });
+      h = this.data.move(id, h.status, "GENERATING", {
+        error: null,
+        reportText: null,
+        generatedAt: null,
+        degraded: false,
+        confirmedAt: null,
+        fallbackText: null,
+        fallbackSources: null,
+      });
       this.announce(h);
       const source = r.live.get(h.conversationId);
       if (

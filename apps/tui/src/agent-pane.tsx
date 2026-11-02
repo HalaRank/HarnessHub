@@ -192,6 +192,9 @@ export function AgentPane(props: {
               "current_mode_update",
               "runtime.interrupted",
               "runtime.worker_lost",
+              "runtime.context_ended",
+              "runtime.settings_pending",
+              "runtime.settings_settled",
             ].includes(e.kind),
           )
         )

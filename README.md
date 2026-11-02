@@ -2,7 +2,7 @@
 
 HarnessHub 是 Linux x64 / WSL2 的本地 TUI。全局命令是 **`hhu`**。
 
-当前交付 Phase 6（0.6.0，SQLite schema 6）：修复关停/源 Worker 清理边界，异步执行有安全预留的 Worktree Git 操作，补齐数据权限、日志轮转、事务迁移故障验证、对话导出与用户级安装锁。Codex、Claude、Grok 的本轮真实消息和取消通过；OpenCode 握手成功但消息超时，仍待排查。Windows Terminal / VS Code WSL 物理键鼠及系统剪贴板待人工验收，**尚未宣布 MVP 全部通过**。见 [Phase 6 报告](docs/acceptance/phase-6.md)、[安装/升级/恢复指南](docs/OPERATIONS.md) 和 [双终端人工清单](docs/acceptance/windows-terminal-checklist.md)。
+当前为 Phase 6 审计修复版 **0.6.1（SQLite schema 6）**：修复最终独立审计的 Worktree 文件安全、Worker 后代管理、上下文/设置状态、安装一致性及测试断言。Worktree 清理改为保留式移动，不自动物理删除文件；安装采用完整独立发布目录。原审计与修复验证分别见 [独立审计报告](docs/acceptance/official-final-audit.md) 和 [审计修复记录](docs/acceptance/phase-6-audit-remediation.md)。Windows 双终端人工验收及真实 Harness 未验证项仍须单独完成，**尚未宣布 MVP 全部通过**。
 
 ## 安装与运行
 
@@ -18,7 +18,7 @@ cd ~
 hhu
 ```
 
-安装器生成 `~/.local/bin/hhu`，不使用 sudo、不修改 Shell 配置。此目录须已在 PATH 中；如缺失，在当前 Shell 执行 `export PATH="$HOME/.local/bin:$PATH"`。启动器引用当前源码仓库构建产物及 Bun 绝对路径，请保留仓库和 `node_modules`。重新安装前运行 `hhu daemon stop`；安装器在构建前拒绝覆盖正在使用的 Daemon 构建。
+安装器生成 `~/.local/bin/hhu`，不使用 sudo、不修改 Shell 配置。此目录须已在 PATH 中；如缺失，在当前 Shell 执行 `export PATH="$HOME/.local/bin:$PATH"`。启动器引用仓库 `dist/releases/<UUID>` 中完整的独立发布产物及 Bun 绝对路径，请保留仓库、该发布目录和 `node_modules`。安装失败不会修改上一发布；旧发布和失败的 staging 目录保留供检查，不自动删除。重新安装前运行 `hhu daemon stop`；安装器在构建前拒绝覆盖正在使用的 Daemon 构建。
 
 ```bash
 hhu /absolute/project/path   # 注册/打开已存在的目录
@@ -45,13 +45,13 @@ Ctrl+P → Archive Conversation 只隐藏会话，View Archived Conversations �
 
 Ctrl+D 切换 Changes / Chat；Changes 用 ↑/↓ 选择文件、PgUp/PgDn 滚动、`g` 刷新、`y` 复制完整 Diff。面板读取绑定 Workspace 的 Git 状态，分别显示 Staged / Unstaged / Untracked，不推断 Agent 归属。不会提交、暂存或改写项目文件；Git 读取不是原子快照。单次 Git 输出超过 2 MiB 或查询超过 10 秒会明确报错；大 Diff 预览上限 96,000 字符，原文可在源视图阅读。非 Git 项目显示说明。工具提供的 Diff 单独内联展示。
 
-顶部模型只来自 ACP 实际返回值，没有暴露时明确显示。命令面板的 `ACP Native Session Options` 显示原生 mode/config 候选；只有用户选择并 Enter 才调用已有设置接口。权限审批仍只使用 Agent 原始选项，不增加自动审批。
+顶部模型只来自 ACP 实际返回值，没有暴露时明确显示。命令面板的 `ACP Native Session Options` 显示原生 mode/config 候选；只有用户选择并 Enter 才调用已有设置接口。设置请求超时后保持配置锁，阻止新 Turn；迟到响应会刷新真实选项，原生请求未结束时需要等待或经现有 stop API 明确确认强制关闭该 Session。权限审批仍只使用 Agent 原始选项，不增加自动审批。
 
 同一 Harness 连续发送复用当前原生会话。按 `h` 选择下一个 Harness，顶部显示当前 Harness → 待切换目标；仅选择没有模型调用，`x` 或命令面板 Cancel Pending Harness Switch 可回到源 Harness。向目标发送第一条消息时才在源原生会话生成结构化报告、持久化，再创建目标会话并注入历史背景与独立用户新消息。源执行、审批或取消未结束时不能开始目标任务。A → B → A 的第三段使用全新 A 会话，Workspace 不变；聊天中 Handoff 项可用 `e` 展开，`y` 看完整原文，`r` 查来源。
 
 报告失败时目标任务保持预留，按 `f` 或命令面板 Handoff Failure 查看材料、重试、确认降级继续或取消。只有用户明确选择确认，才使用可能不完整的材料发送目标任务。报告要求源 Agent 不使用工具；HarnessHub 无法沙箱化 Agent 自有工具，仍显示其原生审批。若观察到摘要期间使用工具，会显示警示并要求检查 Changes、确认降级后再接管。已发出但结果不明的任务为 UNCERTAIN，不能自动重发。接管提交以实际目标最终 ACP 响应为边界，之后安全释放源 Worker。
 
-独立 Worktree 在私有数据目录 `worktrees/<UUID>`，使用新分支 `hhu/<UUID>`，只对有 HEAD 的有效 Git 仓库创建。删除 Conversation 不删除 Worktree 或分支。Ctrl+P → Manage Worktrees / Safe Cleanup 选择记录，核对完整路径和分支，再输入 **CLEAN**：必须没有绑定的 Conversation（包括子目录会话）、脏文件、未跟踪/忽略文件、Git 锁或归属变化；只调用普通 `git worktree remove`，保留分支。创建部分失败的记录为 ERROR，须检查后独立清理；不删除未登记目录。
+独立 Worktree 在私有数据目录 `worktrees/<UUID>`，使用新分支 `hhu/<UUID>`，只对有 HEAD 的有效 Git 仓库创建。删除 Conversation 不删除 Worktree 或分支。Ctrl+P → Manage Worktrees / Safe Cleanup 选择记录，核对完整路径和分支，再输入 **CLEAN**：必须没有绑定的 Conversation（包括子目录会话）、脏文件、未跟踪/忽略文件、Git 锁或归属变化；拒绝 assume-unchanged/skip-worktree 等隐藏修改标志；将目录通过 Git move 移入 `worktrees/retained/<UUID>`，记录 RETAINED，保留文件、Git 登记和分支供检查，后续物理删除由用户核查外部写入者后手动处理。即使预检后出现新的 ignored 文件也不会被自动删除。创建部分失败的记录为 ERROR，须检查后独立清理；不删除未登记目录。
 
 不同 Conversation 可以在共享目录或独立 Worktree 并行执行。共享目录只有冲突提醒，没有全局工作区互斥或 Agent 修改归属推断。
 
@@ -59,7 +59,7 @@ TUI 顶部汇总所有 Project 的活动 Conversation、待审批会话/请求�
 
 每个 Conversation 的未发送草稿自动保存，切换/退出时补存，重新进入按 `m` 恢复。多客户端编辑同一草稿时，版本冲突会报错并保留本地文字，避免静默覆盖。若保存失败，正常退出会提示；明确按 Ctrl+Q 可放弃尚未保存的本地编辑并关闭 TUI。非正常终止可能丢失最后约 150ms 尚未保存的输入。发送前先持久化请求编号；重连只读历史，恢复未确认提交时保留相同编号，只有用户再次 Enter 才显式重试。Ctrl+C 清空未确认草稿时仍保留原 requestId；命令面板 Restore Unconfirmed Message 只恢复原文供检查，不自动发送。
 
-Daemon 仍存活时，重新打开 TUI 会连接同一 Worker/原生会话。Daemon 崩溃后，SQLite 历史恢复，未结束的 Turn 标为 UNCERTAIN，失效原生会话标为 INTERRUPTED，旧审批过期；不加载或自动重放任务。空闲会话下次显式发送会新建原生会话；UNCERTAIN 需先检查历史和工作区，再显式新建 Conversation。
+Daemon 仍存活时，重新打开 TUI 会连接同一 Worker/原生会话。正常停止 Daemon 或显式关闭原生会话都会持久显示上下文结束边界，后续消息创建的新原生会话没有旧原生上下文。Daemon 崩溃后，SQLite 历史恢复，未结束的 Turn 标为 UNCERTAIN，失效原生会话标为 INTERRUPTED，旧审批过期；不加载或自动重放任务。空闲会话下次显式发送会新建原生会话；UNCERTAIN 需先检查历史和工作区，再显式新建 Conversation。
 
 ## ACP 与脚本操作
 

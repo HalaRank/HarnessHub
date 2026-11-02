@@ -455,6 +455,28 @@ export class RuntimeStore {
         .set({ status: "INTERRUPTED", endedAt: Date.now() })
         .where(isNull(nativeSessions.endedAt))
         .run();
+      // Older builds closed idle native sessions without marking the Conversation.
+      // A clean shutdown still loses native context when no safe resume is implemented.
+      for (const conversation of this.store.listConversations()) {
+        if (
+          conversation.runtimeStatus !== "IDLE" ||
+          !conversation.activeNativeSessionId ||
+          this.active(conversation.id).length
+        )
+          continue;
+        const session = this.session(conversation.activeNativeSessionId);
+        if (session.endedAt === null) continue;
+        this.status(conversation.id, "INTERRUPTED");
+        this.append({
+          conversationId: conversation.id,
+          nativeSessionId: session.id,
+          turnId: null,
+          kind: "runtime.context_ended",
+          raw: null,
+          origin: "runtime",
+          payload: { nativeSessionRecovered: false, reason: "native_session_already_closed" },
+        });
+      }
       this.db
         .update(approvals)
         .set({ status: "EXPIRED", endedAt: Date.now() })

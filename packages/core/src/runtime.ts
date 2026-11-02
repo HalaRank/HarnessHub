@@ -7,7 +7,13 @@ import type {
   SessionConfigOption,
   SetSessionConfigOptionResponse,
 } from "@agentclientprotocol/sdk";
-import { builtinProfiles, executable, type WireMessage, Worker } from "@harnesshub/acp";
+import {
+  AcpTimeoutError,
+  builtinProfiles,
+  executable,
+  type WireMessage,
+  Worker,
+} from "@harnesshub/acp";
 import {
   AppError,
   type ChangeEvent,
@@ -32,6 +38,7 @@ export type Live = {
   session?: NewSessionResponse;
   turnId: string | null;
   configuring: boolean;
+  settingsOperation?: { timedOut: boolean };
 };
 type Pending = { live: Live; resolve: (result: RequestPermissionResponse) => void };
 export class Runtime {
@@ -589,50 +596,83 @@ export class Runtime {
       throw new AppError(409, "Create a live session first");
     if (this.data.active(conversationId).length || live.configuring)
       throw new AppError(409, "Wait for the active operation to finish");
+    const worker = live.worker,
+      session = live.session;
     live.configuring = true;
-    try {
-      if (input.kind === "mode") {
-        if (!live.session.modes?.availableModes.some((m) => m.id === input.modeId))
-          throw new AppError(400, "Mode not advertised by Agent");
-        await live.worker.bounded(
-          live.worker.agent.request("session/set_mode", {
-            sessionId: live.session.sessionId,
+    const operation = { timedOut: false };
+    live.settingsOperation = operation;
+    this.data.updateSession(live.id, { status: "CONFIGURING" });
+    this.status(conversationId, "PREPARING");
+    const apply = async () => {
+      try {
+        if (input.kind === "mode") {
+          if (!session.modes?.availableModes.some((m) => m.id === input.modeId))
+            throw new AppError(400, "Mode not advertised by Agent");
+          await worker.agent.request("session/set_mode", {
+            sessionId: session.sessionId,
             modeId: input.modeId,
-          }),
-        );
-        live.session.modes.currentModeId = input.modeId;
-      } else {
-        const option = live.session.configOptions?.find((o) => o.id === input.configId);
-        if (!option) throw new AppError(400, "Config option not advertised by Agent");
-        if (
-          option.type === "boolean"
-            ? typeof input.value !== "boolean"
-            : typeof input.value !== "string" ||
-              !option.options.some((entry) =>
-                "group" in entry
-                  ? entry.options.some((o) => o.value === input.value)
-                  : entry.value === input.value,
-              )
-        )
-          throw new AppError(400, "Value not advertised by Agent");
-        const request = {
-          sessionId: live.session.sessionId,
-          configId: input.configId,
-          ...(typeof input.value === "boolean"
-            ? { type: "boolean" as const, value: input.value }
-            : { value: input.value }),
-        };
-        const response = await live.worker.bounded(
-          live.worker.agent.request<SetSessionConfigOptionResponse>(
+          });
+          if (live.settingsOperation !== operation || worker.closed)
+            throw new AppError(409, "Native session ended during configuration");
+          session.modes.currentModeId = input.modeId;
+        } else {
+          const option = session.configOptions?.find((o) => o.id === input.configId);
+          if (!option) throw new AppError(400, "Config option not advertised by Agent");
+          if (
+            option.type === "boolean"
+              ? typeof input.value !== "boolean"
+              : typeof input.value !== "string" ||
+                !option.options.some((entry) =>
+                  "group" in entry
+                    ? entry.options.some((o) => o.value === input.value)
+                    : entry.value === input.value,
+                )
+          )
+            throw new AppError(400, "Value not advertised by Agent");
+          const request = {
+            sessionId: session.sessionId,
+            configId: input.configId,
+            ...(typeof input.value === "boolean"
+              ? { type: "boolean" as const, value: input.value }
+              : { value: input.value }),
+          };
+          const response = await worker.agent.request<SetSessionConfigOptionResponse>(
             "session/set_config_option",
             request,
-          ),
-        );
-        live.session.configOptions = response.configOptions;
+          );
+          if (live.settingsOperation !== operation || worker.closed)
+            throw new AppError(409, "Native session ended during configuration");
+          session.configOptions = response.configOptions;
+        }
+        return this.capabilities(live);
+      } finally {
+        // Only the original RPC settling releases this lock. A caller timeout does
+        // not cancel it. A confirmed stop invalidates this operation's ownership.
+        if (live.settingsOperation === operation) {
+          delete live.settingsOperation;
+          live.configuring = false;
+          if (!worker.closed) {
+            this.data.updateSession(live.id, { status: "READY" });
+            this.event(live, conversationId, "runtime.settings_settled", {
+              message:
+                "Native configuration request settled; refreshed session options are available.",
+            });
+            this.status(conversationId, "IDLE");
+          }
+        }
       }
-      return this.capabilities(live);
-    } finally {
-      live.configuring = false;
+    };
+    try {
+      return await worker.bounded(apply());
+    } catch (error) {
+      if (error instanceof AcpTimeoutError && live.settingsOperation === operation) {
+        operation.timedOut = true;
+        this.event(live, conversationId, "runtime.settings_pending", {
+          message:
+            "Native setting result is unknown; wait for the response or explicitly confirm force stop of this session. New Turns are blocked.",
+        });
+      }
+      throw error;
     }
   }
   async closeSession(conversationId: string, force: boolean) {
@@ -649,6 +689,10 @@ export class Runtime {
       );
     if (force && live.turnId) this.finish(live, "UNCERTAIN", "user_confirmed_force_stop");
     this.expire(live, "EXPIRED");
+    if (force && live.settingsOperation?.timedOut) {
+      delete live.settingsOperation;
+      live.configuring = false;
+    }
     if (live.configuring && !force)
       throw new AppError(409, "Session has an active configuration or stop operation");
     await this.disposeLive(live, force);
@@ -676,6 +720,16 @@ export class Runtime {
       }
       await live.worker?.stop(force);
       this.data.updateSession(live.id, { status: "CLOSED", endedAt: Date.now() });
+      const conversation = this.store.getConversation(live.conversationId);
+      if (conversation.activeNativeSessionId === live.id) {
+        this.event(live, live.conversationId, "runtime.context_ended", {
+          message:
+            "Native context ended. The next message starts a new native session without the previous native context.",
+          nativeSessionRecovered: false,
+        });
+        if (conversation.runtimeStatus !== "UNCERTAIN")
+          this.status(live.conversationId, "INTERRUPTED");
+      }
       if (this.live.get(live.conversationId) === live) this.live.delete(live.conversationId);
     } finally {
       live.configuring = false;

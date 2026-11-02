@@ -197,11 +197,17 @@ test("SQLite uses WAL, foreign keys, schema version, and private permissions", a
   assert.equal(db.pragma("journal_mode", { simple: true }), "wal");
   assert.equal(db.pragma("user_version", { simple: true }), 6);
   db.pragma("foreign_keys = ON");
-  assert.throws(() =>
-    db
-      .prepare("insert into conversations values (?, ?, ?, ?, ?, ?, ?, ?)")
-      .run("invalid", "absent", "x", "shared", "/tmp", "IDLE", 1, 1),
+  const insert = db.prepare(
+    "INSERT INTO conversations(id, project_id, title, workspace_mode, workspace_path, runtime_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   );
+  assert.throws(
+    () => insert.run("invalid", "absent", "x", "shared", "/tmp", "IDLE", 1, 1),
+    (error) => error.code === "SQLITE_CONSTRAINT_FOREIGNKEY",
+  );
+  db.transaction(() => {
+    insert.run("valid-fk", project.id, "valid", "shared", project.rootPath, "IDLE", 1, 1);
+    db.prepare("DELETE FROM conversations WHERE id=?").run("valid-fk");
+  })();
   db.close();
 });
 
@@ -237,7 +243,7 @@ test("doctor reports real runtime and native binding; CLI errors are explicit", 
     /Stop the running HarnessHub Daemon/,
   );
   assert.equal(statSync(cli).mtimeMs, buildTime, "installation guard must run before build");
-  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.6.0");
+  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.6.1");
   await assert.rejects(cliRun("daemon", "bogus"), /Usage/);
   await assert.rejects(cliRun(), /interactive terminal/);
 });

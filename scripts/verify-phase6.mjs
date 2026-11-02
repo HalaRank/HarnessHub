@@ -5,6 +5,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { Client } from "../dist/client/client.js";
+import { smokeEvidence } from "./smoke-evidence.mjs";
 
 process.umask(0o077);
 const root = mkdtempSync(join(tmpdir(), "hhu-real-phase6-"));
@@ -88,20 +89,23 @@ try {
       }
       const exported = await api(`/v1/conversations/${conversation.id}/export?format=debug`);
       result.eventCount = exported.events.length;
-      result.toolCalls = exported.events.filter((event) => event.kind === "tool_call").length;
-      result.agentText = exported.events
-        .filter((event) => event.kind === "agent_message_chunk" && event.turnId === turn.id)
-        .map((event) => event.payload?.content?.text ?? "")
-        .join("");
+      Object.assign(
+        result,
+        smokeEvidence(exported.events, result.smoke, root, "HARNESSHUB_PHASE6_世界"),
+      );
       result.cwdMatched =
         result.session.cwd === root &&
         exported.events.some(
-          (event) => event.raw?.method === "session/new" && event.raw.params.cwd === root,
+          (event) =>
+            event.nativeSessionId === result.smoke.nativeSessionId &&
+            event.raw?.method === "session/new" &&
+            event.raw.params.cwd === root,
         );
       result.smokeVerified =
         result.smoke.state === "COMPLETED" &&
         result.cwdMatched &&
-        result.toolCalls > 0 &&
+        result.smoke.stopReason === "end_turn" &&
+        result.toolsVerified &&
         result.agentText.includes("HARNESSHUB_PHASE6_世界");
       result.cancelVerified =
         result.cancel?.state === "CANCELLED" && result.cancel.stopReason === "cancelled";

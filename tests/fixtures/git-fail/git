@@ -5,9 +5,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 const args = process.argv.slice(2), real = process.env.HHU_REAL_GIT;
 if (!real) process.exit(99);
-if (args.includes("worktree") && (args.includes("add") || args.includes("remove")) && process.env.HHU_TEST_GIT_DELAY) {
-  writeFileSync(process.env.HHU_TEST_GIT_MARKER, args.includes("add") ? "add" : "remove");
+if (args.includes("worktree") && (args.includes("add") || args.includes("move")) && process.env.HHU_TEST_GIT_DELAY) {
+  writeFileSync(process.env.HHU_TEST_GIT_MARKER, args.includes("add") ? "add" : "move");
   await new Promise((resolve) => setTimeout(resolve, Number(process.env.HHU_TEST_GIT_DELAY)));
+}
+if (args.includes("worktree") && args.includes("move") && process.env.HHU_TEST_GIT_LATE_IGNORED) {
+  writeFileSync(join(args[args.indexOf("--") + 1], "late.ignored"), "precious after preflight\n");
 }
 if (args.includes("worktree") && args.includes("add")) {
   const path = args[args.indexOf("--") + 1], branch = args[args.indexOf("-b") + 1];

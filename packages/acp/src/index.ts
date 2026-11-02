@@ -14,6 +14,13 @@ import {
   type RequestPermissionResponse,
 } from "@agentclientprotocol/sdk";
 import { AppError, type HarnessProfile, VERSION } from "@harnesshub/shared";
+import { ProcessGroup } from "./process-group";
+
+export class AcpTimeoutError extends AppError {
+  constructor() {
+    super(503, "ACP operation timed out; it was not retried");
+  }
+}
 
 export function executable(command: string, env = process.env): string | null {
   for (const candidate of command.includes("/")
@@ -61,7 +68,8 @@ export class Worker {
   readonly child: ChildProcessWithoutNullStreams;
   readonly connection: ClientConnection;
   readonly exited: Promise<void>;
-  exitedConfirmed = false;
+  private childClosed = false;
+  private readonly group: ProcessGroup | undefined;
   closed = false;
   private stopping = false;
   stderrBytes = 0;
@@ -75,6 +83,7 @@ export class Worker {
     const command = executable(profile.command, env);
     if (!command) throw new AppError(400, `ACP executable unavailable: ${profile.command}`);
     this.child = spawn(command, profile.args, { cwd, env, stdio: "pipe", detached: true });
+    this.group = this.child.pid ? new ProcessGroup(this.child.pid) : undefined;
     // Agent stderr is drained but never copied to application logs (it can contain secrets).
     this.child.stderr.on("data", (chunk: Buffer) => {
       this.stderrBytes += chunk.length;
@@ -88,7 +97,7 @@ export class Worker {
     this.child.on("error", failed);
     // close follows stdio drain; exit can fire while final ACP messages remain unread.
     this.child.on("close", () => {
-      this.exitedConfirmed = true;
+      this.childClosed = true;
       failed();
     });
     this.child.stdin.on("error", failed);
@@ -135,6 +144,9 @@ export class Worker {
   get agent() {
     return this.connection.agent;
   }
+  get exitedConfirmed() {
+    return this.childClosed && (!this.group || this.group.empty());
+  }
   async initialize(): Promise<InitializeResponse> {
     const response = await this.bounded(
       this.agent.request("initialize", {
@@ -154,10 +166,7 @@ export class Worker {
       return await Promise.race([
         promise,
         new Promise<never>((_, reject) => {
-          timer = setTimeout(
-            () => reject(new AppError(503, "ACP operation timed out; it was not retried")),
-            timeout,
-          );
+          timer = setTimeout(() => reject(new AcpTimeoutError()), timeout);
         }),
       ]);
     } finally {
@@ -172,35 +181,23 @@ export class Worker {
     this.connection.close();
     this.child.stdin.end();
     const wait = async (ms: number) => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const result = await Promise.race([
-        this.exited.then(() => true),
-        new Promise<false>((resolve) => {
-          timer = setTimeout(() => resolve(false), ms);
-        }),
-      ]);
-      clearTimeout(timer);
-      return result;
-    };
-    const signal = (sig: NodeJS.Signals) => {
-      if (!this.child.pid) return;
-      try {
-        process.kill(-this.child.pid, sig);
-      } catch {
-        /* Process group already exited. */
-      }
+      const deadline = Date.now() + ms;
+      do {
+        if (this.exitedConfirmed) return true;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      } while (Date.now() < deadline);
+      return this.exitedConfirmed;
     };
     let drained = await wait(1000);
     if (!drained) {
-      signal("SIGTERM");
+      this.group?.signal("SIGTERM");
       drained = await wait(4000);
       if (!drained && force) {
-        signal("SIGKILL");
+        this.group?.signal("SIGKILL");
         drained = await wait(1000);
       }
     }
-    // An adapter can exit while its descendants still hold ACP pipes open. Keep the
-    // Worker handle until close confirms the entire stdio lifetime has ended.
+    // Retain ownership until both stdio and the owned Linux session are quiescent.
     if (!drained || !this.exitedConfirmed)
       throw new AppError(
         409,

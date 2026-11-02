@@ -326,10 +326,10 @@ test("isolated worktrees bind actual cwd, preserve on Conversation deletion, rej
   await conflict(api(`/v1/worktrees/${w.id}/cleanup`, "POST", { confirmed: true }));
   unlinkSync(join(w.path, "ignored-file"));
   await assert.rejects(api(`/v1/worktrees/${w.id}/cleanup`, "POST", {}), (e) => e.status === 400);
-  assert.equal(
-    (await api(`/v1/worktrees/${w.id}/cleanup`, "POST", { confirmed: true })).status,
-    "REMOVED",
-  );
+  const retained = await api(`/v1/worktrees/${w.id}/cleanup`, "POST", { confirmed: true });
+  assert.equal(retained.status, "RETAINED");
+  assert.equal(readFileSync(join(retained.path, "tracked.txt"), "utf8"), "source\n");
+  assert.ok(git(root, "worktree", "list", "--porcelain").includes(retained.path));
   assert.equal(existsSync(w.path), false);
   assert.equal(git(root, "rev-parse", "--verify", `refs/heads/${w.branch}`).trim().length, 40);
   assert.ok(existsSync(d.workspacePath));

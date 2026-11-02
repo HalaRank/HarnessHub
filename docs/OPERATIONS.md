@@ -1,6 +1,6 @@
 # HarnessHub Linux / WSL2 安装、升级与故障恢复
 
-当前发行源码版本 0.6.0、SQLite schema 6。仅 Linux x64 / WSL2；TUI 用 Bun、Daemon 用 Node。安装不需要 sudo，没有 npm 公开包、在线更新或 Web UI。
+当前发行源码版本 0.6.1、SQLite schema 6。仅 Linux x64 / WSL2；TUI 用 Bun、Daemon 用 Node。安装不需要 sudo，没有 npm 公开包、在线更新或 Web UI。
 
 ## 首次安装
 
@@ -16,7 +16,7 @@ hhu doctor
 hhu
 ```
 
-安装器把启动器原子写入 `~/.local/bin/hhu`，保留源码仓库与 `node_modules`；启动器引用仓库构建产物和 Bun 的绝对路径。不会自动修改 Shell 配置；需要长期生效时由用户把上述 PATH 添加到自己的 Shell 配置。
+安装器把启动器原子写入 `~/.local/bin/hhu`，保留源码仓库与 `node_modules`；启动器引用仓库 `dist/releases/<UUID>` 内的完整发布和 Bun 的绝对路径。每次先在 `.staging-<UUID>` 构建全部产物，再切换发布与 launcher；失败或中断不会修改旧 launcher 引用的发布。旧发布和失败 staging 保留供检查，不自动删除，开发用 `bun run build` 也不会覆盖已安装的独立发布。不会自动修改 Shell 配置；需要长期生效时由用户把上述 PATH 添加到自己的 Shell 配置。
 
 无参数 `hhu` 打开全局 Project → Conversation 界面；只有 `hhu .` / `hhu /absolute/path` 才显式注册启动目录。Agent cwd 始终来自 Conversation 的 Project root 或独立 Worktree。
 
@@ -41,9 +41,13 @@ hhu daemon stop --cancel-active
 
 普通 stop 拒绝活动 Turn；`--cancel-active` 请求原生取消、等待最终响应和尾部事件，再合作式释放 Worker。取消超时、源 Worker 清理失败或进程仍未确认结束时，命令报错，Daemon 保留，不能据此假定进程已经退出。TUI 的 Ctrl+C / q 只退出 TUI；不会取消 Agent 或停止 Daemon。
 
+正常停止或显式关闭空闲 Session 也会结束原生上下文并显示 INTERRUPTED；SQLite 历史保留，但下一条消息不会自动携带旧原生内部状态。原生设置超时不是取消证明：配置锁继续阻止新 Turn，迟到响应后才刷新选项；永不返回时可使用已鉴权的 `POST /v1/conversations/:id/session/stop`，仅在用户明确决定后提交 `{ "force": true, "confirmed": true }`。没有自动重试设置或任务。
+
+Worker 关闭分别等待 stdio 和同一 Linux session 中的进程组结束；拒绝退出则保留句柄，不默认 SIGKILL。HarnessHub 不是进程沙箱，Agent 主动通过 setsid 脱离 session 的独立服务仍需按原生工具的生命周期核查。
+
 安全停止后更新源码，再运行 `bun install --frozen-lockfile` 和 `bun run install:local`。安装器在构建及写启动器期间持有同一 Daemon `flock`：活动、启动中、无响应或缺少实例元数据但仍持锁的 Daemon 均会阻止安装；另一终端也不能在此时启动 Daemon。当前版本与旧版本不混连；匹配协议且通过 token/实例身份检查的旧 Daemon 可被正常请求停止。
 
-0.5.0 → 0.6.0 不改变 schema 6；schema 5 → 6 使用已有增量迁移。迁移前备份到同目录 `harnesshub.db.backup-*`（0600）。锁定的 Drizzle 在一个事务中执行全部待迁移 SQL；SQL 失败会回滚，旧库与备份均保留，不自动覆盖库文件。高于支持版本的 schema 拒绝打开。备份不会自动清除，请按自己的保留策略妥善管理。
+0.5.0 / 0.6.0 → 0.6.1 不改变 schema 6；schema 5 → 6 使用已有增量迁移。迁移前备份到同目录 `harnesshub.db.backup-*`（0600）。锁定的 Drizzle 在一个事务中执行全部待迁移 SQL；SQL 失败会回滚，旧库与备份均保留，不自动覆盖库文件。高于支持版本的 schema 拒绝打开。备份不会自动清除，请按自己的保留策略妥善管理。
 
 ## 导出与隐私
 
@@ -56,7 +60,7 @@ hhu agent export <conversationId> debug conversation-debug.json
 
 所有导出、SQLite 和备份都可能含敏感对话、源码、路径或 Agent 自有输出。只对结构化凭据字段脱敏；不会扫描改写普通 Markdown、代码或工具字符串，也不能保证其中没有用户主动提供的秘密。导出不加入 Daemon Token 或 Profile 环境值。默认日志只写固定诊断事件，不输出 Prompt、工具结果或 Worker stderr；每类日志约 1 MiB 轮转，保留 5 个历史文件。
 
-Conversation 归档/恢复只改应用元数据；确认删除会级联清理应用历史和草稿，保留用户源码、Git 分支及 Worktree。Worktree 清理是另一项操作：核对路径/分支，输入 CLEAN，拒绝脏/未跟踪/忽略文件、锁、关联 Conversation 和归属不符；只用普通 Git remove，不删除分支、不使用 force。
+Conversation 归档/恢复只改应用元数据；确认删除会级联清理应用历史和草稿，保留用户源码、Git 分支及 Worktree。Worktree 清理是另一项操作：核对路径/分支，输入 CLEAN，拒绝脏/未跟踪/忽略文件、锁、关联 Conversation 和归属不符；拒绝 assume-unchanged/skip-worktree 等隐藏修改标志；通过 Git move 移入 `worktrees/retained/<UUID>` 并记录 RETAINED，保留文件、Git 登记和分支，不自动物理删除。请先核查外部编辑器/构建进程与完整文件，再自行决定手动移除。Git 移动成功但落库前中断时会显示 ERROR，明确重试 cleanup 可核对保留目录并恢复记录。
 
 ## 故障诊断与恢复备份
 
@@ -64,7 +68,7 @@ Conversation 归档/恢复只改应用元数据；确认删除会级联清理应
 - `hhu daemon logs`：查看有限诊断日志。完整协议来源在 Raw Events / Debug、SQLite 或显式 debug 导出中。
 - 不可达或版本不匹配时，不向元数据中的 PID 发送信号；先用匹配版本的 hhu 检查。不要删除锁文件来绕过现有进程。
 - Daemon 崩溃只恢复 SQLite 历史。活动 Turn 可能为 UNCERTAIN、Session 为 INTERRUPTED、审批过期；不要重放未知结果的任务。先核查原进程与 Changes，必要时显式新建 Conversation。
-- OpenCode 本轮真实任务握手后无输出超时，原生取消返回 `end_turn` 而非 `cancelled`；目前不把其消息/取消验收记为通过。详见 Phase 6 报告。
+- OpenCode 全隔离纯文本/取消的失败证据见原独立审计；0.6.1 的真实握手和正常关闭不代表消息/工具/取消已重新通过。详见审计修复记录。
 
 只有在确认 Daemon 与旧 Worker 安全停止、持有同一内核锁时才恢复备份。以下例子保留失败库及 sidecar，不删除原文件；将 backup 改成实际备份的完整路径：
 

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   chmodSync,
   existsSync,
@@ -67,13 +68,27 @@ if (existsSync(target) && lstatSync(target).isSymbolicLink())
   throw new Error(`Refusing to overwrite a symlink launcher: ${target}`);
 if (existsSync(target) && !readFileSync(target, "utf8").includes("# HarnessHub local launcher"))
   throw new Error(`Refusing to overwrite an existing unrelated executable: ${target}`);
-const build = spawnSync(process.execPath, ["run", "build"], { stdio: "inherit" });
-if (build.status !== 0) throw new Error("Build failed; launcher was not changed");
+const releases = resolve("dist/releases");
+mkdirSync(releases, { recursive: true, mode: 0o700 });
+const releaseId = randomUUID(),
+  staging = join(releases, `.staging-${releaseId}`),
+  release = join(releases, releaseId);
+mkdirSync(staging, { mode: 0o700 });
+const build = spawnSync(process.execPath, ["run", "build", "--outdir", staging], {
+  stdio: "inherit",
+});
+if (build.status !== 0)
+  throw new Error(
+    `Build failed; previous launcher and release were not changed. Inspect ${staging}`,
+  );
+// The old launcher references an immutable complete release, including its daemon
+// and migrations. Neither a failed install nor a later development build mutates it.
+renameSync(staging, release);
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 const staged = `${target}.${process.pid}.tmp`;
 writeFileSync(
   staged,
-  `#!/bin/sh\n# HarnessHub local launcher\nexec ${quote(process.execPath)} ${quote(resolve("dist/cli/hhu.js"))} "$@"\n`,
+  `#!/bin/sh\n# HarnessHub local launcher\nexec ${quote(process.execPath)} ${quote(join(release, "cli/hhu.js"))} "$@"\n`,
   { mode: 0o755, flag: "wx" },
 );
 chmodSync(staged, 0o755);
