@@ -154,7 +154,7 @@ test("oversized Git output is an explicit error and does not silently truncate",
 });
 
 test("sidebar and validated shortcut preferences persist across daemon restart in private SQLite", async () => {
-  const shortcuts = { palette: "ctrl+o", sidebar: "ctrl+s", newline: "meta+return" };
+  const shortcuts = { palette: "ctrl+s", sidebar: "ctrl+v", newline: "meta+return" };
   await api("/v1/preferences", "PATCH", {
     lastConversationId: c.id,
     showSidebar: false,

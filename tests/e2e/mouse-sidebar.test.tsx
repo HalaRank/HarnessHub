@@ -118,7 +118,7 @@ async function command(screen: Screen, text: string) {
 }
 async function current(screen: Screen, conversation: Conversation) {
   await frame(screen, `Conversation · ${conversation.title} · Workspace`);
-  await frame(screen, "Alt+M Message");
+  await frame(screen, "Ctrl+L Message");
 }
 
 test("sidebar spacing preserves names and keeps project headings more prominent", async () => {
@@ -259,7 +259,8 @@ test("large sidebar wheel is isolated from chat, selection and metadata refresh;
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 30 });
   try {
     await current(screen, a);
-    await frame(screen, "completed · Alt+E expand/collapse");
+    await frame(screen, "Exact Native Tool Name");
+    await frame(screen, "completed");
     const tree = node(screen, "project-tree") as ScrollBoxRenderable;
     const history = node(screen, "native-history") as ScrollBoxRenderable;
     history.scrollTo(4);
@@ -312,18 +313,18 @@ test("mouse navigation preserves unsent drafts, scroll and manual tools; backgro
   try {
     await current(screen, a);
     await frame(screen, "Exact Native Tool Name");
-    screen.mockInput.pressKey("t", { meta: true });
-    screen.mockInput.pressKey("e", { meta: true });
-    await frame(screen, "Native details:");
+    screen.mockInput.pressKey("t", { ctrl: true });
+    screen.mockInput.pressKey("e", { ctrl: true });
+    await frame(screen, "Show less");
     const history = node(screen, "native-history") as ScrollBoxRenderable;
     history.scrollTo(4);
     await screen.renderOnce();
     const position = history.scrollTop;
-    screen.mockInput.pressKey("m", { meta: true });
+    screen.mockInput.pressKey("l", { ctrl: true });
     await screen.mockInput.typeText("Alpha unsent\n草稿");
     await click(screen, conversationKey(b.id), 5);
     await current(screen, b);
-    screen.mockInput.pressKey("m", { meta: true });
+    screen.mockInput.pressKey("l", { ctrl: true });
     await screen.mockInput.typeText("Beta draft");
     await click(screen, conversationKey(a.id), 5);
     await current(screen, a);
@@ -333,7 +334,7 @@ test("mouse navigation preserves unsent drafts, scroll and manual tools; backgro
     );
     expect((node(screen, "native-history") as ScrollBoxRenderable).scrollTop).toBe(position);
     (node(screen, "native-history") as ScrollBoxRenderable).scrollTo(Infinity);
-    await frame(screen, "Native details:"); // manual expansion survived remount
+    await frame(screen, "Show less"); // manual expansion survived remount
     await click(screen, conversationKey(b.id), 5);
     await current(screen, b);
     await frame(screen, "Beta draft");

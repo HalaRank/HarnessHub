@@ -107,7 +107,7 @@ export function ChangesPane(props: {
   return (
     <box flexGrow={1} flexDirection="column" gap={1}>
       <text fg="#ffcc80">
-        Changes · Conversation workspace · No Agent attribution · Alt+G refresh · Alt+Y copy diff
+        Changes · Conversation workspace · No Agent attribution · Ctrl+R refresh · Ctrl+Y copy diff
       </text>
       <Show when={state()}>
         {(s) => (
@@ -151,8 +151,8 @@ export function ChangesPane(props: {
               <UnifiedDiff value={section.text.slice(0, 96000)} path={patch()?.path ?? ""} />
               <Show when={section.text.length > 96000}>
                 <text>
-                  Diff preview limited to 96,000 characters. Press Alt+Y for complete source pages /
-                  copy.
+                  Diff preview limited to 96,000 characters. Press Ctrl+Y for complete source pages
+                  / copy.
                 </text>
               </Show>
             </box>

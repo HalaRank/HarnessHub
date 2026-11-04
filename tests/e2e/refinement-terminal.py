@@ -55,9 +55,9 @@ def until(check, label):
 
 try:
     def ready():
-        return b"Alt+M Message" in re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", bytes(output))
+        return b"Ctrl+X Cancel Turn" in re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", bytes(output))
     until(ready, "TUI editor did not load")
-    os.write(fd, b"\x1bmclear by SIGINT")
+    os.write(fd, b"\x0cclear by SIGINT")
     draft_path = "/v1/conversations/" + cid + "/draft"
     until(lambda: api(draft_path)["text"] == "clear by SIGINT", "first draft not saved")
     os.kill(pid, signal.SIGINT)
@@ -82,7 +82,7 @@ try:
     print(json.dumps({"realLinuxPty": True, "sigintClears": True, "rawCtrlCClears": True, "secondCtrlCExits": True}), flush=True)
 finally:
     if not finished:
-        os.write(fd, b"\x1bq")
+        os.write(fd, b"\x11")
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
             drain()

@@ -3,7 +3,7 @@ import { RGBA, TextAttributes } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { NativeEvents } from "../../apps/tui/src/native-events";
 import { sourceParts } from "../../apps/tui/src/rich-content";
-import { Transcript } from "../../apps/tui/src/transcript";
+import { newViewState, Transcript } from "../../apps/tui/src/transcript";
 import type { ConversationEvent } from "../../packages/shared/src/index";
 
 const event = (
@@ -70,7 +70,7 @@ test("Agent replies and public thinking have distinct gutters and headings witho
           line.spans
             .map((span) => span.text)
             .join("")
-            .includes(`${label} · #`),
+            .includes(label),
         );
         if (!heading)
           throw new Error(`Missing ${label} at width ${width}\n${screen.captureCharFrame()}`);
@@ -168,7 +168,7 @@ test("styled streaming replies wrap and copy original Markdown while user backgr
     expect(replyLine?.spans.some((span) => span.bg.equals(RGBA.fromHex("#2d2d30")))).toBe(false);
     screen.mockInput.pressKey("]");
     await frame(screen, "▶ Agent");
-    screen.mockInput.pressKey("y", { meta: true });
+    screen.mockInput.pressKey("y", { ctrl: true });
     await frame(screen, "Original Markdown / text");
     screen.mockInput.pressEnter();
     await waitFor(() => copied.length > 0);
@@ -188,7 +188,9 @@ test("native tool accents follow streaming status and approvals while preserving
         toolCallId: "styled-tool",
         title: "NativeExact",
         status: "pending",
+        rawInput: { command: "NATIVE_PARAMETERS" },
         rawOutput: "NATIVE_OUTPUT",
+        content: [{ type: "content", content: { type: "text", text: "NATIVE_CONTENT" } }],
       }),
     ]);
     const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
@@ -226,32 +228,161 @@ test("native tool accents follow streaming status and approvals while preserving
             (span) => span.text.includes("NativeExact") && span.fg.equals(RGBA.fromHex(color)),
           ),
         ).toBe(true);
-        expect(
-          screen
-            .captureSpans()
-            .lines.some((line) =>
-              line.spans.some(
-                (span) => span.text.includes("│") && span.fg.equals(RGBA.fromHex(color)),
-              ),
-            ),
-        ).toBe(true);
-        if (status === "completed")
-          expect(screen.captureCharFrame()).not.toContain("NATIVE_OUTPUT");
-        else await frame(screen, "NATIVE_OUTPUT");
+        await frame(screen, "NATIVE_CONTENT");
+        expect(screen.captureCharFrame()).not.toContain(" · #");
+        for (const detail of ["NATIVE_PARAMETERS", "NATIVE_OUTPUT", "Parameters"])
+          expect(screen.captureCharFrame()).not.toContain(detail);
       }
-      screen.mockInput.pressKey("t", { meta: true });
+      screen.mockInput.pressKey("t", { ctrl: true });
       await frame(screen, "▶ NativeExact");
-      screen.mockInput.pressKey("e", { meta: true });
+      screen.mockInput.pressKey("e", { ctrl: true });
+      await frame(screen, "NATIVE_OUTPUT");
+      await frame(screen, "NATIVE_PARAMETERS");
+      await frame(screen, "NATIVE_CONTENT");
+      model.append([
+        event(++seq, "approval.decided", { approvalId: "styled-approval", optionId: "deny" }),
+        event(++seq, "tool_call_update", { toolCallId: "styled-tool", status: "completed" }),
+      ]);
+      await frame(screen, "NATIVE_OUTPUT");
+      screen.mockInput.pressKey("e", { ctrl: true });
       await screen.renderOnce();
       expect(screen.captureCharFrame()).not.toContain("NATIVE_OUTPUT");
-      screen.mockInput.pressKey("e", { meta: true });
-      await frame(screen, "NATIVE_OUTPUT");
+      model.append([
+        event(++seq, "tool_call_update", { toolCallId: "styled-tool", status: "failed" }),
+      ]);
+      await frame(screen, "failed");
+      expect(screen.captureCharFrame()).not.toContain("NATIVE_OUTPUT");
       const tool = model.rows[0];
       if (!tool) throw new Error("Native tool missing from transcript");
       expect(sourceParts(model.source(tool), tool.value().tool)).toContainEqual({
         name: "Native tool output",
         text: "NATIVE_OUTPUT",
       });
+    } finally {
+      await screen.dispose();
+    }
+  }
+});
+
+test("historical terminal and Guardian Review details stay folded without changing native events", async () => {
+  const events = [
+    event(1, "tool_call", {
+      toolCallId: "terminal-call",
+      title: "Native terminal command",
+      status: "in_progress",
+      rawInput: { command: "TERMINAL_PARAMETERS" },
+      content: [{ type: "terminal", terminalId: "native-terminal-id" }],
+    }),
+    event(2, "tool_call", {
+      toolCallId: "guardian-review",
+      title: "Guardian Review",
+      status: "failed",
+      rawInput: { reviewId: "GUARDIAN_PARAMETERS" },
+      rawOutput: { review: { status: "aborted", rationale: "GUARDIAN_RESULT" } },
+    }),
+  ];
+  const model = new Transcript(),
+    view = newViewState();
+  const original = JSON.stringify(events);
+  model.append(events);
+  let screen = await testRender(() => <NativeEvents model={model} view={view} disabled={false} />, {
+    width: 120,
+    height: 30,
+  });
+  try {
+    await frame(screen, "Guardian Review");
+    expect(screen.captureCharFrame()).toContain("in_progress");
+    expect(screen.captureCharFrame()).toContain("failed");
+    for (const detail of [
+      "TERMINAL_PARAMETERS",
+      "native-terminal-id",
+      "GUARDIAN_PARAMETERS",
+      "GUARDIAN_RESULT",
+    ])
+      expect(screen.captureCharFrame()).not.toContain(detail);
+    screen.mockInput.pressKey("e", { meta: true });
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).not.toContain("GUARDIAN_RESULT");
+    screen.mockInput.pressKey("e", { ctrl: true });
+    await frame(screen, "TERMINAL_PARAMETERS");
+    expect(screen.captureCharFrame()).not.toContain("native-terminal-id");
+    screen.mockInput.pressKey("t", { ctrl: true });
+    screen.mockInput.pressKey("e", { ctrl: true });
+    await frame(screen, "Show less");
+    expect(screen.captureCharFrame()).not.toContain("GUARDIAN_RESULT");
+    await screen.dispose();
+    expect(Object.values(view.manual)).toEqual([true, true]);
+    screen = await testRender(() => <NativeEvents model={model} view={view} disabled={false} />, {
+      width: 120,
+      height: 30,
+    });
+    await frame(screen, "Show less");
+    screen.mockInput.pressKey("r", { ctrl: true });
+    await frame(screen, "GUARDIAN_PARAMETERS");
+    expect(model.events).toEqual(events);
+    expect(JSON.stringify(events)).toBe(original);
+  } finally {
+    await screen.dispose();
+  }
+});
+
+test("tool summaries bound multiline commands and stdout without exposing protocol data", async () => {
+  const title = `apply_patch <<'PATCH'\nPATCH_BODY_ONLY\n${"+ native patch line\n".repeat(200)}PATCH`;
+  const output = `${"hidden old output\n".repeat(197)}  tail first\n${"long native output ".repeat(50)}\nTAIL_LAST\n`;
+  const events = [
+    event(1, "tool_call", {
+      toolCallId: "internal-tool-id",
+      title,
+      status: "failed",
+      rawInput: { command: title, cwd: "/native-workspace", reviewId: "PRIVATE_REVIEW_ID" },
+      rawOutput: { review: { status: "aborted", rationale: "PRIVATE_REVIEW_RESULT" } },
+      _meta: { terminal_info: { terminal_id: "internal-terminal-id", cwd: "/native-workspace" } },
+    }),
+    event(2, "tool_call_update", {
+      toolCallId: "internal-tool-id",
+      _meta: { terminal_output_delta: { terminal_id: "internal-terminal-id", data: output } },
+    }),
+    textEvent(3, "VISIBLE_AGENT_REPLY"),
+  ];
+  const original = JSON.stringify(events);
+  for (const width of [100, 32]) {
+    const model = new Transcript();
+    model.append(events);
+    const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+      width,
+      height: 18,
+    });
+    try {
+      await frame(screen, "VISIBLE_AGENT_REPLY");
+      await frame(screen, "TAIL_LAST");
+      const rendered = screen.captureCharFrame();
+      for (const visible of ["failed", "tail first", "+ 197 lines"])
+        expect(rendered).toContain(visible);
+      for (const hidden of [
+        "PATCH_BODY_ONLY",
+        "hidden old output",
+        "internal-tool-id",
+        "internal-terminal-id",
+        "PRIVATE_REVIEW_ID",
+        "PRIVATE_REVIEW_RESULT",
+        "Parameters",
+        "Native details:",
+        "expand/collapse",
+      ])
+        expect(rendered).not.toContain(hidden);
+      const tool = model.rows[0];
+      if (!tool) throw new Error("Native tool missing");
+      expect(
+        sourceParts(model.source(tool), tool.value().tool, tool.value().terminals),
+      ).toContainEqual({
+        name: "Terminal internal-terminal-id output",
+        text: output,
+      });
+      screen.mockInput.pressKey("r", { ctrl: true });
+      await frame(screen, "Original source");
+      expect(JSON.parse(model.source(tool)).title).toBe(title);
+      expect(model.events).toEqual(events);
+      expect(JSON.stringify(events)).toBe(original);
     } finally {
       await screen.dispose();
     }

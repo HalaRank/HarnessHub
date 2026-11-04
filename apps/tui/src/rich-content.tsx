@@ -1,6 +1,6 @@
 import { SyntaxStyle } from "@opentui/core";
 import { useRenderer } from "@opentui/solid";
-import { For, onCleanup, Show } from "solid-js";
+import { createMemo, For, onCleanup, Show } from "solid-js";
 import { object, pretty, type TerminalContent } from "./transcript";
 
 export function useSyntax() {
@@ -88,77 +88,98 @@ export function nativeDiff(value: unknown) {
 export function ToolContent(props: {
   tool: Record<string, unknown>;
   terminals?: Record<string, TerminalContent>;
+  expanded?: boolean;
 }) {
+  const blocks = () => (Array.isArray(props.tool.content) ? props.tool.content : []);
+  const preview = createMemo(() => {
+    const text = [
+      ...Object.values(props.terminals ?? {}).map((terminal) => terminal.output),
+      ...blocks().map((entry) => {
+        const content = object(object(entry).content);
+        return content.type === "text" && typeof content.text === "string" ? content.text : "";
+      }),
+    ]
+      .filter(Boolean)
+      .join("\n")
+      .replace(/\r\n/g, "\n")
+      .replace(/\n+$/, "");
+    const lines = text ? text.split("\n") : [];
+    return { lines: lines.slice(-3), omitted: Math.max(0, lines.length - 3) };
+  });
+  const command = () => {
+    const input = object(props.tool.rawInput);
+    const text = typeof input.command === "string" ? input.command : String(props.tool.title ?? "");
+    return text !== props.tool.title || text.includes("\n") || text.length > 120 ? text : "";
+  };
   return (
-    <box flexDirection="column" gap={1}>
-      <Show when={typeof props.tool.name === "string"}>
-        <text>{String(props.tool.name)}</text>
-      </Show>
-      <For each={Object.entries(props.terminals ?? {})}>
-        {([id, value]) => (
-          <box flexDirection="column" flexShrink={0}>
-            <text fg="#8b949e">{`Terminal ${id}`}</text>
-            <Show when={value.info !== null}>
-              <text selectable>{pretty(value.info)}</text>
-            </Show>
-            <text selectable flexShrink={0}>
-              {value.output.slice(-24000)}
-            </text>
-            <Show when={value.output.length > 24000}>
-              <text>
-                Terminal preview: last 24,000 characters. y opens the complete original output.
+    <box flexDirection="row" flexShrink={0}>
+      <text width={2} flexShrink={0} fg="#8b949e">
+        └
+      </text>
+      <box flexDirection="column" flexGrow={1} flexBasis={0} minWidth={0}>
+        <Show
+          when={props.expanded}
+          fallback={
+            <>
+              <For each={preview().lines}>
+                {(line) => (
+                  <text fg="#8b949e" height={1} wrapMode="none" truncate selectable>
+                    {line}
+                  </text>
+                )}
+              </For>
+              <text fg="#8b949e" height={1} wrapMode="none" truncate>
+                {preview().omitted ? `+ ${preview().omitted} lines` : "+ Show details"}
               </text>
-            </Show>
-            <Show when={value.exit !== null}>
-              <text selectable>{pretty(value.exit)}</text>
-            </Show>
-          </box>
-        )}
-      </For>
-      <Show when={props.tool.rawInput !== undefined}>
-        <text
-          selectable
-          flexShrink={0}
-        >{`Parameters\n${pretty(props.tool.rawInput).slice(0, 24000)}`}</text>
-      </Show>
-      <Show when={props.tool.rawOutput !== undefined}>
-        <text
-          selectable
-          flexShrink={0}
-        >{`Result\n${pretty(props.tool.rawOutput).slice(0, 24000)}`}</text>
-      </Show>
-      <For each={Array.isArray(props.tool.content) ? props.tool.content : []}>
-        {(entry) => {
-          const block = object(entry),
-            content = object(block.content);
-          return (
-            <Show
-              when={block.type === "diff" && nativeDiff(block)}
-              fallback={
+            </>
+          }
+        >
+          <Show when={command()}>
+            <text selectable flexShrink={0}>
+              {command().slice(0, 24000)}
+            </text>
+          </Show>
+          <For each={Object.values(props.terminals ?? {})}>
+            {(value) => (
+              <Show when={value.output}>
+                <text selectable flexShrink={0}>
+                  {value.output.slice(-24000)}
+                </text>
+              </Show>
+            )}
+          </For>
+          <Show when={typeof props.tool.rawOutput === "string"}>
+            <text selectable flexShrink={0}>
+              {String(props.tool.rawOutput).slice(0, 24000)}
+            </text>
+          </Show>
+          <For each={blocks()}>
+            {(entry) => {
+              const block = object(entry),
+                content = object(block.content);
+              return (
                 <Show
-                  when={content.type === "text" && typeof content.text === "string"}
+                  when={block.type === "diff" && nativeDiff(block)}
                   fallback={
-                    <text selectable flexShrink={0}>
-                      {pretty(block).slice(0, 24000)}
-                    </text>
+                    <Show when={content.type === "text" && typeof content.text === "string"}>
+                      <Markdown text={String(content.text).slice(0, 24000)} />
+                    </Show>
                   }
                 >
-                  <Markdown text={String(content.text).slice(0, 24000)} />
+                  <text>{String(block.path ?? "Diff")}</text>
+                  <UnifiedDiff
+                    value={nativeDiff(block).slice(0, 48000)}
+                    path={String(block.path ?? "")}
+                  />
                 </Show>
-              }
-            >
-              <text>{String(block.path ?? "Diff")}</text>
-              <UnifiedDiff
-                value={nativeDiff(block).slice(0, 48000)}
-                path={String(block.path ?? "")}
-              />
-            </Show>
-          );
-        }}
-      </For>
-      <text fg="#8b949e">
-        Native details: r · Full output / code copy: y (large previews are bounded)
-      </text>
+              );
+            }}
+          </For>
+          <text fg="#8b949e" height={1} wrapMode="none" truncate>
+            − Show less · Full source: Ctrl+R / Ctrl+Y
+          </text>
+        </Show>
+      </box>
     </box>
   );
 }

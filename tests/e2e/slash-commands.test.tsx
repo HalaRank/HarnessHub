@@ -109,7 +109,7 @@ async function screenFor(c: Conversation, onExit = () => {}) {
   });
   await frame(s, "ACP ·");
   await until(() => !!editor(s));
-  s.mockInput.pressKey("m", { meta: true });
+  s.mockInput.pressKey("l", { ctrl: true });
   await until(() => editor(s).focused, "initial editor focus");
   // Initial loading finishes before the editor accepts keyboard input.
   await until(async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).id === c.id);
@@ -142,7 +142,7 @@ test("shortcut validation rejects editor collisions, terminal aliases and nonexi
     expect(shortcutInput.safeParse(keys).success).toBe(false);
   expect(shortcutInput.safeParse({}).success).toBe(true);
   expect(
-    shortcutInput.safeParse({ palette: "ctrl+l", sidebar: "meta+s", newline: "ctrl+n" }).success,
+    shortcutInput.safeParse({ palette: "ctrl+s", sidebar: "meta+s", newline: "ctrl+0" }).success,
   ).toBe(true);
 });
 

@@ -99,9 +99,7 @@ export function NativeEvents(props: {
   const toggle = (row: TranscriptRow) =>
     setManual((v) => ({
       ...v,
-      [row.id]: !(row.value().kind === "tool"
-        ? toolExpanded(row.value(), v[row.id])
-        : (v[row.id] ?? false)),
+      [row.id]: !(row.value().kind === "tool" ? toolExpanded(v[row.id]) : (v[row.id] ?? false)),
     }));
   const close = () => {
     setSource(null);
@@ -189,7 +187,7 @@ export function NativeEvents(props: {
       >
         <Show
           when={model.size()}
-          fallback={<text>Start a conversation. Press Alt+M to write a message.</text>}
+          fallback={<text>Start a conversation. Press Ctrl+L to write a message.</text>}
         >
           <For each={visible()}>
             {(row) => (
@@ -208,48 +206,60 @@ export function NativeEvents(props: {
                   </text>
                 </Show>
                 <box flexDirection="column" flexGrow={1} flexBasis={0} minWidth={0}>
-                  <text>
-                    <span
-                      style={{
-                        fg: row.value().label === "You" ? "#b7bdc8" : rowAccent(row.value()),
-                        bold: true,
-                      }}
-                    >
-                      {`${row.value().label === "You" && selectedRow()?.id === row.id ? "▶ " : ""}${row.value().kind === "tool" ? (row.value().tool?.title ?? row.value().tool?.toolCallId) : row.value().label}`}
-                    </span>
-                    <span style={{ fg: "#8b949e" }}>{` · #${row.sources[0]?.seq}`}</span>
-                  </text>
+                  <Show
+                    when={row.value().kind === "tool"}
+                    fallback={
+                      <text>
+                        <span
+                          style={{
+                            fg: row.value().label === "You" ? "#b7bdc8" : rowAccent(row.value()),
+                            bold: true,
+                          }}
+                        >
+                          {`${row.value().label === "You" && selectedRow()?.id === row.id ? "▶ " : ""}${row.value().label}`}
+                        </span>
+                      </text>
+                    }
+                  >
+                    <box flexDirection="row" height={1} flexShrink={0}>
+                      <text
+                        flexGrow={1}
+                        flexBasis={0}
+                        minWidth={0}
+                        height={1}
+                        wrapMode="none"
+                        truncate
+                      >
+                        <span style={{ fg: rowAccent(row.value()), bold: true }}>
+                          {
+                            String(
+                              row.value().tool?.title ?? row.value().tool?.name ?? "Tool",
+                            ).split(/\r?\n/, 1)[0]
+                          }
+                        </span>
+                      </text>
+                      <text fg={rowAccent(row.value())} flexShrink={0}>
+                        {` · ${row.value().waiting ? "WAITING_APPROVAL" : (row.value().tool?.status ?? "pending")}`}
+                      </text>
+                    </box>
+                  </Show>
                   <Show when={row.value().kind === "text"}>
                     <Markdown text={row.value().text} streaming={row.value().streaming} />
                   </Show>
                   <Show when={row.value().kind === "handoff"}>
                     <text fg="#80cbc4">
-                      Alt+E expand/collapse · Alt+Y complete report · Alt+R source events
+                      Ctrl+E expand/collapse · Ctrl+Y complete report · Ctrl+R source events
                     </text>
                     <Show when={manual()[row.id] ?? row.value().waiting}>
                       <Markdown text={row.value().text.slice(0, 24000)} />
                     </Show>
                   </Show>
                   <Show when={row.value().kind === "tool"}>
-                    <box
-                      flexDirection="column"
-                      border={["left"]}
-                      borderColor={rowAccent(row.value())}
-                      paddingLeft={1}
-                    >
-                      <text>
-                        <span
-                          style={{ fg: rowAccent(row.value()) }}
-                        >{`${row.value().waiting ? "WAITING_APPROVAL · " : ""}${row.value().tool?.status ?? "pending"}`}</span>
-                        <span style={{ fg: "#8b949e" }}> · Alt+E expand/collapse</span>
-                      </text>
-                      <Show when={toolExpanded(row.value(), manual()[row.id])}>
-                        <ToolContent
-                          tool={row.value().tool ?? {}}
-                          terminals={row.value().terminals}
-                        />
-                      </Show>
-                    </box>
+                    <ToolContent
+                      tool={row.value().tool ?? {}}
+                      terminals={row.value().terminals}
+                      expanded={toolExpanded(manual()[row.id])}
+                    />
                   </Show>
                   <Show when={row.value().kind === "notice"}>
                     <text selectable fg="#ffcc80">
@@ -259,7 +269,9 @@ export function NativeEvents(props: {
                             .value()
                             .text.slice(0, 180)
                             .replace(/\s*\n\s*/g, " ") +
-                          (row.value().text.length > 180 ? " … (Alt+E expand · Alt+R source)" : "")}
+                          (row.value().text.length > 180
+                            ? " … (Ctrl+E expand · Ctrl+R source)"
+                            : "")}
                     </text>
                   </Show>
                   <Show when={row.value().kind === "plan"}>
@@ -293,7 +305,7 @@ export function NativeEvents(props: {
         flexShrink={0}
         height={1}
         fg="#8b949e"
-      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · Alt+R details · Alt+Y copy · PgUp/PgDn scroll · Esc/End latest`}</text>
+      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · Ctrl+E more/less · Ctrl+R source · Ctrl+Y copy · PgUp/PgDn scroll · Esc/End latest`}</text>
       <Show when={source()}>{(parts) => <SourceViewer parts={parts()} onClose={close} />}</Show>
     </box>
   );

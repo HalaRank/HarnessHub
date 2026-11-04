@@ -1,5 +1,9 @@
 # Phase 6：稳定性、安全加固与最终 MVP 验收报告
 
+2026-11-04 的 Ctrl 默认键位及工具详情默认折叠修正见 [定向验收记录](phase-6-ctrl-shortcuts-and-tool-details.md)。
+
+同日按用户截图进一步收敛默认工具视图，见 [紧凑工具摘要](phase-6-compact-tool-transcript.md)。
+
 日期：2026-10-31（环境日期）。最终源码版本 **0.6.0**，SQLite **schema 6**。不新增持久化字段或修改已有 migration。**工程交付不等于最终 MVP 全部通过：OpenCode 本轮真实消息超时，Windows Terminal / VS Code WSL 物理终端尚待用户验收。**
 
 ## 1. 开发前审查与差异

@@ -115,7 +115,7 @@ test("modal Esc preserves scroll; an explicit editor follow request returns to t
     await settle(screen);
     expect(scroll.scrollTop).toBe(20);
     setDisabled(false);
-    screen.mockInput.pressKey("r", { meta: true });
+    screen.mockInput.pressKey("r", { ctrl: true });
     await settle(screen);
     screen.mockInput.pressEscape();
     await settle(screen);

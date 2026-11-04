@@ -43,7 +43,7 @@ def read_until(child, needle, timeout=12):
     raise AssertionError("PTY did not display expected content: " + repr(output[-3000:]))
 
 def quit_child(child):
-    os.write(child[1], b"\x1bq")
+    os.write(child[1], b"\x11")
     deadline = time.monotonic() + 8
     while time.monotonic() < deadline:
         pid, status = os.waitpid(child[0], os.WNOHANG)
@@ -57,7 +57,7 @@ def quit_child(child):
                 os.read(child[1], 65536)
         except OSError:
             pass
-    raise AssertionError("TUI failed to exit after Alt+Q")
+    raise AssertionError("TUI failed to exit after Ctrl+Q")
 
 try:
     first = launch()
@@ -66,7 +66,7 @@ try:
     read_until(second, b"Workspace:")
     quit_child(first)
     # The remaining TUI still processes input after the first one closes.
-    os.write(second[1], b"\x1bp")
+    os.write(second[1], b"\x17")
     read_until(second, b"~/")
     # Complete the actual project from Home and register its canonical duplicate.
     project_path = os.environ["HARNESSHUB_PTY_PROJECT"]
@@ -78,7 +78,7 @@ try:
     os.write(second[1], b"\r")
     time.sleep(0.3)
     # This shortcut opens a fresh form only if registration closed the first one.
-    os.write(second[1], b"\x1bp")
+    os.write(second[1], b"\x17")
     read_until(second, b"Existing project")
     os.write(second[1], b"\x1b")
     time.sleep(0.15)

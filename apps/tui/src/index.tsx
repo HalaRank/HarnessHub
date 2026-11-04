@@ -638,13 +638,13 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                 }
               >
                 <text selectable={false} fg="#80cbc4">
-                  ⋯ Actions (Alt+O)
+                  ⋯ Actions (Ctrl+O)
                 </text>
               </box>
             </Show>
             <Show
               when={rows().length > 0}
-              fallback={<text>No projects. Press Alt+P to register an existing directory.</text>}
+              fallback={<text>No projects. Press Ctrl+W to register an existing directory.</text>}
             >
               <ProjectTree
                 rows={rows()}
@@ -679,7 +679,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             <text height={1} flexShrink={0} fg="#8b949e">
               {row()?.value.conversation
                 ? `Conversation · ${row()?.value.conversation?.title}${row()?.value.conversation?.archivedAt !== null ? " [archived]" : ""} · Workspace: ${row()?.value.conversation?.workspacePath}`
-                : `${row()?.value.project.name} · Workspace: ${row()?.value.project.rootPath} · Press Alt+N to create a conversation`}
+                : `${row()?.value.project.name} · Workspace: ${row()?.value.project.rootPath} · Press Ctrl+N to create a conversation`}
             </text>
           </Show>
           <Show
@@ -887,8 +887,9 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           title="Shortcuts · JSON overrides · Esc close"
         >
           <text>
-            Use Ctrl/Meta combinations. Letters alone never invoke shortcuts. Fixed Alt actions,
-            Ctrl+G, Enter, Shift+Enter and Esc are reserved. Empty object restores defaults.
+            Use Ctrl combinations (legacy Meta overrides remain supported). Letters alone never
+            invoke shortcuts. Fixed Ctrl actions, Enter, Shift+Enter and Esc are reserved. Empty
+            object restores defaults.
           </text>
           <text>{JSON.stringify(keys())}</text>
           <input
@@ -902,7 +903,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                 setForm(null);
               } catch {
                 setError(
-                  "Invalid shortcuts: use distinct Ctrl/Meta keys; editor keys, fixed Alt actions, Ctrl+G and quit are reserved",
+                  "Invalid shortcuts: use distinct Ctrl/Meta keys; editor keys, fixed Ctrl actions and quit are reserved",
                 );
               }
             }}
@@ -919,7 +920,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         </text>
       </Show>
       <text height={1} flexShrink={0} fg="#8b949e">
-        {`${keys().palette} Commands · Alt+O Actions · Del Delete · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
+        {`${keys().palette} Commands · Ctrl+O Actions · Del Delete · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
       </text>
     </box>
   );

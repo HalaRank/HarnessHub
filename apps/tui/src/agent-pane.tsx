@@ -528,7 +528,7 @@ export function AgentPane(props: {
         fg="#80cbc4"
         height={1}
         flexShrink={0}
-      >{`ACP · ${executionSession()?.harnessId ?? harness()}${openHandoffRecord() ? ` · Handoff ${openHandoffRecord()?.sourceHarness} → ${openHandoffRecord()?.targetHarness} · ${openHandoffRecord()?.status}` : activeSession() && activeSession()?.harnessId !== harness() ? ` → ${harness()} (PENDING_SWITCH; Alt+X cancel)` : ""} · ${props.conversation.runtimeStatus} · Model (ACP): ${actualModel(executionSession())} · ${connection()}`}</text>
+      >{`ACP · ${executionSession()?.harnessId ?? harness()}${openHandoffRecord() ? ` · Handoff ${openHandoffRecord()?.sourceHarness} → ${openHandoffRecord()?.targetHarness} · ${openHandoffRecord()?.status}` : activeSession() && activeSession()?.harnessId !== harness() ? ` → ${harness()} (PENDING_SWITCH; Ctrl+U cancel)` : ""} · ${props.conversation.runtimeStatus} · Model (ACP): ${actualModel(executionSession())} · ${connection()}`}</text>
       <Show when={activeSession() && activeSession()?.harnessId !== harness()}>
         <text fg="#ffcc80">
           First target message starts Handoff. Wait for source execution/approval/cancellation to
@@ -537,8 +537,8 @@ export function AgentPane(props: {
       </Show>
       <Show when={failedHandoff()}>
         <text fg="#ffcc80">
-          Context may be incomplete / 上下文可能不完整 · Alt+F: materials / confirm degraded / retry
-          / cancel. Target task has NOT been sent.
+          Context may be incomplete / 上下文可能不完整 · Ctrl+K: materials / confirm degraded /
+          retry / cancel. Target task has NOT been sent.
         </text>
       </Show>
       <Show when={["INTERRUPTED", "UNCERTAIN"].includes(props.conversation.runtimeStatus)}>
@@ -590,7 +590,7 @@ export function AgentPane(props: {
             </For>
             <Show
               when={props.form === "approval"}
-              fallback={<text>Press Alt+A to choose an Agent option.</text>}
+              fallback={<text>Press Ctrl+A to choose an Agent option.</text>}
             >
               <input
                 focused={!busy()}
@@ -644,7 +644,7 @@ export function AgentPane(props: {
                 if (props.form && props.form !== "message") event.preventDefault();
               }}
               initialValue={draft.text}
-              placeholder="Enter / Alt+M to write a message…"
+              placeholder="Enter / Ctrl+L to write a message…"
               onContentChange={() => {
                 const text = textarea?.plainText ?? draft.text;
                 draft.update(text);
@@ -744,7 +744,7 @@ export function AgentPane(props: {
       <text fg="#8b949e" height={1}>
         {busy() || !draftReady()
           ? "ACP operation pending"
-          : "Enter / Alt+M Message · Alt+A Approval · Alt+C Cancel Turn"}
+          : "Enter / Ctrl+L Message · Ctrl+A Approval · Ctrl+X Cancel Turn"}
       </text>
       <Show when={handoffMenu() && props.form === "details"}>
         <box

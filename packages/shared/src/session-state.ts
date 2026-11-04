@@ -11,22 +11,22 @@ export const draftInput = z
   .refine((d) => !d.pendingSubmission || d.text === "" || d.pendingSubmission.message === d.text);
 export type Draft = z.infer<typeof draftInput> & { conversationId: string };
 export const navigationShortcuts = {
-  quit: "meta+q",
-  project: "meta+p",
-  conversation: "meta+n",
-  actions: "meta+o",
+  quit: "ctrl+q",
+  project: "ctrl+w",
+  conversation: "ctrl+n",
+  actions: "ctrl+o",
   activity: "ctrl+g",
-  message: "meta+m",
-  approval: "meta+a",
-  harness: "meta+h",
-  cancel: "meta+c",
-  cancelSwitch: "meta+x",
-  handoff: "meta+f",
-  nextTool: "meta+t",
-  expand: "meta+e",
-  source: "meta+r",
-  copySource: "meta+y",
-  refreshChanges: "meta+g",
+  message: "ctrl+l",
+  approval: "ctrl+a",
+  harness: "ctrl+f",
+  cancel: "ctrl+x",
+  cancelSwitch: "ctrl+u",
+  handoff: "ctrl+k",
+  nextTool: "ctrl+t",
+  expand: "ctrl+e",
+  source: "ctrl+r",
+  copySource: "ctrl+y",
+  refreshChanges: "ctrl+r",
 } as const;
 export const shortcutNames = ["palette", "sidebar", "newline", "changes", "copy"] as const;
 export const defaultShortcuts = {
@@ -74,6 +74,7 @@ export const shortcutInput = z
     const effective = { ...defaultShortcuts, ...value };
     return (
       Object.entries(value).every(([action, key]) => {
+        if (action === "copy" && key === defaultShortcuts.copy) return true;
         if (Object.values(navigationShortcuts).some((reserved) => reserved === key)) return false;
         if (action === "newline" && key === "meta+return") return true;
         const name = key.split("+").at(-1) ?? "";
