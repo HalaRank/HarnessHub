@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { mouseClick } from "./project-tree";
+import { ui } from "./ui";
 
 type Entry = { path: string; name: string; directory: boolean; symlink: boolean };
 
@@ -75,16 +76,21 @@ export function ProjectDirectory(props: { rootPath: string }) {
   };
   return (
     <box id="project-directory" flexDirection="column" flexGrow={1} minHeight={0}>
-      <text height={1} flexShrink={0} fg="#80cbc4">
-        Project directory · click folders to expand / collapse
+      <text height={1} flexShrink={0} fg={ui.text}>
+        <b>Project directory</b>
+      </text>
+      <text fg={ui.muted} height={1} flexShrink={0} wrapMode="none">
+        Click folders to expand / collapse · /new creates a conversation
       </text>
       <scrollbox flexGrow={1} minHeight={0} scrollX={false} focused={false}>
-        <text selectable>{props.rootPath}</text>
+        <text selectable fg={ui.muted}>
+          {props.rootPath}
+        </text>
         <Show
           when={revision() > 0}
           fallback={<text>{errors()[props.rootPath] ? "" : "Loading directory…"}</text>}
         >
-          <Show when={rows().length} fallback={<text fg="#8b949e">(empty directory)</text>}>
+          <Show when={rows().length} fallback={<text fg={ui.muted}>(empty directory)</text>}>
             <For each={rows()}>
               {({ entry, depth }) => (
                 <box
@@ -97,9 +103,12 @@ export function ProjectDirectory(props: { rootPath: string }) {
                     selectable={false}
                     wrapMode="none"
                     height={1}
-                    fg={entry.directory ? "#80cbc4" : "#c9d1d9"}
+                    fg={entry.directory ? ui.text : ui.secondary}
                   >
-                    {`${"  ".repeat(depth)}${entry.directory ? (open().has(entry.path) ? "▾ " : "▸ ") : "  "}${entry.name}${entry.directory ? "/" : entry.symlink ? " @" : ""}`}
+                    <span
+                      style={{ fg: ui.muted }}
+                    >{`${"  ".repeat(depth)}${entry.directory ? (open().has(entry.path) ? "▾ " : "▸ ") : "  "}`}</span>
+                    {`${entry.name}${entry.directory ? "/" : entry.symlink ? " @" : ""}`}
                   </text>
                 </box>
               )}
@@ -107,7 +116,7 @@ export function ProjectDirectory(props: { rootPath: string }) {
           </Show>
         </Show>
         <For each={Object.entries(errors())}>
-          {([path, error]) => <text fg="#ef9a9a">{`Cannot read ${path}: ${error}`}</text>}
+          {([path, error]) => <text fg={ui.error}>{`Cannot read ${path}: ${error}`}</text>}
         </For>
       </scrollbox>
     </box>

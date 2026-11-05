@@ -80,8 +80,8 @@ try:
         os.environ["TERM"] = "xterm-256color"
         os.execv(bun, [bun, cli])
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 32, 110, 0, 0))
-    until(lambda: "Ctrl+X Cancel Turn" in visible(), "editor load")
-    os.write(fd, b"\x0c/rev")
+    until(lambda: "Escinterrupt" in visible().replace(" ", ""), "editor load")
+    os.write(fd, b"\r/rev")
     until(lambda: "PTY_NATIVE_REVIEW" in visible(), "native menu missing")
     os.write(fd, b"\r")
     until(lambda: api(base + "/draft")["text"] == "/review", "Enter did not complete")
@@ -89,16 +89,22 @@ try:
     os.write(fd, b"\r")
     until(lambda: len([e for e in api(base + "/events?limit=1000")["events"] if e["kind"] == "user.message"]) == 1, "explicit send missing")
     until(lambda: api(base)["runtimeStatus"] == "IDLE", "Turn unfinished")
-    os.write(fd, b"\x0cmahcxfpnoq\x1b[13;2u")
+    os.write(fd, b"mahcxfpnoq\x1b[13;2u")
     os.write(fd, "中文🙂".encode())
     os.write(fd, b"\nlast")
     until(lambda: api(base + "/draft")["text"] == "mahcxfpnoq\n中文🙂\nlast", "UTF8/newline draft changed")
-    os.write(fd, b"\x10")  # Ctrl+P; close returns to the same editor.
+    os.write(fd, b"\x14")
+    time.sleep(0.1)
+    os.write(fd, b"\x1b")
+    time.sleep(0.1)
+    os.write(fd, b"/")
     until(lambda: "Command palette" in visible(), "palette missing")
     os.write(fd, b"\x1b")
     time.sleep(0.15)
-    os.write(fd, b"\x02")  # Ctrl+B preserves draft.
+    os.write(fd, b"/Toggle Sidebar\r")
+    time.sleep(0.2)
     assert api(base + "/draft")["text"] == "mahcxfpnoq\n中文🙂\nlast"
+    os.write(fd, b"\r")  # Enter returns to the draft.
     os.write(fd, b"\x03")
     until(lambda: api(base + "/draft")["text"] == "", "Ctrl+C did not clear")
     assert os.waitpid(pid, os.WNOHANG)[0] == 0, "nonempty Ctrl+C exited"

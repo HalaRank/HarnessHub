@@ -2,6 +2,7 @@ import type { NativeCommand } from "@harnesshub/shared";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { createEffect, For, Show } from "solid-js";
 import { mouseClick } from "./project-tree";
+import { KeyHints, ui } from "./ui";
 
 // Only the first token of the entire message is a command trigger. The caller
 // obtains the prefix from the editor's real cursor (native offsets are not JS UTF-16).
@@ -15,11 +16,13 @@ export function matchingCommands(commands: NativeCommand[], query: string) {
   return commands.filter((c) => c.name.toLocaleLowerCase().startsWith(query.toLocaleLowerCase()));
 }
 export function SlashCommands(props: {
+  title?: string;
   commands: NativeCommand[];
   selected: number;
   height: number;
   bottom: number;
   status: string;
+  notice?: string;
   choose: (command: NativeCommand) => void;
 }) {
   let scroll: ScrollBoxRenderable | undefined;
@@ -41,11 +44,15 @@ export function SlashCommands(props: {
       height={props.height}
       zIndex={20}
       border
-      borderColor="#80cbc4"
-      backgroundColor="#10151c"
+      borderColor={ui.border}
+      backgroundColor={ui.panel}
       flexDirection="column"
-      title="ACP commands · ↑↓ · Tab / Enter complete · Esc close"
+      paddingX={1}
     >
+      <text height={1} flexShrink={0} fg={ui.text} selectable={false}>
+        <b>{props.title ?? "ACP commands"}</b>
+        <span style={{ fg: ui.muted }}>{`  ${props.commands.length} available`}</span>
+      </text>
       <scrollbox
         id="slash-options"
         ref={(el) => {
@@ -54,9 +61,16 @@ export function SlashCommands(props: {
         flexGrow={1}
         minHeight={0}
       >
+        <Show when={props.notice}>
+          <text fg={ui.secondary}>{props.notice}</text>
+        </Show>
         <Show
           when={props.commands.length}
-          fallback={<text selectable={false}>{props.status}</text>}
+          fallback={
+            <text selectable={false} fg={ui.secondary}>
+              {props.status}
+            </text>
+          }
         >
           <For each={props.commands}>
             {(command, index) => (
@@ -64,19 +78,36 @@ export function SlashCommands(props: {
                 id={`slash-${index()}`}
                 flexDirection="column"
                 flexShrink={0}
-                backgroundColor={props.selected === index() ? "#36404b" : "#10151c"}
+                backgroundColor={props.selected === index() ? ui.selection : ui.panel}
                 onMouse={(event) => click(command.name, event, () => props.choose(command))}
               >
-                <text
-                  selectable={false}
-                  fg="#80cbc4"
-                >{`/${command.name}${command.input?.hint ? ` · ${command.input.hint}` : ""}`}</text>
-                <text selectable={false}>{command.description}</text>
+                <text selectable={false} fg={ui.text}>
+                  <span style={{ fg: ui.accent }}>{props.selected === index() ? "› " : "  "}</span>
+                  <b>{`/${command.name}`}</b>
+                  <span style={{ fg: props.selected === index() ? ui.secondary : ui.muted }}>
+                    {command.input?.hint ? `  ${command.input.hint}` : ""}
+                  </span>
+                </text>
+                <box paddingLeft={2}>
+                  <text
+                    selectable={false}
+                    fg={props.selected === index() ? ui.secondary : ui.muted}
+                  >
+                    {command.description}
+                  </text>
+                </box>
               </box>
             )}
           </For>
         </Show>
       </scrollbox>
+      <KeyHints
+        items={[
+          ["↑↓", "choose"],
+          ["Tab / Enter", "complete"],
+          ["Esc", "close"],
+        ]}
+      />
     </box>
   );
 }

@@ -6,6 +6,7 @@ import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { UnifiedDiff } from "./rich-content";
 import { matches, navigationShortcuts } from "./shortcuts";
 import { SourceViewer } from "./source-viewer";
+import { KeyHints, listStyle, ui } from "./ui";
 
 export function ChangesPane(props: {
   conversationId: string;
@@ -105,17 +106,50 @@ export function ChangesPane(props: {
     }
   });
   return (
-    <box flexGrow={1} flexDirection="column" gap={1}>
-      <text fg="#ffcc80">
-        Changes · Conversation workspace · No Agent attribution · Ctrl+R refresh · Ctrl+Y copy diff
+    <box flexGrow={1} minHeight={0} flexDirection="column" gap={0}>
+      <text fg={ui.text} height={1} flexShrink={0}>
+        <b>Changes</b>
+        <span style={{ fg: ui.muted }}> · Conversation workspace</span>
       </text>
+      <box flexDirection="row" height={1}>
+        <box
+          id="changes-refresh"
+          onMouse={(event) => {
+            if (event.type === "down" && event.button === 0) {
+              event.preventDefault();
+              event.stopPropagation();
+              void refresh();
+            }
+          }}
+        >
+          <text selectable={false} fg={ui.accent}>
+            Refresh{" "}
+          </text>
+        </box>
+        <box
+          id="changes-source"
+          onMouse={(event) => {
+            if (event.type === "down" && event.button === 0 && patch()) {
+              event.preventDefault();
+              event.stopPropagation();
+              setSource(true);
+              props.onModalChange(true);
+            }
+          }}
+        >
+          <text selectable={false} fg={ui.accent}>
+            Source / copy
+          </text>
+        </box>
+      </box>
       <Show when={state()}>
         {(s) => (
           <>
-            <text>{s().notice}</text>
-            <text fg="#8b949e">{`Workspace: ${s().workspace} · Repository: ${s().repository ?? "none"}`}</text>
+            <text fg={ui.secondary}>{s().notice}</text>
+            <text fg={ui.muted}>{`Repository · ${s().repository ?? "none"}`}</text>
             <Show when={s().files.length} fallback={<text>No Git changes.</text>}>
               <select
+                {...listStyle}
                 height={Math.min(6, s().files.length + 1)}
                 focused={false}
                 selectedIndex={selected()}
@@ -135,7 +169,7 @@ export function ChangesPane(props: {
         <text>Reading Git…</text>
       </Show>
       <Show when={error()}>
-        <text fg="#ef9a9a">{error()}</text>
+        <text fg={ui.error}>{error()}</text>
       </Show>
       <scrollbox
         ref={(el) => {
@@ -147,18 +181,25 @@ export function ChangesPane(props: {
         <For each={sections()}>
           {(section) => (
             <box flexDirection="column" flexShrink={0}>
-              <text fg="#80cbc4">{section.name}</text>
+              <text fg={ui.text}>
+                <b>{section.name}</b>
+              </text>
               <UnifiedDiff value={section.text.slice(0, 96000)} path={patch()?.path ?? ""} />
               <Show when={section.text.length > 96000}>
                 <text>
-                  Diff preview limited to 96,000 characters. Press Ctrl+Y for complete source pages
-                  / copy.
+                  Diff preview limited to 96,000 characters. Open Source for complete pages / copy.
                 </text>
               </Show>
             </box>
           )}
         </For>
       </scrollbox>
+      <KeyHints
+        items={[
+          ["↑↓", "files"],
+          ["Source", "copy diff"],
+        ]}
+      />
       <Show when={source()}>
         <SourceViewer
           parts={sections()}

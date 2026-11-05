@@ -16,6 +16,7 @@ import {
   shortcutInput,
   type Turn,
 } from "../../packages/shared/src/index";
+import { focusMessage, invoke, openCommands } from "./ui-actions";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-slash-ui-"));
 const previous = { ...process.env };
@@ -109,7 +110,7 @@ async function screenFor(c: Conversation, onExit = () => {}) {
   });
   await frame(s, "ACP ·");
   await until(() => !!editor(s));
-  s.mockInput.pressKey("l", { ctrl: true });
+  await focusMessage(s);
   await until(() => editor(s).focused, "initial editor focus");
   // Initial loading finishes before the editor accepts keyboard input.
   await until(async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).id === c.id);
@@ -136,7 +137,6 @@ test("shortcut validation rejects editor collisions, terminal aliases and nonexi
     { palette: "ctrl+enter" },
     { palette: "ctrl+tab" },
     { palette: "ctrl+madeup" },
-    { copy: "ctrl+p" },
     { palette: "ctrl+m" },
   ])
     expect(shortcutInput.safeParse(keys).success).toBe(false);
@@ -258,26 +258,26 @@ test("ordinary letters, Ctrl+D/Y, arrows, Shift+Enter and Ctrl+J retain editor s
   }
 });
 
-test("Ctrl+P modal owns keys, closes to original draft/cursor; Ctrl+B preserves both", async () => {
+test("command menu owns keys, restores draft/cursor and sidebar actions preserve both", async () => {
   const c = await setup("palette");
   const s = await screenFor(c);
   try {
     await s.mockInput.pasteBracketedText("中文🙂 draft");
     editor(s).moveCursorLeft();
     const cursor = editor(s).cursorOffset;
-    s.mockInput.pressKey("p", { ctrl: true });
+    await openCommands(s);
     await frame(s, "Command palette");
     s.mockInput.pressKey("d", { ctrl: true });
     expect(editor(s).plainText).toBe("中文🙂 draft");
     s.mockInput.pressEscape();
     await until(() => editor(s).focused);
     expect(editor(s).cursorOffset).toBe(cursor);
-    s.mockInput.pressKey("b", { ctrl: true });
+    await invoke(s, "Toggle Sidebar");
     expect(editor(s).cursorOffset).toBe(cursor);
     expect(editor(s).plainText).toBe("中文🙂 draft");
-    s.mockInput.pressKey("p", { ctrl: true });
+    await openCommands(s);
     await frame(s, "Command palette");
-    s.mockInput.pressKey("p", { ctrl: true });
+    await openCommands(s);
     await until(() => editor(s).focused);
     expect(editor(s).cursorOffset).toBe(cursor);
     expect((await users(c)).length).toBe(0);
@@ -414,7 +414,7 @@ test("uninitialized/unpublished/closed sessions show precise status and initiali
     await s.mockInput.typeText("/");
     await frame(s, "NativeSession not initialized");
     expect((await sessions(c)).length).toBe(0);
-    s.mockInput.pressKey("p", { ctrl: true });
+    await openCommands(s);
     await frame(s, "Command palette");
     await s.mockInput.typeText("Initialize ACP session");
     s.mockInput.pressEnter();
@@ -458,7 +458,9 @@ test("long popup supports keyboard scrolling, mouse completion, narrow resize an
     await s.mockInput.typeText("/");
     s.resize(35, 12);
     await s.renderOnce();
-    expect(popup(s)?.height).toBeLessThanOrEqual(5);
+    await frame(s, "Native compact");
+    expect(popup(s)?.height).toBeLessThanOrEqual(6);
+    expect(popup(s)?.y).toBeGreaterThanOrEqual(0);
     expect((await users(c)).length).toBe(0);
   } finally {
     s.renderer.destroy();

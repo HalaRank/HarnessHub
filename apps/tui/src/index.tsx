@@ -8,7 +8,7 @@ import {
   shortcutInput,
 } from "@harnesshub/shared";
 import { connect, watchSnapshot } from "@harnesshub/shared/client";
-import { createCliRenderer, type KeyEvent } from "@opentui/core";
+import { createCliRenderer, type KeyEvent, type TextareaRenderable } from "@opentui/core";
 import { render, useRenderer, useTerminalDimensions } from "@opentui/solid";
 import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type AgentAction, AgentPane } from "./agent-pane";
@@ -29,8 +29,14 @@ import {
 } from "./project-tree";
 import { matches, navigationShortcuts, shortcuts } from "./shortcuts";
 import { newViewState, type ViewState } from "./transcript";
+import { inputStyle, KeyHints, listStyle, Panel, statusColor, ui } from "./ui";
 
-export function App(props: { initialProjectId?: string | undefined; onExit: () => void }) {
+export function App(props: {
+  initialProjectId?: string | undefined;
+  launchCwd?: string | undefined;
+  onExit: () => void;
+}) {
+  const launchCwd = props.launchCwd ?? process.cwd();
   const [snapshot, setSnapshot] = createSignal<Snapshot>({
     projects: [],
     conversations: [],
@@ -45,6 +51,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     | "project"
     | "rename"
     | "message"
+    | "transcript"
     | "approval"
     | "palette"
     | "conversationActions"
@@ -103,8 +110,18 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     return value;
   };
   const [ready, setReady] = createSignal(false);
-  const allRows = createMemo<ProjectRow[]>(() =>
-    snapshot().projects.flatMap((project) => [
+  const allRows = createMemo<ProjectRow[]>(() => [
+    ...snapshot()
+      .conversations.filter(
+        (c) =>
+          c.projectId === null && (showArchived() ? c.archivedAt !== null : c.archivedAt === null),
+      )
+      .map((conversation) => ({
+        id: conversationKey(conversation.id),
+        project: null,
+        conversation,
+      })),
+    ...snapshot().projects.flatMap((project) => [
       { id: projectKey(project.id), project },
       ...snapshot()
         .conversations.filter(
@@ -114,9 +131,9 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         )
         .map((conversation) => ({ id: conversationKey(conversation.id), project, conversation })),
     ]),
-  );
+  ]);
   const rows = createMemo(() =>
-    allRows().filter((r) => !r.conversation || !collapsed().has(r.project.id)),
+    allRows().filter((r) => !r.conversation || !r.project || !collapsed().has(r.project.id)),
   );
   // Selection survives collapse, sorting and metadata object replacement.
   const row = () => {
@@ -132,7 +149,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
   const selectRow = (target: ProjectRow) => {
     renderer.clearSelection();
     batch(() => {
-      expand(target.project.id);
+      if (target.project) expand(target.project.id);
       setSelected(target.id);
       setChangesView(false);
       setForm(null);
@@ -167,7 +184,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     const visible = showActivity();
     if (!ready()) return;
     const patch = {
-      lastProjectId: value?.project.id ?? null,
+      lastProjectId: value?.project?.id ?? null,
       lastConversationId: value?.conversation?.id ?? null,
       showActivity: visible,
       showSidebar: showSidebar(),
@@ -211,15 +228,20 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           const target =
             allRows().find((r) =>
               initial && props.initialProjectId
-                ? r.project.id === props.initialProjectId && !r.conversation
+                ? r.project?.id === props.initialProjectId && !r.conversation
                 : initial && recent?.lastConversationId
                   ? r.conversation?.id === recent.lastConversationId
                   : initial && recent?.lastProjectId
-                    ? r.project.id === recent.lastProjectId && !r.conversation
+                    ? r.project?.id === recent.lastProjectId && !r.conversation
                     : r.id === selected(),
             ) ??
-            allRows().find((r) => r.project.id === previous?.project.id && !r.conversation) ??
+            allRows().find((r) => r.project?.id === previous?.project?.id && !r.conversation) ??
             allRows()[0];
+          if (target?.id !== selected()) {
+            if (["message", "transcript", "approval", "details", "settings"].includes(form() ?? ""))
+              setForm(null);
+            setChangesView(false);
+          }
           setSelected(target?.id ?? null);
           initial = false;
           setReady(true);
@@ -262,19 +284,37 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     });
   });
   let paletteReturn: "message" | null = null;
-  const closePalette = () => setForm(paletteReturn);
+  let paletteCursor: number | undefined;
+  const openPalette = () => {
+    paletteReturn = form() === "message" ? "message" : null;
+    paletteCursor = (
+      renderer.root.findDescendantById("message-draft") as TextareaRenderable | undefined
+    )?.cursorOffset;
+    setForm("palette");
+  };
+  const closePalette = () => {
+    setForm(paletteReturn);
+    const editor = renderer.root.findDescendantById("message-draft") as
+      | TextareaRenderable
+      | undefined;
+    if (editor && paletteReturn === "message" && paletteCursor !== undefined)
+      editor.cursorOffset = paletteCursor;
+  };
   const keyboard = (key: KeyEvent) => {
     if (key.defaultPrevented || key.propagationStopped) return;
-    if (key.ctrl && key.name === "q" && error()) {
-      props.onExit();
-      key.preventDefault();
-      key.stopPropagation();
-      return;
-    }
     if (key.ctrl && key.name === "c") {
       key.preventDefault();
       key.stopPropagation();
       interrupt();
+      return;
+    }
+    if (
+      (!form() || form() === "message" || form() === "transcript") &&
+      matches(key, navigationShortcuts.standaloneConversation)
+    ) {
+      key.preventDefault();
+      key.stopPropagation();
+      void createConversation("shared", true);
       return;
     }
     if (form() && form() !== "message") {
@@ -294,8 +334,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     if (matches(key, keys().palette)) {
       key.preventDefault();
       key.stopPropagation();
-      paletteReturn = form() === "message" ? "message" : null;
-      setForm("palette");
+      openPalette();
       return;
     }
     if (matches(key, keys().sidebar)) {
@@ -305,7 +344,32 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       return;
     }
     if (form() === "message") return; // Slash/textarea owns Esc and editing.
+    if (
+      !form() &&
+      !changesView() &&
+      row()?.value.project &&
+      (matches(key, navigationShortcuts.conversation) || matches(key, "shift+n"))
+    ) {
+      key.preventDefault();
+      key.stopPropagation();
+      void createConversation("shared");
+      return;
+    }
+    if (key.sequence === "/" || key.sequence === "?") {
+      key.preventDefault();
+      key.stopPropagation();
+      paletteReturn = null;
+      setForm("palette");
+      return;
+    }
     if (key.name === "escape") {
+      const conversation = row()?.value.conversation;
+      if (conversation && activeStates.has(conversation.runtimeStatus)) {
+        key.preventDefault();
+        key.stopPropagation();
+        dispatch("cancel");
+        return;
+      }
       setForm(null);
       setError("");
       return;
@@ -320,7 +384,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       key.preventDefault();
       const visible = rows();
       let index = visible.findIndex((r) => r.id === selected());
-      if (index < 0) index = visible.findIndex((r) => r.project.id === row()?.value.project.id);
+      if (index < 0) index = visible.findIndex((r) => r.project?.id === row()?.value.project?.id);
       const target =
         visible[Math.max(0, Math.min(visible.length - 1, index + (key.name === "up" ? -1 : 1)))];
       if (target) selectRow(target);
@@ -336,22 +400,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       setError("");
       setForm("project");
     }
-    if (matches(key, navigationShortcuts.conversation) && row()) {
-      key.preventDefault();
-      key.stopPropagation();
-      setError("");
-      void createConversation("shared");
-    }
     if (matches(key, navigationShortcuts.actions) && row()) {
       key.preventDefault();
       key.stopPropagation();
       setError("");
       setForm("actions");
-    }
-    if (matches(key, "delete") && row()) {
-      key.preventDefault();
-      key.stopPropagation();
-      requestDelete(row()?.value);
     }
   };
   onMount(() => {
@@ -403,13 +456,15 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       if (!client) throw new Error("Daemon disconnected");
       const conversation = target.conversation;
       await client.request(
-        conversation ? `/v1/conversations/${conversation.id}` : `/v1/projects/${target.project.id}`,
+        conversation
+          ? `/v1/conversations/${conversation.id}`
+          : `/v1/projects/${target.project?.id}`,
         "DELETE",
         { confirmed: true },
         60000,
       );
       for (const c of snapshot().conversations)
-        if (conversation ? c.id === conversation.id : c.projectId === target.project.id)
+        if (conversation ? c.id === conversation.id : c.projectId === target.project?.id)
           views.delete(c.id);
       setForm(null);
       setDeleteTarget(null);
@@ -420,9 +475,9 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       setBusy(false);
     }
   };
-  const createConversation = async (workspaceMode: "shared" | "worktree") => {
-    const project = row()?.value.project;
-    if (!project || busy()) return;
+  const createConversation = async (workspaceMode: "shared" | "worktree", standalone = false) => {
+    const project = standalone ? null : row()?.value.project;
+    if ((!standalone && !project) || busy()) return;
     setBusy(true);
     setError("");
     try {
@@ -430,9 +485,9 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       const client = await connect();
       if (!client) throw new Error("Daemon disconnected");
       const conversation = await client.request<Conversation>(
-        `/v1/projects/${project.id}/conversations`,
+        project ? `/v1/projects/${project.id}/conversations` : "/v1/conversations",
         "POST",
-        { workspaceMode },
+        project ? { workspaceMode } : { workspacePath: launchCwd },
       );
       // Select the returned ID immediately, even if the WS snapshot has not arrived yet.
       batch(() => {
@@ -444,7 +499,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           ],
         }));
         setShowArchived(false);
-        selectRow({ id: conversationKey(conversation.id), project, conversation });
+        selectRow({ id: conversationKey(conversation.id), project: project ?? null, conversation });
         setForm("message");
       });
     } catch (e) {
@@ -489,12 +544,16 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     ];
   });
   const commands = createMemo<Command[]>(() => [
+    { id: "actions", name: "Project and Conversation Actions", run: () => setForm("actions") },
     ...contextCommands(),
     ...allRows().map((r) => ({
       id: r.id,
       name: r.conversation
-        ? `Conversation · ${r.project.name} / ${r.conversation.title} [${r.conversation.runtimeStatus}]`
-        : `Project · ${r.project.name} · ${r.project.rootPath}`,
+        ? `Conversation · ${r.project ? `${r.project.name} / ` : ""}${r.conversation.title}`
+        : `Project · ${r.project?.name}`,
+      description: r.conversation
+        ? `${r.conversation.runtimeStatus} · ${r.conversation.workspacePath}`
+        : (r.project?.rootPath ?? ""),
       run: () => selectRow(r),
     })),
     {
@@ -505,24 +564,40 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
         batch(() => {
           setShowArchived((v) => !v);
           if (!allRows().some((r) => r.id === selected()))
-            setSelected(previous ? projectKey(previous.project.id) : (allRows()[0]?.id ?? null));
+            setSelected(
+              previous?.project ? projectKey(previous.project.id) : (allRows()[0]?.id ?? null),
+            );
         });
       },
     },
-    { id: "project", name: "Add Project", run: () => setForm("project") },
+    {
+      id: "project",
+      name: "Add Project",
+      description: "Register an existing local directory",
+      run: () => setForm("project"),
+    },
     {
       id: "new",
       name: "New Conversation",
+      description: "Use the selected project's shared workspace",
       run: () => void createConversation("shared"),
+    },
+    {
+      id: "new_standalone",
+      name: "New Standalone Conversation",
+      description: "Ctrl+N · Use the directory where this hhu was launched, without a project",
+      run: () => void createConversation("shared", true),
     },
     {
       id: "new_worktree",
       name: "New Conversation in Git Worktree",
+      description: "Create an isolated branch and working directory",
       run: () => void createConversation("worktree"),
     },
     {
       id: "worktrees",
-      name: "Manage Worktrees / Safe Cleanup…",
+      name: "Manage Worktrees",
+      description: "Inspect managed directories and safe cleanup",
       run: () => {
         void (async () => {
           try {
@@ -541,7 +616,8 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     { id: "keys", name: "Configure Shortcuts", run: () => setForm("shortcuts") },
     {
       id: "quit",
-      name: "Quit TUI (keep Agents running)",
+      name: "Quit TUI",
+      description: "Keep the Daemon and Agents running in the background",
       run: () => {
         void exit();
       },
@@ -550,18 +626,21 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       ? [
           {
             id: "raw",
-            name: "Raw Events / Debug (complete ACP protocol)",
+            name: "Raw Events / Debug",
+            description: "Inspect the complete persisted ACP protocol",
             run: () => dispatch("raw"),
           },
           {
             id: "restore_pending",
-            name: "Restore Unconfirmed Message (without sending)",
+            name: "Restore Unconfirmed Message",
+            description: "Return the reserved message to the editor for inspection",
             run: () => dispatch("restore_pending"),
           },
           { id: "message", name: "Write Message", run: () => setForm("message") },
           {
             id: "initialize",
-            name: "Initialize ACP session (no Prompt)",
+            name: "Initialize ACP session",
+            description: "Connect and negotiate capabilities without a Prompt",
             run: () => dispatch("initialize"),
           },
           { id: "changes", name: "Toggle Changes / Chat", run: () => dispatch("changes") },
@@ -569,7 +648,8 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           { id: "cancel", name: "Cancel Current Turn (ACP)", run: () => dispatch("cancel") },
           {
             id: "harness",
-            name: "Select Next Harness (Handoff on first message)",
+            name: "Select Next Harness",
+            description: "The first message to the target starts Handoff",
             run: () => dispatch("harness"),
           },
           {
@@ -579,17 +659,36 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           },
           {
             id: "handoff",
-            name: "Handoff Failure / Saved Context / Degraded Confirmation",
+            name: "Handoff Failure",
+            description: "View saved context, confirm degraded context, retry or cancel",
             run: () => dispatch("handoff"),
           },
           {
             id: "settings",
-            name: "HarnessHub ACP settings · Native Session Options",
+            name: "HarnessHub ACP settings",
+            description: "Choose model, mode and other options exposed by the native session",
             run: () => setForm("settings"),
           },
         ]
       : []),
   ]);
+  const localCommand = (name: string) => {
+    if (["help", "resume"].includes(name)) {
+      paletteReturn = "message";
+      setForm("palette");
+      return;
+    }
+    const aliases: Record<string, string> = {
+      diff: "changes",
+      model: "settings",
+      permissions: "settings",
+      keymap: "keys",
+      exit: "quit",
+    };
+    commands()
+      .find((command) => command.id === (aliases[name] ?? name))
+      ?.run();
+  };
   const submit = async (value: string) => {
     if (busy()) return;
     setBusy(true);
@@ -611,54 +710,106 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
     }
   };
   return (
-    <box flexDirection="column" width="100%" height="100%" paddingX={1} gap={0}>
-      <text fg="#80cbc4" height={1} flexShrink={0}>
-        {`HarnessHub · ${state()}${showActivity() ? ` · Global · Running ${snapshot().activity.running} · Approval ${snapshot().activity.pendingApprovals} · Problems ${snapshot().activity.problems}` : ""}${showArchived() ? " · Archives visible" : ""}`}
-      </text>
+    <box
+      flexDirection="column"
+      width="100%"
+      height="100%"
+      paddingX={1}
+      gap={0}
+      backgroundColor={ui.canvas}
+    >
+      <box id="app-header" flexDirection="row" height={1} flexShrink={0} backgroundColor={ui.panel}>
+        <box
+          id="commands-button"
+          onMouse={(event) => {
+            if (event.type !== "down" || event.button !== 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (form() && form() !== "message" && form() !== "transcript") return;
+            openPalette();
+          }}
+        >
+          <text selectable={false} fg={ui.accent}>
+            {" "}
+            / Commands{" "}
+          </text>
+        </box>
+        <text fg={ui.text} flexShrink={0}>
+          <b>HarnessHub</b>
+          <span style={{ fg: statusColor(state()) }}>{` · ${state()}`}</span>
+        </text>
+        <Show when={showActivity() && dimensions().width >= 70}>
+          <text fg={ui.muted} wrapMode="none" height={1}>
+            {" · Global · "}
+            <span
+              style={{ fg: snapshot().activity.running ? ui.accent : ui.muted }}
+            >{`Running ${snapshot().activity.running}`}</span>
+            {" · "}
+            <span
+              style={{ fg: snapshot().activity.pendingApprovals ? ui.warning : ui.muted }}
+            >{`Approval ${snapshot().activity.pendingApprovals}`}</span>
+            {" · "}
+            <span
+              style={{ fg: snapshot().activity.problems ? ui.error : ui.muted }}
+            >{`Problems ${snapshot().activity.problems}`}</span>
+          </text>
+        </Show>
+        <Show when={showArchived()}>
+          <text fg={ui.warning}> · Archives visible</text>
+        </Show>
+      </box>
       <box flexGrow={1} minHeight={0} flexDirection="row" gap={1}>
         <Show when={sidebarVisible()}>
           <box
             width={Math.min(34, Math.floor(dimensions().width * 0.28))}
+            minWidth={0}
             border
-            borderColor="#36404b"
-            title="Projects → Conversations"
+            borderColor={ui.border}
+            backgroundColor={ui.panel}
             flexDirection="column"
           >
+            <text height={1} flexShrink={0} fg={ui.text} wrapMode="none">
+              <b>Projects → Conversations</b>
+            </text>
             <Show when={row()}>
               <box
                 height={1}
                 flexShrink={0}
                 onMouse={(event) =>
                   sidebarClick("sidebar-actions", event, () => {
-                    if (!form()) {
+                    if (!form() || form() === "transcript") {
                       setError("");
                       setForm("actions");
                     }
                   })
                 }
               >
-                <text selectable={false} fg="#80cbc4">
-                  ⋯ Actions (Ctrl+O)
+                <text selectable={false} fg={ui.muted}>
+                  ⋯ Actions
                 </text>
               </box>
             </Show>
             <Show
               when={rows().length > 0}
-              fallback={<text>No projects. Press Ctrl+W to register an existing directory.</text>}
+              fallback={
+                <text fg={ui.secondary}>No projects yet. Press / and choose Add Project.</text>
+              }
             >
               <ProjectTree
                 rows={rows()}
                 selected={selected()}
                 activeProjectId={row()?.value.conversation?.projectId ?? null}
                 collapsed={collapsed()}
-                disabled={!!form() && form() !== "message"}
+                disabled={!!form() && form() !== "message" && form() !== "transcript"}
                 onSelect={selectRow}
                 onToggle={toggleProject}
                 onProjectClick={(target) => {
-                  const wasCollapsed = collapsed().has(target.project.id);
+                  const project = target.project;
+                  if (!project) return;
+                  const wasCollapsed = collapsed().has(project.id);
                   batch(() => {
                     selectRow(target);
-                    if (!wasCollapsed) toggleProject(target.project.id);
+                    if (!wasCollapsed) toggleProject(project.id);
                   });
                 }}
                 onActions={(conversation) => {
@@ -673,17 +824,30 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
           <Show
             when={row()}
             fallback={
-              <text>Global project list. Startup shell cwd is not registered automatically.</text>
+              <box flexDirection="column" padding={1} gap={1}>
+                <text fg={ui.text}>
+                  <b>Open your workspace</b>
+                </text>
+                <text fg={ui.secondary}>
+                  Add an existing project directory, then create a conversation.
+                </text>
+                <KeyHints items={[["/", "commands and projects"]]} />
+              </box>
             }
           >
-            <text height={1} flexShrink={0} fg="#8b949e">
-              {row()?.value.conversation
-                ? `Conversation · ${row()?.value.conversation?.title}${row()?.value.conversation?.archivedAt !== null ? " [archived]" : ""} · Workspace: ${row()?.value.conversation?.workspacePath}`
-                : `${row()?.value.project.name} · Workspace: ${row()?.value.project.rootPath} · Press Ctrl+N to create a conversation`}
+            <text id="workspace-heading" height={1} flexShrink={0} fg={ui.text} wrapMode="none">
+              <b>
+                {row()?.value.conversation
+                  ? `Conversation · ${row()?.value.conversation?.title}${row()?.value.conversation?.archivedAt !== null ? " [archived]" : ""}`
+                  : row()?.value.project?.name}
+              </b>
+            </text>
+            <text height={1} flexShrink={0} fg={ui.muted} wrapMode="none">
+              {`Workspace · ${row()?.value.conversation?.workspacePath ?? row()?.value.project?.rootPath}`}
             </text>
           </Show>
           <Show
-            when={row() && !row()?.value.conversation ? row()?.value.project.rootPath : undefined}
+            when={row() && !row()?.value.conversation ? row()?.value.project?.rootPath : undefined}
             keyed
           >
             {(rootPath) => <ProjectDirectory rootPath={rootPath} />}
@@ -695,8 +859,11 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                   snapshot().conversations.find((c) => c.id === conversationId) as Conversation
                 }
                 form={form()}
-                setForm={setForm}
+                setForm={(value) => {
+                  if (row()?.value.conversation?.id === conversationId) setForm(value);
+                }}
                 onDraftError={setError}
+                onCommand={localCommand}
                 view={view(conversationId)}
                 shortcuts={keyOverrides()}
                 action={action()}
@@ -718,7 +885,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
               )
             }
           >
-            <text fg="#ffcc80">
+            <text fg={ui.warning}>
               Another Conversation is active in this shared workspace. Concurrent file edits can
               conflict.
             </text>
@@ -730,8 +897,18 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
       </Show>
       <Show when={form() === "rename" && renameTarget()}>
         {(target) => (
-          <box border title="Rename Conversation · Enter save · Esc cancel" height={3}>
+          <box
+            border
+            borderColor={ui.border}
+            backgroundColor={ui.panel}
+            flexDirection="column"
+            height={5}
+          >
+            <text fg={ui.text}>
+              <b>Rename Conversation</b>
+            </text>
             <input
+              {...inputStyle}
               id="conversation-title"
               focused={!busy()}
               value={(target() as Conversation).title}
@@ -741,27 +918,27 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
               }}
               width="100%"
             />
+            <KeyHints
+              items={[
+                ["Enter", "save"],
+                ["Esc", "cancel"],
+              ]}
+            />
           </box>
         )}
       </Show>
       <Show when={form() === "worktrees"}>
-        <box
-          position="absolute"
-          top={2}
-          left={2}
-          width="94%"
+        <Panel
+          title="Managed Worktrees"
+          hint="Choose a worktree to inspect cleanup. Esc closes."
           height="80%"
-          border
-          backgroundColor="#10151c"
-          flexDirection="column"
-          padding={1}
-          title="Managed Worktrees · Enter inspect cleanup · Esc cancel"
         >
-          <text>
+          <text fg={ui.secondary}>
             Cleanup moves an unbound, clean worktree to a retained directory. Files and branches
             remain available for inspection; HarnessHub never physically deletes them.
           </text>
           <select
+            {...listStyle}
             focused
             flexGrow={1}
             showDescription
@@ -775,29 +952,21 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
               }
             }}
           />
-        </box>
+        </Panel>
       </Show>
       <Show when={form() === "cleanup" && cleanupTarget()}>
         {(w) => (
-          <box
-            position="absolute"
-            top={3}
-            left={3}
-            width="92%"
-            height={10}
-            border
-            backgroundColor="#10151c"
-            padding={1}
-            flexDirection="column"
-            title="Confirm safe Worktree cleanup · Esc cancel"
-          >
-            <text>{`Retain managed directory: ${(w() as ManagedWorktree).path}`}</text>
-            <text>{`Preserve branch: ${(w() as ManagedWorktree).branch}`}</text>
-            <text>
+          <Panel title="Confirm safe Worktree cleanup" hint="Type CLEAN to continue. Esc cancels.">
+            <text
+              fg={ui.secondary}
+            >{`Retain managed directory: ${(w() as ManagedWorktree).path}`}</text>
+            <text fg={ui.secondary}>{`Preserve branch: ${(w() as ManagedWorktree).branch}`}</text>
+            <text fg={ui.secondary}>
               Dirty, hidden-index, bound, locked or mismatched worktrees are refused. Files are
               retained.
             </text>
             <input
+              {...inputStyle}
               focused={!busy()}
               placeholder="Type CLEAN to confirm removal"
               onSubmit={(value) => {
@@ -827,7 +996,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
                 })();
               }}
             />
-          </box>
+          </Panel>
         )}
       </Show>
       <Show when={form() === "palette"}>
@@ -850,7 +1019,7 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             onDelete={() => {
               const conversation = target() as Conversation;
               const project = snapshot().projects.find((p) => p.id === conversation.projectId);
-              if (project) requestDelete({ project, conversation });
+              requestDelete({ project: project ?? null, conversation });
             }}
             onClose={() => setForm(null)}
           />
@@ -864,35 +1033,27 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
             onCancel={() => setForm(null)}
             onDelete={() => void deleteSelected()}
           >
-            <text>
+            <text fg={ui.secondary}>
               {target().conversation
                 ? `Permanently delete “${target().conversation?.title}” and its application history?`
-                : `Permanently delete Project “${target().project.name}” and all ${snapshot().conversations.filter((c) => c.projectId === target().project.id).length} Conversations (including archived) and their history?`}
+                : `Permanently delete Project “${target().project?.name}” and all ${snapshot().conversations.filter((c) => c.projectId === target().project?.id).length} Conversations (including archived) and their history?`}
             </text>
-            <text>Active, pending approval or UNCERTAIN Conversations must be resolved first.</text>
+            <text fg={ui.secondary}>
+              Active, pending approval or UNCERTAIN Conversations must be resolved first.
+            </text>
           </DeleteConfirmation>
         )}
       </Show>
       <Show when={form() === "shortcuts"}>
-        <box
-          position="absolute"
-          top={2}
-          left={2}
-          width="92%"
-          height={10}
-          border
-          backgroundColor="#10151c"
-          padding={1}
-          flexDirection="column"
-          title="Shortcuts · JSON overrides · Esc close"
-        >
-          <text>
+        <Panel title="Shortcuts" hint="Edit JSON overrides. Enter saves. Esc closes.">
+          <text fg={ui.secondary}>
             Use Ctrl combinations (legacy Meta overrides remain supported). Letters alone never
-            invoke shortcuts. Fixed Ctrl actions, Enter, Shift+Enter and Esc are reserved. Empty
-            object restores defaults.
+            invoke shortcuts. Editor keys, Enter, Shift+Enter and Esc are reserved. Empty object
+            restores defaults.
           </text>
-          <text>{JSON.stringify(keys())}</text>
+          <text fg={ui.secondary}>{JSON.stringify(keys())}</text>
           <input
+            {...inputStyle}
             focused
             value={JSON.stringify(keyOverrides())}
             onSubmit={(value) => {
@@ -908,24 +1069,47 @@ export function App(props: { initialProjectId?: string | undefined; onExit: () =
               }
             }}
           />
-        </box>
+        </Panel>
       </Show>
       <Show when={error()}>
-        <text fg="#ef9a9a">{error()}</text>
-        <text>Ctrl+Q closes this TUI without saving pending local edits.</text>
+        <text fg={ui.error}>{error()}</text>
+        <box
+          onMouse={(event) => {
+            if (event.type === "down" && event.button === 0) props.onExit();
+          }}
+        >
+          <text fg={ui.secondary}>Click here to close without saving pending local edits.</text>
+        </box>
       </Show>
       <Show when={notice()}>
-        <text height={1} fg="#8b949e">
+        <text height={1} fg={ui.muted}>
           {notice()}
         </text>
       </Show>
-      <text height={1} flexShrink={0} fg="#8b949e">
-        {`${keys().palette} Commands · Ctrl+O Actions · Del Delete · ${keys().sidebar} Sidebar · ${keys().changes} Changes · Ctrl+C Copy / Clear / Quit`}
-      </text>
+      <box backgroundColor={ui.panel} height={1} flexShrink={0}>
+        <KeyHints
+          items={
+            form() === "message"
+              ? [
+                  ["/", "Commands"],
+                  ["Ctrl+N", "New at launch path"],
+                  ["Ctrl+T", "Transcript"],
+                  ["Ctrl+C", "Copy / Clear / Quit"],
+                ]
+              : [
+                  ["/", "Commands"],
+                  ["N", "New in project"],
+                  ["Ctrl+N", "New at launch path"],
+                  ["Enter", "Message"],
+                  ["Ctrl+C", "Copy / Clear / Quit"],
+                ]
+          }
+        />
+      </box>
     </box>
   );
 }
-export async function openTui(initialProjectId?: string) {
+export async function openTui(initialProjectId?: string, launchCwd = process.cwd()) {
   const renderer = await createCliRenderer({
     exitOnCtrlC: false,
     exitSignals: ["SIGTERM", "SIGHUP"],
@@ -937,7 +1121,13 @@ export async function openTui(initialProjectId?: string) {
   });
   renderer.once("destroy", finish);
   await render(
-    () => <App initialProjectId={initialProjectId} onExit={() => renderer.destroy()} />,
+    () => (
+      <App
+        initialProjectId={initialProjectId}
+        launchCwd={launchCwd}
+        onExit={() => renderer.destroy()}
+      />
+    ),
     renderer,
   );
   await done;

@@ -44,7 +44,12 @@ export async function openStore(file: string, migrations: string) {
     }
     sqlite.pragma("journal_mode = WAL");
     const db = drizzle(sqlite, { schema });
-    migrate(db, { migrationsFolder: migrations });
+    sqlite.pragma("foreign_keys = OFF");
+    try {
+      migrate(db, { migrationsFolder: migrations });
+    } finally {
+      sqlite.pragma("foreign_keys = ON");
+    }
     sqlite.pragma(`user_version = ${expected}`);
     for (const path of [file, `${file}-wal`, `${file}-shm`]) if (existsSync(path)) secureFile(path);
     return new Store(sqlite, db);
@@ -173,10 +178,19 @@ export class Store {
     if (!value) throw new AppError(404, "Conversation not found");
     return value;
   }
-  addConversation(projectId: string, title?: string, workspace?: { id: string; path: string }) {
-    this.assertProjectAvailable(projectId);
-    const project = this.getProject(projectId);
-    this.assertWorkspaceAvailable(workspace?.path ?? project.rootPath);
+  addConversation(
+    projectId: string | null,
+    title?: string,
+    workspace?: { id: string; path: string },
+    standalonePath?: string,
+  ) {
+    if (projectId) this.assertProjectAvailable(projectId);
+    const workspacePath = projectId
+      ? (workspace?.path ?? this.getProject(projectId).rootPath)
+      : standalonePath;
+    if (!workspacePath || (!projectId && workspace))
+      throw new AppError(400, "Standalone Conversation requires a shared workspace path");
+    this.assertWorkspaceAvailable(workspacePath);
     const now = Date.now();
     const value = {
       id: randomUUID(),
@@ -187,7 +201,7 @@ export class Store {
       worktreeId: workspace?.id ?? null,
       activeNativeSessionId: null,
       selectedHarnessId: null,
-      workspacePath: workspace?.path ?? project.rootPath,
+      workspacePath,
       runtimeStatus: "IDLE" as const,
       createdAt: now,
       updatedAt: now,

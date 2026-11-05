@@ -17,6 +17,7 @@ import {
   projectDeleteInput,
   projectInput,
   projectPatch,
+  standaloneConversationInput,
   VERSION,
 } from "@harnesshub/shared";
 import { appendPrivateLog, paths, privateWrite, securePaths } from "@harnesshub/shared/paths";
@@ -198,6 +199,13 @@ async function main() {
       data.title,
       data.workspaceMode,
     );
+    publish(result.event);
+    return c.json(result.value, 201);
+  });
+  app.post("/v1/conversations", async (c) => {
+    const data = standaloneConversationInput.parse(await c.req.json());
+    if (runtime.closing) throw new AppError(503, "Runtime is stopping");
+    const result = projects.createStandaloneConversation(data.workspacePath, data.title);
     publish(result.event);
     return c.json(result.value, 201);
   });

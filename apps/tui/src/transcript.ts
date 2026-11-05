@@ -111,7 +111,7 @@ export function projectEvent(event: ConversationEvent): EventProjection {
       label: "Native permission · user decision required",
       text:
         options.map((option) => String(option.name ?? option.optionId)).join(" · ") ||
-        "The Agent is waiting for your permission. Press Ctrl+A to review the native options.",
+        "The Agent is waiting for your permission. Use /approval to review the native options.",
     };
   }
   if (event.kind === "handoff.record")
@@ -146,7 +146,7 @@ export function projectEvent(event: ConversationEvent): EventProjection {
     return {
       category: "USER_NOTICE",
       label: `Warning · ${event.kind}`,
-      text: visibleText(p) ?? "Agent reported a warning. Press Ctrl+R to inspect the source.",
+      text: visibleText(p) ?? "Agent reported a warning. Open Source to inspect the event.",
     };
   if (event.kind === "runtime.context_ended")
     return {
@@ -427,7 +427,7 @@ export class Transcript {
         (event.kind === "plan"
           ? pretty(event.payload)
           : (visibleText(p) ??
-            `Agent sent ${String(object(p.content).type ?? "non-text")} content. Press Ctrl+R to inspect the source.`)),
+            `Agent sent ${String(object(p.content).type ?? "non-text")} content. Open Source to inspect the event.`)),
       tool: null,
       waiting: false,
       streaming: false,

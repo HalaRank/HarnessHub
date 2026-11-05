@@ -180,7 +180,11 @@ test("sidebar and validated shortcut preferences persist across daemon restart i
   assert.equal(result.showSidebar, false);
   assert.deepEqual(result.shortcuts, shortcuts);
   const db = new Database(join(env.XDG_DATA_HOME, "harnesshub/harnesshub.db"), { readonly: true });
-  assert.equal(db.pragma("user_version", { simple: true }), 6);
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    JSON.parse(readFileSync(resolve("packages/storage/migrations/meta/_journal.json"))).entries
+      .length,
+  );
   db.close();
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).includes("harnesshub.db"));
 });

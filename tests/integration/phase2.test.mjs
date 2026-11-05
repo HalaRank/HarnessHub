@@ -102,7 +102,7 @@ test("migration upgrades a real Phase-1 database without losing projects/convers
   assert.equal((await api("/v1/projects"))[0].name, project.name);
   assert.ok(readdirSync(join(env.XDG_DATA_HOME, "harnesshub")).some((p) => p.includes(".backup-")));
   const db = new Database(dbFile);
-  assert.equal(db.pragma("user_version", { simple: true }), 6);
+  assert.equal(db.pragma("user_version", { simple: true }), journal.entries.length);
   db.close();
   await api("/v1/harness-profiles", "POST", {
     id: "mock",

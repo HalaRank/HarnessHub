@@ -17,6 +17,7 @@ import { ProjectDirectory } from "../../apps/tui/src/project-directory";
 import { conversationKey, projectKey } from "../../apps/tui/src/project-tree";
 import { connect } from "../../packages/shared/src/client";
 import type { Conversation, Project } from "../../packages/shared/src/index";
+import { focusMessage, invoke, openCommands, selectLastRow } from "./ui-actions";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-mouse-sidebar-"));
 const previous = { ...process.env };
@@ -110,15 +111,22 @@ async function setup(name: string, count = 2) {
   return { project, conversations, a, b };
 }
 async function command(screen: Screen, text: string) {
-  screen.mockInput.pressKey("p", { ctrl: true });
+  await openCommands(screen);
   await frame(screen, "Command palette");
   await screen.mockInput.typeText(text);
   screen.mockInput.pressEnter();
   await screen.renderOnce();
 }
 async function current(screen: Screen, conversation: Conversation) {
-  await frame(screen, `Conversation · ${conversation.title} · Workspace`);
-  await frame(screen, "Ctrl+L Message");
+  await frame(screen, `Conversation · ${conversation.title}`);
+  await frame(screen, "Model (ACP)");
+  await waitFor(async () => {
+    await screen.renderOnce();
+    return (
+      !!screen.renderer.root.findDescendantById("message-draft") &&
+      !screen.captureCharFrame().includes("ACP operation pending")
+    );
+  }, "draft ready");
 }
 
 test("sidebar spacing preserves names and keeps project headings more prominent", async () => {
@@ -146,7 +154,7 @@ test("sidebar spacing preserves names and keeps project headings more prominent"
         span.fg.equals(RGBA.fromHex("#b2dfdb")),
       );
       const conversationSpans = conversationLine?.spans.filter((span) =>
-        span.fg.equals(RGBA.fromHex("#ffffff")),
+        span.fg.equals(RGBA.fromHex("#edf2f7")),
       );
       expect(projectSpans?.length).toBeGreaterThan(0);
       expect(conversationSpans?.length).toBeGreaterThan(0);
@@ -192,7 +200,7 @@ test("project arrows collapse independently; names expand/select; hover, selecte
     // Collapsing the active project's children does not leave the conversation.
     await current(screen, two.a);
     await click(screen, projectKey(one.project.id), 4);
-    await frame(screen, `${one.project.name} · Workspace`);
+    await frame(screen, `Workspace · ${one.project.rootPath}`);
     expect(screen.renderer.root.findDescendantById(conversationKey(one.a.id))).toBeTruthy();
     expect(screen.renderer.root.findDescendantById(conversationKey(two.a.id))).toBeFalsy();
     await frame(screen, "Project directory");
@@ -210,16 +218,16 @@ test("project arrows collapse independently; names expand/select; hover, selecte
     await click(screen, conversationKey(one.a.id), 5);
     await current(screen, one.a);
     const selected = node(screen, conversationKey(one.a.id)) as BoxRenderable;
-    expect(selected.backgroundColor.equals(RGBA.fromHex("#264b63"))).toBe(true);
+    expect(selected.backgroundColor.equals(RGBA.fromHex("#294456"))).toBe(true);
     const p = await point(screen, conversationKey(one.b.id), 5);
     await screen.mockMouse.moveTo(p.x, p.y);
     await screen.renderOnce();
     expect(
       (node(screen, conversationKey(one.b.id)) as BoxRenderable).backgroundColor.equals(
-        RGBA.fromHex("#1c2935"),
+        RGBA.fromHex("#233342"),
       ),
     ).toBe(true);
-    expect(selected.backgroundColor.equals(RGBA.fromHex("#264b63"))).toBe(true);
+    expect(selected.backgroundColor.equals(RGBA.fromHex("#294456"))).toBe(true);
     await screen.mockMouse.moveTo(100, 0);
     await screen.renderOnce();
     expect((node(screen, conversationKey(one.b.id)) as BoxRenderable).backgroundColor.a).toBe(0);
@@ -231,14 +239,14 @@ test("project arrows collapse independently; names expand/select; hover, selecte
     screen.resize(72, 30);
     await screen.renderOnce();
     expect(screen.renderer.root.findDescendantById("project-tree")).toBeFalsy();
-    screen.mockInput.pressKey("b", { ctrl: true });
+    await invoke(screen, "Toggle Sidebar");
     await waitFor(async () => {
       await screen.renderOnce();
       return !!screen.renderer.root.findDescendantById("project-tree");
     });
     await click(screen, conversationKey(one.a.id), 5);
     await current(screen, one.a);
-    screen.mockInput.pressKey("b", { ctrl: true });
+    await invoke(screen, "Toggle Sidebar");
     await screen.renderOnce();
     expect(screen.renderer.root.findDescendantById("project-tree")).toBeFalsy();
   } finally {
@@ -313,18 +321,18 @@ test("mouse navigation preserves unsent drafts, scroll and manual tools; backgro
   try {
     await current(screen, a);
     await frame(screen, "Exact Native Tool Name");
-    screen.mockInput.pressKey("t", { ctrl: true });
-    screen.mockInput.pressKey("e", { ctrl: true });
+    await selectLastRow(screen);
+    screen.mockInput.pressEnter();
     await frame(screen, "Show less");
     const history = node(screen, "native-history") as ScrollBoxRenderable;
     history.scrollTo(4);
     await screen.renderOnce();
     const position = history.scrollTop;
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await focusMessage(screen);
     await screen.mockInput.typeText("Alpha unsent\n草稿");
     await click(screen, conversationKey(b.id), 5);
     await current(screen, b);
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await focusMessage(screen);
     await screen.mockInput.typeText("Beta draft");
     await click(screen, conversationKey(a.id), 5);
     await current(screen, a);
@@ -471,7 +479,7 @@ test("chat area clicks focus the draft without sending or stealing modal focus",
     await screen.mockInput.typeText("prefix ");
     expect(editor().plainText).toBe("prefix 中文 👋 draft appended border");
 
-    screen.mockInput.pressKey("p", { ctrl: true });
+    await openCommands(screen);
     await frame(screen, "Command palette");
     await screen.mockMouse.click(history.x + 3, history.y + 2);
     await screen.renderOnce();
@@ -653,7 +661,7 @@ test("row actions archive/restore/delete the intended ID without selecting a nei
       await screen.renderOnce();
       return !screen.renderer.root.findDescendantById("conversation-action-archive");
     });
-    await frame(screen, `${project.name} · Workspace`);
+    await frame(screen, `Workspace · ${project.rootPath}`);
     await command(screen, "View Archived Conversations");
     await click(screen, conversationKey(a.id), 5);
     await frame(screen, "[archived]");
@@ -662,7 +670,7 @@ test("row actions archive/restore/delete the intended ID without selecting a nei
     await waitFor(
       async () => (await api<Conversation>(`/v1/conversations/${a.id}`)).archivedAt === null,
     );
-    await frame(screen, `${project.name} · Workspace`);
+    await frame(screen, `Workspace · ${project.rootPath}`);
     await waitFor(async () => {
       await screen.renderOnce();
       return !screen.renderer.root.findDescendantById("conversation-action-archive");
@@ -706,7 +714,7 @@ test("row actions archive/restore/delete the intended ID without selecting a nei
     await click(screen, "conversation-action-delete", 2);
     await frame(screen, "Confirm Conversation deletion");
     await click(screen, "delete-confirm", 2);
-    await frame(screen, `${project.name} · Workspace`);
+    await frame(screen, `Workspace · ${project.rootPath}`);
     expect(screen.renderer.root.findDescendantById(conversationKey(a.id))).toBeFalsy();
   } finally {
     await screen.dispose();

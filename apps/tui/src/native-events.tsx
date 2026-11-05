@@ -142,12 +142,18 @@ export function NativeEvents(props: {
       const next = candidates.find(({ i }) => i > selectedIndex()) ?? candidates[0];
       if (next) reveal(next.i);
     }
-    if (matches(key, "[") || matches(key, "]"))
+    if (matches(key, "up") || matches(key, "down")) {
+      key.preventDefault();
+      key.stopPropagation();
       reveal(
-        Math.max(0, Math.min(model.size() - 1, selectedIndex() + (key.name === "[" ? -1 : 1))),
+        Math.max(0, Math.min(model.size() - 1, selectedIndex() + (key.name === "up" ? -1 : 1))),
       );
-    if (matches(key, navigationShortcuts.expand) && selectedRow())
+    }
+    if (matches(key, "return") && selectedRow()) {
+      key.preventDefault();
+      key.stopPropagation();
       toggle(selectedRow() as TranscriptRow);
+    }
     if (matches(key, navigationShortcuts.source)) inspect(true);
     if (matches(key, navigationShortcuts.copySource)) inspect(false);
     if ((key.ctrl || key.meta || key.shift) && !["pageup", "pagedown"].includes(key.name)) return;
@@ -167,6 +173,7 @@ export function NativeEvents(props: {
       key.preventDefault();
       key.stopPropagation();
       followLatest();
+      if (key.name === "end") setSelected(model.size() - 1);
     }
   });
   return (
@@ -187,7 +194,7 @@ export function NativeEvents(props: {
       >
         <Show
           when={model.size()}
-          fallback={<text>Start a conversation. Press Ctrl+L to write a message.</text>}
+          fallback={<text>Start a conversation. Press Enter to write a message.</text>}
         >
           <For each={visible()}>
             {(row) => (
@@ -248,7 +255,7 @@ export function NativeEvents(props: {
                   </Show>
                   <Show when={row.value().kind === "handoff"}>
                     <text fg="#80cbc4">
-                      Ctrl+E expand/collapse · Ctrl+Y complete report · Ctrl+R source events
+                      Enter expand/collapse · click Source for the complete report and events
                     </text>
                     <Show when={manual()[row.id] ?? row.value().waiting}>
                       <Markdown text={row.value().text.slice(0, 24000)} />
@@ -269,9 +276,7 @@ export function NativeEvents(props: {
                             .value()
                             .text.slice(0, 180)
                             .replace(/\s*\n\s*/g, " ") +
-                          (row.value().text.length > 180
-                            ? " … (Ctrl+E expand · Ctrl+R source)"
-                            : "")}
+                          (row.value().text.length > 180 ? " … (Enter expands in transcript)" : "")}
                     </text>
                   </Show>
                   <Show when={row.value().kind === "plan"}>
@@ -301,11 +306,53 @@ export function NativeEvents(props: {
           Agent is working…
         </text>
       </Show>
-      <text
-        flexShrink={0}
-        height={1}
-        fg="#8b949e"
-      >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · [/] select · Ctrl+E more/less · Ctrl+R source · Ctrl+Y copy · PgUp/PgDn scroll · Esc/End latest`}</text>
+      <box flexDirection="row" height={1} flexShrink={0}>
+        <text
+          flexGrow={1}
+          minWidth={0}
+          truncate
+          fg="#8b949e"
+        >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · Ctrl+T transcript · ↑↓ select · Enter expand`}</text>
+        <box
+          id="transcript-expand"
+          onMouse={(event) => {
+            if (event.type !== "down" || event.button !== 0 || !selectedRow()) return;
+            event.preventDefault();
+            event.stopPropagation();
+            toggle(selectedRow() as TranscriptRow);
+          }}
+        >
+          <text selectable={false} fg="#8b949e">
+            More / less{" "}
+          </text>
+        </box>
+        <box
+          id="transcript-source"
+          onMouse={(event) => {
+            if (event.type !== "down" || event.button !== 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            inspect(false);
+          }}
+        >
+          <text selectable={false} fg="#8b949e">
+            Source{" "}
+          </text>
+        </box>
+        <box
+          id="transcript-raw"
+          onMouse={(event) => {
+            if (event.type !== "down" || event.button !== 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            inspect(true);
+          }}
+        >
+          <text selectable={false} fg="#8b949e">
+            Raw
+          </text>
+        </box>
+      </box>
       <Show when={source()}>{(parts) => <SourceViewer parts={parts()} onClose={close} />}</Show>
     </box>
   );

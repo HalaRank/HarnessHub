@@ -34,6 +34,7 @@ export const turnInput = z
     requestId: z.string().uuid(),
     harnessId: z.string().min(1).max(80),
     message: z.string().min(1).max(100000),
+    delivery: z.enum(["steer", "queue"]).optional(),
     nativeCommand: z
       .object({ nativeSessionId: z.string().uuid(), name: z.string() })
       .strict()
@@ -78,6 +79,14 @@ export type Turn = {
   finishEventSeq: number | null;
   createdAt: number;
   endedAt: number | null;
+};
+export type PendingInput = {
+  requestId: string;
+  conversationId: string;
+  input: z.infer<typeof turnInput>;
+  state: "QUEUED" | "HELD" | "SENDING" | "SENT" | "ERROR" | "UNCERTAIN" | "CANCELLED";
+  turnId: string | null;
+  reason: string;
 };
 export type NativeSession = {
   id: string;

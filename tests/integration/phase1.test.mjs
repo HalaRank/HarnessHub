@@ -195,7 +195,10 @@ test("SQLite uses WAL, foreign keys, schema version, and private permissions", a
     assert.equal(statSync(file).mode & 0o777, 0o600);
   const db = new Database(join(data, "harnesshub.db"));
   assert.equal(db.pragma("journal_mode", { simple: true }), "wal");
-  assert.equal(db.pragma("user_version", { simple: true }), 6);
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    JSON.parse(readFileSync(join(migrations, "meta/_journal.json"))).entries.length,
+  );
   db.pragma("foreign_keys = ON");
   const insert = db.prepare(
     "INSERT INTO conversations(id, project_id, title, workspace_mode, workspace_path, runtime_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

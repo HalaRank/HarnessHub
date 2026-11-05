@@ -33,33 +33,44 @@ hhu daemon stop --cancel-active  # 明确请求原生取消；等待结束后才
 hhu --version
 ```
 
-无参数启动不会把 Shell cwd 注册为项目。在 TUI 中按 `Ctrl+W` 注册项目，目录默认从 `~/` 开始；按 Tab 补全目录，多个匹配时补齐共同前缀并显示候选，继续输入后可再次 Tab。支持绝对路径，`~` 和相对路径以 Home 展开，不会创建目录。按 `Ctrl+N` 直接创建并进入共享目录会话，无需输入名称；首条消息自动生成标题（空白折叠，最多 80 字符），后续消息不覆盖。选择会话后通过 `Ctrl+O` / `⋯` / Ctrl+P → Rename Conversation 重命名，手动标题优先。Ctrl+P → New Conversation in Git Worktree 创建独立 worktree 会话，同样自动命名。↑/↓ 浏览，选中 Conversation 后 `Ctrl+F` 选择 Harness、`Ctrl+L` 输入消息、Enter 发送、Shift+Enter 换行（终端不支持时用 Ctrl+J）、`Ctrl+A` 输入原生权限选项编号、`Ctrl+X` 正常取消。工具采用紧凑摘要：调用标题限一行，原生文本/终端输出默认最多三行，超出显示省略行数；状态和原生审批选项仍可见。`Ctrl+T` 选择工具、`Ctrl+E` 展开/折叠正文。参数/结果 JSON、terminal/review ID 和事件编号只在来源/原文视图查看，不直接铺进聊天。Esc 关闭输入，`Ctrl+Q` 退出；Ctrl+C 优先复制有效选区并清除选区，否则清空非空输入框，再次 Ctrl+C 在空输入时退出。退出不停止 Daemon / Worker，取消 Turn 仍独立使用 `Ctrl+X`。Windows Terminal 和 VS Code WSL 的真实键码仍需人工验收。
+无参数启动打开全局 Project → Conversation 树。浏览时按 `/`，或点击顶部 Commands，搜索项目、会话及操作。Add Project 注册已有目录，路径默认从 `~/` 开始，支持 Tab 补全。`/new` 创建共享目录会话，命令面板的 New Conversation in Git Worktree 创建独立 worktree 会话。首条消息自动生成标题，Rename Conversation 支持手动重命名。
 
-Ctrl+P 打开命令面板，搜索 Project / Conversation 或执行常见操作；Ctrl+B 隐藏侧栏，少于 90 列自动收起，选择不受影响。输入框始终位于底部，`Ctrl+L` 聚焦编辑，Esc 返回浏览；Enter 发送、Shift+Enter 换行，默认备用 Ctrl+J。命令面板中的 `Configure Shortcuts` 接受 JSON 覆盖，例如 `{"palette":"ctrl+s","sidebar":"ctrl+v","newline":"ctrl+0"}`；空对象恢复默认。默认动作统一使用 Ctrl，不再使用 Alt；裸字母及 Shift+字母不触发操作。固定 Ctrl 导航组合键不可被自定义覆盖；Ctrl+Y 在有选区时复制选区，无选区时打开当前项的原文。自定义配置仍兼容原有 meta 语法。偏好保存在 HarnessHub SQLite，不修改终端或 Harness 原生配置。Enter、Shift+Enter、Esc 和退出键保留；终端可能拦截某些组合，需按实际环境选择。
+选中项目或项目下的会话、且未进入聊天输入/历史或弹窗时，按 `N`（小写 `n` 亦可）在该项目根目录创建新会话；即使选中的是 Worktree 会话，也不会继承其 Worktree。按 `Ctrl+N` 在**本次启动 `hhu` 的目录**创建不属于任何项目的独立会话，不注册项目、不使用 Daemon 的工作目录。独立会话直接显示在侧栏顶层，历史和草稿照常持久化；聊天输入中 `N` 保持输入文字，`Ctrl+N` 仍可新建，弹窗打开时不触发创建。
 
-聊天区用 `[` / `]` 选择展示项，`Ctrl+T` 选择工具，`Ctrl+E` 展开/折叠，`Ctrl+R` 查看对应事件序号、原始 ACP 和 normalized payload。`Ctrl+Y` 查看并复制原始 Markdown、代码块、原生参数/结果及 Codex 终端分块；来源选择器中 Enter 复制完整原文，通过 OpenTUI Clipboard Service 优先写入可用的系统剪贴板，终端 OSC52 作为备用（是否接受由终端策略决定）。鼠标拖选松开自动复制，双击选词、三击选行；Ctrl+C / Ctrl+Y 也可复制有效选区。源视图 PgUp/PgDn 滚动、Ctrl+←/→ 分页。代码缩进和换行不做格式化，未知内容可展开查看完整原始详情。握手、控制响应和调试元数据默认不显示在正常聊天；Ctrl+P → Raw Events / Debug 可查看全部已补拉的原始协议事件，每页 100 项，Ctrl+PgUp/PgDn 翻页。
+默认键位按 Codex CLI 收敛。
 
-选中项目或会话后按 `Ctrl+O`（或点击侧栏 `⋯ Actions`）打开操作菜单，Ctrl+P 命令面板也提供相同操作。`Archive Conversation` 直接归档，从主列表隐藏，保留历史、草稿和后台任务；`View Archived Conversations` 只显示归档会话，`Restore Archived Conversation` 恢复到主列表，`Hide Archived Conversations` 返回主列表。`Delete Conversation` / `Delete Project` 或浏览时按 Delete 打开“取消 / 删除”确认框，默认选中取消，Tab / 左右键切换，Enter 确认，也可鼠标点击；确认框中再次按 Delete 可直接删除，无需输入 DELETE。删除项目包含其全部会话（含归档）、历史和草稿；服务端拒绝包含活动任务、待审批及 UNCERTAIN 历史的删除，确认空闲 Worker 安全退出后才清理应用数据。项目目录、Worktree 和 Git 分支均保留。归档与删除经 WebSocket 快照同步到其他客户端。
+| 操作                        | 键位或入口                                     |
+| --------------------------- | ---------------------------------------------- |
+| 发送消息 / 运行中追加指令   | Enter                                          |
+| 运行中排队到下一轮          | Tab                                            |
+| 换行                        | Shift+Enter，备用 Ctrl+J                       |
+| 打断当前任务                | Esc，优先关闭命令候选或顶层弹窗                |
+| 浏览已发送消息 / 搜索历史   | ↑↓ / Ctrl+R                                    |
+| 复制最近完成的回复          | Ctrl+O，有选区时复制选区                       |
+| 进入 / 离开聊天历史         | Ctrl+T，历史中 ↑↓ 选择、Enter 展开、End 到末尾 |
+| 命令和帮助                  | 输入 `/` 或在空输入框按 `?`                    |
+| 新会话 / 查找会话 / Changes | `/new` / `/resume` / `/diff`                   |
+| 当前项目新会话              | 浏览项目或其会话时按 N                         |
+| 启动目录独立新会话          | Ctrl+N（不归属项目）                           |
+| 原生模型及权限设置 / 审批   | `/model`、`/permissions` / `/approval`         |
+| 切换 Harness / Handoff 材料 | `/harness` / `/handoff`                        |
+| 排队消息管理                | `/queue`，支持暂停后继续、编辑和移除           |
+| 侧栏 / 键位设置             | `/sidebar` / `/keymap`                         |
+| 退出 TUI                    | `/quit`、`/exit`，或空输入无选区时 Ctrl+C      |
 
-聊天 PgUp/PgDn 滚动，Ctrl+PgUp/PgDn 翻历史页，End 回到底部并跟随。用户向上阅读时暂停跟随；跨会话保留本次 TUI 的滚动位置和工具展开状态，不存 UI 快照。历史每页最多挂载 60 个展示项，极长消息按约 16,000 字符分段，跨段 Markdown 格式可能重新解析，`Ctrl+Y` 仍复制完整连续消息。较大工具/原始详情有明确预览限制，源视图可逐页阅读或一次复制全文。
+运行中 Enter 仅在 Agent 实际声明 `_meta.steering.supported` 时使用原生 `_session/steering`，并要求空闲竞态回到宿主控制。Agent 未声明该能力时，输入框明确显示排队降级。Tab 按 FIFO 等待当前 Turn 正常结束再发送。所有排队、发送及不确定状态保存在 SQLite 事件日志，TUI 退出后仍由 Daemon 管理。Esc 取消、Harness 切换及 Daemon 重启会暂停未投递消息，`/queue` 明确恢复。投递结果为 UNCERTAIN 时保留历史并阻止自动重发。
 
-Ctrl+D 切换 Changes / Chat；Changes 用 ↑/↓ 选择文件、PgUp/PgDn 滚动、`Ctrl+R` 刷新、`Ctrl+Y` 复制完整 Diff。面板读取绑定 Workspace 的 Git 状态，分别显示 Staged / Unstaged / Untracked，不推断 Agent 归属。不会提交、暂存或改写项目文件；Git 读取不是原子快照。单次 Git 输出超过 2 MiB 或查询超过 10 秒会明确报错；大 Diff 预览上限 96,000 字符，原文可在源视图阅读。非 Git 项目显示说明。工具提供的 Diff 单独内联展示。
+已有原生 ACP 命令继续按 Agent 发布的名称、说明和参数提示补全。补全本身不发送，未发布的 slash 文本经用户确认后才作为普通消息发送。HarnessHub 本地命令与原生命令同名时优先使用原生命令。`/model`、`/permissions` 通过真实 ACP 选项工作。
 
-顶部模型只来自 ACP 实际返回值，没有暴露时明确显示。命令面板的 `ACP Native Session Options` 显示原生 mode/config 候选；只有用户选择并 Enter 才调用已有设置接口。设置请求超时后保持配置锁，阻止新 Turn；迟到响应会刷新真实选项，原生请求未结束时需要等待或经现有 stop API 明确确认强制关闭该 Session。权限审批仍只使用 Agent 原始选项，不增加自动审批。
+工具保持紧凑摘要，标题一行、正文最多末尾三行，手动展开状态优先。Ctrl+T 进入历史后用 ↑↓ 选择、Enter 展开，底部 More / less、Source、Raw 也可点击。Source 展示完整原始 Markdown、代码及工具输出，Enter 复制全文，PgUp/PgDn 滚动、Ctrl+←/→ 分页。鼠标拖选松开自动复制，双击选词、三击选行。Ctrl+C 优先复制有效选区，否则清空非空输入，再次在空输入时退出。
 
-同一 Harness 连续发送复用当前原生会话。按 `Ctrl+F` 选择下一个 Harness，顶部显示当前 Harness → 待切换目标；仅选择没有模型调用，`Ctrl+U` 或命令面板 Cancel Pending Harness Switch 可回到源 Harness。向目标发送第一条消息时才在源原生会话生成结构化报告、持久化，再创建目标会话并注入历史背景与独立用户新消息。源执行、审批或取消未结束时不能开始目标任务。A → B → A 的第三段使用全新 A 会话，Workspace 不变；聊天中 Handoff 项可用 `Ctrl+E` 展开，`Ctrl+Y` 看完整原文，`Ctrl+R` 查来源。
+Changes 用 ↑↓ 选择文件，点击 Refresh 刷新、Source / copy 查看完整 Diff。读取 Conversation 绑定 Workspace 的 Staged、Unstaged 和 Untracked，不推断 Agent 修改归属。单次 Git 输出超过 2 MiB 或查询超过 10 秒时明确报错。
 
-报告失败时目标任务保持预留，按 `Ctrl+K` 或命令面板 Handoff Failure 查看材料、重试、确认降级继续或取消。只有用户明确选择确认，才使用可能不完整的材料发送目标任务。报告要求源 Agent 不使用工具；HarnessHub 无法沙箱化 Agent 自有工具，仍显示其原生审批。若观察到摘要期间使用工具，会显示警示并要求检查 Changes、确认降级后再接管。已发出但结果不明的任务为 UNCERTAIN，不能自动重发。接管提交以实际目标最终 ACP 响应为边界，之后安全释放源 Worker。
+命令面板和侧栏 `⋯` 保留归档、恢复、重命名及确认删除操作。删除应用历史须确认，服务端拒绝活动、审批、UNCERTAIN 或投递未确定的会话。用户项目目录、Worktree 和 Git 分支保留。Manage Worktrees 继续要求核对路径、分支和 CLEAN 确认，按已有安全规则将目录移入保留目录。
 
-独立 Worktree 在私有数据目录 `worktrees/<UUID>`，使用新分支 `hhu/<UUID>`，只对有 HEAD 的有效 Git 仓库创建。删除 Conversation 不删除 Worktree 或分支。Ctrl+P → Manage Worktrees / Safe Cleanup 选择记录，核对完整路径和分支，再输入 **CLEAN**：必须没有绑定的 Conversation（包括子目录会话）、脏文件、未跟踪/忽略文件、Git 锁或归属变化；拒绝 assume-unchanged/skip-worktree 等隐藏修改标志；将目录通过 Git move 移入 `worktrees/retained/<UUID>`，记录 RETAINED，保留文件、Git 登记和分支供检查，后续物理删除由用户核查外部写入者后手动处理。即使预检后出现新的 ignored 文件也不会被自动删除。创建部分失败的记录为 ERROR，须检查后独立清理；不删除未登记目录。
+同 Harness 连续消息复用原生会话。`/harness` 仅选择目标，首次向目标提交消息才生成源报告并创建目标原生会话。源执行、审批或取消未结束时等待。失败通过 `/handoff` 查看报告、重试、确认降级或取消，已发送但结果不明的请求保持 UNCERTAIN。
 
-不同 Conversation 可以在共享目录或独立 Worktree 并行执行。共享目录只有冲突提醒，没有全局工作区互斥或 Agent 修改归属推断。
-
-TUI 顶部汇总所有 Project 的活动 Conversation、待审批会话/请求及异常；树中每个 Conversation 显示真实状态。Running 包含准备、执行、等待审批和取消中的会话，与 Approval 数量有重叠。Ctrl+G 切换汇总显示，偏好和最近选择持久化；显式 `hhu /path` 优先打开该 Project。多个 TUI 各自保留当前选择，最近选择按最后一次保存生效。
-
-每个 Conversation 的未发送草稿自动保存，切换/退出时补存，重新进入按 `Ctrl+L` 恢复。多客户端编辑同一草稿时，版本冲突会报错并保留本地文字，避免静默覆盖。若保存失败，正常退出会提示；明确按 Ctrl+Q 可放弃尚未保存的本地编辑并关闭 TUI。非正常终止可能丢失最后约 150ms 尚未保存的输入。发送前先持久化请求编号；重连只读历史，恢复未确认提交时保留相同编号，只有用户再次 Enter 才显式重试。Ctrl+C 清空未确认草稿时仍保留原 requestId；命令面板 Restore Unconfirmed Message 只恢复原文供检查，不自动发送。
-
-Daemon 仍存活时，重新打开 TUI 会连接同一 Worker/原生会话。正常停止 Daemon 或显式关闭原生会话都会持久显示上下文结束边界，后续消息创建的新原生会话没有旧原生上下文。Daemon 崩溃后，SQLite 历史恢复，未结束的 Turn 标为 UNCERTAIN，失效原生会话标为 INTERRUPTED，旧审批过期；不加载或自动重放任务。空闲会话下次显式发送会新建原生会话；UNCERTAIN 需先检查历史和工作区，再显式新建 Conversation。
+多 Conversation 可在各自 Workspace 并行工作，共享目录显示冲突提醒。关闭 TUI 保留 Daemon 和 Worker，重新打开按序补拉历史。草稿自动保存并使用 CAS 防止多客户端覆盖。默认快捷键可经 `/keymap` 显式覆盖或以空字符串解除绑定，`{}` 恢复默认。Windows Terminal / VS Code WSL 的物理键盘和桌面剪贴板验收仍待完成。
 
 ## ACP 与脚本操作
 

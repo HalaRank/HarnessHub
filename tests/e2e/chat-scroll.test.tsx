@@ -5,6 +5,7 @@ import { createSignal } from "solid-js";
 import { NativeEvents } from "../../apps/tui/src/native-events";
 import { Transcript } from "../../apps/tui/src/transcript";
 import type { ConversationEvent } from "../../packages/shared/src/index";
+import { clickControl } from "./ui-actions";
 
 const message = (seq: number): ConversationEvent => ({
   id: `message-${seq}`,
@@ -115,7 +116,7 @@ test("modal Esc preserves scroll; an explicit editor follow request returns to t
     await settle(screen);
     expect(scroll.scrollTop).toBe(20);
     setDisabled(false);
-    screen.mockInput.pressKey("r", { ctrl: true });
+    await clickControl(screen, "transcript-raw");
     await settle(screen);
     screen.mockInput.pressEscape();
     await settle(screen);

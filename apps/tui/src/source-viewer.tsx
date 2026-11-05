@@ -3,6 +3,7 @@ import { useKeyboard } from "@opentui/solid";
 import { createEffect, createMemo, createSignal, For, untrack } from "solid-js";
 import { useClipboard } from "./clipboard";
 import type { SourcePart } from "./rich-content";
+import { KeyHints, listStyle, Panel, ui } from "./ui";
 
 // Showing source never submits it to an Agent. Copy uses the original string, not screen text.
 export function SourceViewer(props: { parts: SourcePart[]; onClose: () => void }) {
@@ -45,21 +46,13 @@ export function SourceViewer(props: { parts: SourcePart[]; onClose: () => void }
     }
   });
   return (
-    <box
-      position="absolute"
-      top={1}
-      left={1}
-      width="96%"
+    <Panel
+      title="Original source"
+      hint="Inspect and copy complete original content. Esc closes."
       height="94%"
-      border
-      borderColor="#80cbc4"
-      backgroundColor="#10151c"
-      padding={1}
-      flexDirection="column"
-      gap={1}
-      title="Original source · Esc close"
     >
       <select
+        {...listStyle}
         height={Math.min(5, props.parts.length + 1)}
         options={options()}
         focused
@@ -70,9 +63,12 @@ export function SourceViewer(props: { parts: SourcePart[]; onClose: () => void }
           setPage(0);
         }}
       />
-      <text>
-        Enter copy full selected source · Ctrl+←/→ source pages {page() + 1}/{count()}
-      </text>
+      <KeyHints
+        items={[
+          ["Enter", "copy full selected source"],
+          ["Ctrl+←/→", `source pages ${page() + 1}/${count()}`],
+        ]}
+      />
       <scrollbox
         ref={(el) => {
           scroll = el;
@@ -81,11 +77,11 @@ export function SourceViewer(props: { parts: SourcePart[]; onClose: () => void }
         scrollX
         scrollY
       >
-        <text selectable flexShrink={0} wrapMode="none">
+        <text selectable flexShrink={0} wrapMode="none" fg={ui.text}>
           {source().slice(page() * 24000, (page() + 1) * 24000)}
         </text>
       </scrollbox>
-      <For each={notice() ? [notice()] : []}>{(value) => <text fg="#ffcc80">{value}</text>}</For>
-    </box>
+      <For each={notice() ? [notice()] : []}>{(value) => <text fg={ui.warning}>{value}</text>}</For>
+    </Panel>
   );
 }

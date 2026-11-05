@@ -1,6 +1,7 @@
 import type { InputRenderable } from "@opentui/core";
 import { createSignal, onCleanup, Show } from "solid-js";
 import { completeProjectPath } from "./project-path";
+import { inputStyle, KeyHints, ui } from "./ui";
 
 export function ProjectPathInput(props: { busy: boolean; onSubmit: (value: string) => void }) {
   let input: InputRenderable;
@@ -34,8 +35,18 @@ export function ProjectPathInput(props: { busy: boolean; onSubmit: (value: strin
   };
   return (
     <box flexDirection="column">
-      <box border title="Existing project: directory · Tab complete · Enter register" height={3}>
+      <box
+        border
+        borderColor={ui.border}
+        backgroundColor={ui.panel}
+        flexDirection="column"
+        height={5}
+      >
+        <text fg={ui.text}>
+          <b>Add existing project</b>
+        </text>
         <input
+          {...inputStyle}
           id="project-path"
           ref={(element) => {
             input = element;
@@ -57,9 +68,18 @@ export function ProjectPathInput(props: { busy: boolean; onSubmit: (value: strin
           }}
           width="100%"
         />
+        <KeyHints
+          items={[
+            ["Tab", "complete path"],
+            ["Enter", "register"],
+            ["Esc", "cancel"],
+          ]}
+        />
       </box>
       <Show when={hint()}>
-        <text maxHeight={3}>{hint()}</text>
+        <text maxHeight={3} fg={ui.muted}>
+          {hint()}
+        </text>
       </Show>
     </box>
   );

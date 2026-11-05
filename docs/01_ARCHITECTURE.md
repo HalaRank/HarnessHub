@@ -16,6 +16,8 @@ HarnessHub 是一个统一管理多个 AI Coding Harness 的 Linux/WSL 终端应
 
 1. 在 `~` 或任何位置执行 `hhu`，连接或自动启动 Daemon，打开全局 Project → Conversation 列表；**不将启动位置作为 Agent 的工作目录**。可选 `hhu .` / `hhu /abs/path` 快速打开或注册项目。
 2. Project 注册一次 Linux 绝对根目录；新 Conversation 默认继承该目录，不再次要求路径。Conversation 可以在创建时选择独立 Git Worktree。
+
+   2026-11-05 用户新增快捷入口：选中 Project 或其 Conversation、且不在聊天输入/历史及弹窗内时，`N` / `n` 创建该 Project 的共享根目录 Conversation。`Ctrl+N` 显式创建独立 Conversation（`projectId=null`），将**本次 TUI 启动时的目录**规范化后持久化为 `workspacePath`，不隐式注册 Project。该例外不是全局 Agent 默认 cwd：Worker 和 ACP `session/new.cwd` 仍只读取 Conversation 绑定的 Workspace；已有 Project/Worktree 会话不受启动目录影响。独立会话可在侧栏顶层恢复、重命名、归档及删除；只支持共享目录，不创建无 Project 的托管 Worktree。
 3. 一个 Conversation 同时至多存在一个能够开始开发写操作的活动 Harness Turn；多个不同 Conversation 可并发，甚至允许共享工作目录（给冲突警示，不做全局互斥）。
 4. 同一 Harness 连续对话复用它的当前原生会话；Codex → Grok → Codex 重新创建返回后的 Codex 原生会话，并使用应用层 Handoff；不会假定能跨提供商加载原生内部上下文。
 5. 仅切换下拉/选择器不触发 Handoff、模型调用或进程终止。用户向目标发送第一条 Prompt 时才真正执行交接。
@@ -156,9 +158,9 @@ ACP Client 应实现协议要求的文件/终端请求与权限回调；所有�
 
 Project → Conversation 树形侧边栏，可隐藏，窄终端自动收起；全局命令面板搜索项目、会话和操作；显示后台执行、待审批、故障、Handoff。主要区域 Chat/Changes，Markdown 与代码高亮，原生 Plan/TODO、可观察思考，Unknown events 可展开 raw。
 
-工具：按 2026-11-04 用户修正，采用紧凑摘要：标题单行截断，原生文本/终端输出默认最多展示末尾三行，超出显示省略行数；真实状态和原生审批选项仍显示。Ctrl+E 展开命令、正文和内联 Diff，手动选择优先，不因状态转换而改变。普通聊天（含展开状态）不打印事件编号、terminal/review ID、参数或结果的协议 JSON；这些数据仅在 Ctrl+R 来源 / Ctrl+Y 原文视图查看，完整原始事件仍保留。Changes 独立页；支持复制原始 Markdown。
+工具：按 2026-11-04 用户修正，采用紧凑摘要：标题单行截断，原生文本/终端输出默认最多展示末尾三行，超出显示省略行数；真实状态和原生审批选项仍显示。Ctrl+T 进入历史后 Enter 展开命令、正文和内联 Diff，手动选择优先，不因状态转换而改变。普通聊天（含展开状态）不打印事件编号、terminal/review ID、参数或结果的协议 JSON；这些数据仅在 Source / Raw 视图查看，完整原始事件仍保留。Changes 独立页；支持复制原始 Markdown。
 
-输入：**Enter 发送；Shift+Enter 换行**；多行/粘贴/草稿持久化；Ctrl+P 命令面板、Ctrl+B 侧边栏等可配置，实际终端兼容测试。Terminal 不支持 Shift+Enter 独立键码时提供明显的备选方式而非改变默认。查看历史时新流式内容不强制拉到末尾。只存草稿/基础偏好，不持久化完整 UI 快照。
+输入：**Enter 发送；Shift+Enter 换行**；多行/粘贴/草稿持久化；按 2026-11-05 用户要求采用 Codex CLI 键位。运行中 Enter 通过真实协商的 steering 扩展追加指令，未声明能力则明确排队降级；Tab 排队，Esc 优先关闭候选/弹窗后请求原生取消。Ctrl+R 搜索输入历史，Ctrl+O 复制已完成回复，Ctrl+T 进入历史。项目、侧栏、Harness、Changes 等通过 slash 命令和命令面板操作。排队输入与投递状态写入 SQLite 事件日志，取消、切换或 Daemon 重启暂停队列，UNCERTAIN 不自动重发。实际终端兼容测试。Terminal 不支持 Shift+Enter 独立键码时提供明显的备选方式而非改变默认。查看历史时新流式内容不强制拉到末尾。只存草稿/基础偏好，不持久化完整 UI 快照。
 
 ## 11. Daemon / CLI / 启动和安装
 

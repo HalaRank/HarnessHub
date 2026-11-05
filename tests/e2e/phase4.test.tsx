@@ -13,6 +13,14 @@ import { SourceViewer } from "../../apps/tui/src/source-viewer";
 import { chatVisible, newViewState, projectEvent, Transcript } from "../../apps/tui/src/transcript";
 import { connect } from "../../packages/shared/src/client";
 import type { Conversation, ConversationEvent } from "../../packages/shared/src/index";
+import {
+  clickControl,
+  focusMessage,
+  invoke,
+  navigate,
+  openCommands,
+  selectLastRow,
+} from "./ui-actions";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-phase4-ui-"));
 const previous = { ...process.env };
@@ -275,7 +283,7 @@ test("tool details default to collapsed, explicit expansion survives status and 
   try {
     await screen.renderOnce();
     expect(screen.captureCharFrame()).not.toContain("EXACT_RESULT");
-    screen.mockInput.pressKey("e", { ctrl: true });
+    screen.mockInput.pressEnter();
     await frame(screen, "EXACT_RESULT");
     model.append([
       event(2, "tool_call_update", { toolCallId: "tool", status: "in_progress" }),
@@ -303,7 +311,7 @@ test("tool details default to collapsed, explicit expansion survives status and 
     try {
       await frame(small, "failed");
       expect(small.captureCharFrame()).not.toContain("FAILURE_NATIVE");
-      small.mockInput.pressKey("e", { ctrl: true });
+      small.mockInput.pressEnter();
       await frame(small, "FAILURE_NATIVE");
     } finally {
       await small.dispose();
@@ -367,7 +375,7 @@ test("unknown events expose raw and normalized payloads with event IDs and seque
   });
   try {
     await frame(screen, "UNCHANGED_FUTURE");
-    screen.mockInput.pressKey("r", { ctrl: true });
+    await clickControl(screen, "transcript-raw");
     await frame(screen, "Original source");
     expect(screen.captureCharFrame()).toContain('"eventId": "event-1"');
     expect(screen.captureCharFrame()).toContain('"normalized"');
@@ -491,7 +499,7 @@ test("App Esc returns chat to the bottom from navigation or the editor without d
     expect(editor.plainText).toBe("unsent draft");
     scroll.scrollTo(10);
     await screen.renderOnce();
-    screen.mockInput.pressKey("p", { ctrl: true });
+    await openCommands(screen);
     await frame(screen, "Command palette");
     screen.mockInput.pressEscape();
     await waitFor(async () => {
@@ -510,7 +518,7 @@ test("App Esc returns chat to the bottom from navigation or the editor without d
   }
 }, 20000);
 
-test("unmodified letters never invoke navigation, Harness or transcript actions", async () => {
+test("unmodified letters other than N never invoke navigation, Harness or transcript actions", async () => {
   const { p, c } = await setup("Modified shortcuts only");
   let exited = false;
   const screen = await testRender(() => <App onExit={() => (exited = true)} />, {
@@ -518,10 +526,12 @@ test("unmodified letters never invoke navigation, Harness or transcript actions"
     height: 45,
   });
   try {
-    await frame(screen, "Ctrl+L Message");
+    await frame(screen, "Esc interrupt");
     const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
     const original = await api<Conversation>(`/v1/conversations/${c.id}`);
-    await screen.mockInput.typeText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    await screen.mockInput.typeText(
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".replaceAll(/n/gi, ""),
+    );
     await screen.renderOnce();
     expect(exited).toBe(false);
     expect(input.focused).toBe(false);
@@ -530,7 +540,7 @@ test("unmodified letters never invoke navigation, Harness or transcript actions"
     expect(await api<Conversation[]>(`/v1/projects/${p.id}/conversations`)).toHaveLength(1);
     for (const title of ["Existing project", "Conversation / Project actions", "Original source"])
       expect(screen.captureCharFrame()).not.toContain(title);
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await focusMessage(screen);
     await waitFor(() => input.focused);
     await screen.mockInput.typeText("mahcxfpnoqgterya");
     expect(input.plainText).toBe("mahcxfpnoqgterya");
@@ -548,10 +558,10 @@ test("Enter sends once, Kitty Shift+Enter and Ctrl+J insert newlines without sub
     kittyKeyboard: true,
   });
   try {
-    await frame(screen, "Ctrl+L Message");
-    expect(screen.captureCharFrame()).toContain("Model (ACP): mock-model");
-    await frame(screen, "Ctrl+L Message");
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await frame(screen, "Esc interrupt");
+    expect(screen.captureCharFrame()).toContain("Model (ACP) · mock-model");
+    await frame(screen, "Esc interrupt");
+    await focusMessage(screen);
     await frame(screen, "Esc navigate");
     await screen.mockInput.typeText("one");
     screen.mockInput.pressEnter({ shift: true });
@@ -606,7 +616,7 @@ test("command palette searches projects and conversations, responsive sidebar hi
     kittyKeyboard: true,
   });
   try {
-    await frame(screen, "Ctrl+L Message");
+    await frame(screen, "Esc interrupt");
     screen.mockInput.pressKey("s", { ctrl: true });
     await frame(screen, "Command palette");
     await screen.mockInput.typeText("Unique Palette Beta");
@@ -626,8 +636,8 @@ test("command palette searches projects and conversations, responsive sidebar hi
     expect(screen.captureCharFrame()).not.toContain("Projects → Conversations");
     screen.resize(150, 45);
     await frame(screen, "Projects → Conversations");
-    await frame(screen, "Ctrl+L Message");
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await frame(screen, "Esc interrupt");
+    await focusMessage(screen);
     await screen.mockInput.typeText("alternative");
     screen.mockInput.pressEnter({ meta: true });
     await screen.mockInput.typeText("newline");
@@ -666,22 +676,16 @@ test("two concurrently streaming Conversations switch without mixing output, los
   try {
     await frame(screen, "Global · Running 2");
     await frame(screen, "native-");
-    await frame(screen, "Ctrl+L Message");
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await frame(screen, "Esc interrupt");
+    await focusMessage(screen);
     await screen.mockInput.typeText("Alpha isolated draft");
-    screen.mockInput.pressEscape();
-    await new Promise((r) => setTimeout(r, 60));
-    await screen.renderOnce();
-    screen.mockInput.pressArrow("down");
+    await invoke(screen, "Conversation · Concurrent Alpha / Concurrent Beta");
     await frame(screen, "Conversation · Concurrent Beta");
     await frame(screen, "native-");
-    await frame(screen, "Ctrl+L Message");
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await frame(screen, "Esc interrupt");
+    await focusMessage(screen);
     await screen.mockInput.typeText("Beta isolated draft");
-    screen.mockInput.pressEscape();
-    await new Promise((r) => setTimeout(r, 60));
-    await screen.renderOnce();
-    screen.mockInput.pressArrow("up");
+    await invoke(screen, "Conversation · Concurrent Alpha / Concurrent Alpha");
     await frame(screen, "Conversation · Concurrent Alpha");
     await frame(screen, "Alpha isolated draft");
     await waitFor(async () =>
@@ -713,8 +717,8 @@ test("Changes panel reads actual workspace Git state and exposes an inline patch
   writeFileSync(join(root, "hello.ts"), "export const hello = 'native';\n");
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 170, height: 45 });
   try {
-    await frame(screen, "Ctrl+L Message");
-    screen.mockInput.pressKey("d", { ctrl: true });
+    await frame(screen, "Esc interrupt");
+    await invoke(screen, "Toggle Changes / Chat");
     await frame(screen, "Changes · Conversation workspace");
     await frame(screen, "hello.ts");
     await frame(screen, "export const hello");
@@ -723,17 +727,17 @@ test("Changes panel reads actual workspace Git state and exposes an inline patch
     await screen.renderOnce();
     expect(screen.captureCharFrame()).not.toContain("Original source");
     writeFileSync(join(root, "refreshed.ts"), "export const refreshed = true;\n");
-    screen.mockInput.pressKey("r", { ctrl: true });
+    await clickControl(screen, "changes-refresh");
     await frame(screen, "refreshed.ts");
     await frame(screen, "export const hello");
-    screen.mockInput.pressKey("y", { ctrl: true });
+    await clickControl(screen, "changes-source");
     await frame(screen, "Original source");
     screen.mockInput.pressEscape();
     await waitFor(async () => {
       await screen.renderOnce();
       return !screen.captureCharFrame().includes("Original source");
     });
-    screen.mockInput.pressKey("d", { ctrl: true });
+    await invoke(screen, "Toggle Changes / Chat");
     await frame(screen, "Start a conversation");
   } finally {
     await screen.dispose();
@@ -802,7 +806,7 @@ test("Codex terminal metadata deltas render and copy without changing native pay
     expect(screen.captureCharFrame()).toContain("Native command title");
     expect(screen.captureCharFrame()).toContain("  first");
     expect(screen.captureCharFrame()).toContain("second");
-    screen.mockInput.pressKey("y", { ctrl: true });
+    await clickControl(screen, "transcript-source");
     await frame(screen, "Original source");
     screen.mockInput.pressArrow("down");
     screen.mockInput.pressEnter();
@@ -964,8 +968,8 @@ test("Ctrl+C clears draft, second Ctrl+C exits; selection takes precedence and d
   };
   try {
     await frame(screen, "started");
-    await frame(screen, "Ctrl+L Message");
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await frame(screen, "Esc interrupt");
+    await focusMessage(screen);
     await screen.mockInput.typeText("unsent draft");
     const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
     screen.mockInput.pressKey("c", { ctrl: true });
@@ -973,7 +977,7 @@ test("Ctrl+C clears draft, second Ctrl+C exits; selection takes precedence and d
     expect(input.plainText).toBe("");
     expect(exits).toBe(0);
     await screen.mockInput.typeText("preserve this draft");
-    screen.mockInput.pressEscape();
+    await navigate(screen);
     await new Promise((r) => setTimeout(r, 60));
     await screen.renderOnce();
     const lines = screen.captureCharFrame().split("\n");
@@ -1034,7 +1038,7 @@ test("mouse release copies multiline chat and code; double click selects a word 
     return true;
   };
   try {
-    await frame(screen, "Ctrl+L Message");
+    await frame(screen, "Esc interrupt");
     const scroll = screen.renderer.root.findDescendantById("native-history") as ScrollBoxRenderable;
     scroll.scrollTo(0);
     await frame(screen, "alpha beta gamma");
@@ -1066,13 +1070,12 @@ test("mouse release copies multiline chat and code; double click selects a word 
       () =>
         !(screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable).focused,
     );
-    screen.mockInput.pressKey("t", { ctrl: true });
-    await screen.renderOnce();
-    screen.mockInput.pressKey("e", { ctrl: true });
+    await selectLastRow(screen);
+    screen.mockInput.pressEnter();
     await screen.renderOnce();
     scroll.scrollTo(Infinity);
     await frame(screen, "Show less");
-    screen.mockInput.pressKey("y", { ctrl: true });
+    await clickControl(screen, "transcript-source");
     await frame(screen, "output\\n");
     const output = locate("output\\n");
     expect(output.x).toBeGreaterThan(0);
@@ -1085,7 +1088,7 @@ test("mouse release copies multiline chat and code; double click selects a word 
 }, 20000);
 
 async function command(screen: Awaited<ReturnType<typeof testRender>>, query: string) {
-  screen.mockInput.pressKey("p", { ctrl: true });
+  await openCommands(screen);
   await frame(screen, "Command palette");
   await screen.mockInput.typeText(query);
   screen.mockInput.pressEnter();
@@ -1098,8 +1101,8 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
   const one = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
   const two = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
   try {
-    await frame(one, "Ctrl+L Message");
-    await frame(two, "Ctrl+L Message");
+    await frame(one, "Esc interrupt");
+    await frame(two, "Esc interrupt");
     await command(one, "Raw Events");
     await frame(one, "Raw Events #");
     expect(one.captureCharFrame()).toContain('"raw"');
@@ -1108,13 +1111,13 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
     await one.renderOnce();
     await command(one, "Archive Conversation");
     await waitFor(async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt);
-    await frame(two, "Press Ctrl+N to create");
+    await frame(two, "/new creates a conversation");
     expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
     await command(one, "View Archived");
     await frame(one, "Archives visible");
     await command(one, "Conversation · Lifecycle UI");
     await frame(one, "[archived]");
-    await frame(one, "Ctrl+L Message");
+    await frame(one, "Esc interrupt");
     await command(one, "Restore Archived");
     await waitFor(
       async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt === null,
@@ -1139,7 +1142,7 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
           (v) => v.id === c.id,
         ),
     );
-    await frame(two, "Press Ctrl+N to create");
+    await frame(two, "/new creates a conversation");
     expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
   } finally {
     await one.dispose();
@@ -1152,12 +1155,12 @@ test("two Delete presses confirm Conversation and Project deletion", async () =>
     const { p, c, root } = await setup(`Double Delete ${kind}`);
     const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
     try {
-      await frame(screen, "Ctrl+L Message");
+      await frame(screen, "Esc interrupt");
       if (kind === "Project") {
         screen.mockInput.pressArrow("up");
-        await frame(screen, "Press Ctrl+N to create");
+        await frame(screen, "/new creates a conversation");
       }
-      screen.mockInput.pressKey("DELETE");
+      await invoke(screen, `Delete ${kind}`);
       await frame(screen, `Confirm ${kind} deletion`);
       await frame(screen, "Delete to delete");
       expect((await api<{ id: string }>(`/v1/projects/${p.id}`)).id).toBe(p.id);
@@ -1188,14 +1191,14 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
     kittyKeyboard: true,
   });
   try {
-    await frame(screen, "Ctrl+L Message");
+    await frame(screen, "Esc interrupt");
     const history = screen.renderer.root.findDescendantById(
       "native-history",
     ) as ScrollBoxRenderable;
     const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
     expect(history.height).toBeGreaterThanOrEqual(20);
     expect(input.height).toBe(1);
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await focusMessage(screen);
     await screen.mockInput.typeText("one");
     screen.mockInput.pressEnter({ shift: true });
     await screen.mockInput.typeText("two");
@@ -1223,14 +1226,14 @@ test("action menu archives without confirmation, archive view isolates history, 
   const one = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
   const two = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
   try {
-    await frame(one, "Ctrl+L Message");
-    await frame(two, "Ctrl+L Message");
-    one.mockInput.pressKey("DELETE");
+    await frame(one, "Esc interrupt");
+    await frame(two, "Esc interrupt");
+    await invoke(one, "Delete Conversation");
     await frame(one, "Confirm Conversation deletion");
     one.mockInput.pressEnter(); // Cancel is selected initially.
-    await frame(one, "Ctrl+L Message");
+    await frame(one, "Esc interrupt");
     expect((await api<Conversation>(`/v1/conversations/${c.id}`)).id).toBe(c.id);
-    one.mockInput.pressKey("o", { ctrl: true });
+    await invoke(one, "Project and Conversation Actions");
     await frame(one, "Conversation / Project actions");
     await one.mockInput.typeText("Archive Conversation");
     one.mockInput.pressEnter();
@@ -1238,7 +1241,7 @@ test("action menu archives without confirmation, archive view isolates history, 
       async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt,
       "archive from action menu",
     );
-    await frame(two, "Press Ctrl+N to create");
+    await frame(two, "/new creates a conversation");
     expect(two.captureCharFrame()).not.toContain("Previously archived");
     await command(one, "View Archived");
     await frame(one, "Previously archived");
@@ -1247,7 +1250,7 @@ test("action menu archives without confirmation, archive view isolates history, 
     await waitFor(
       async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt === null,
     );
-    await frame(one, "Press Ctrl+N to create");
+    await frame(one, "/new creates a conversation");
     expect(one.captureCharFrame()).not.toContain("Delete project UI [archived]");
     await frame(one, "Previously archived");
     await command(one, "Delete Project");
@@ -1258,7 +1261,7 @@ test("action menu archives without confirmation, archive view isolates history, 
     if (!cancelButton) throw new Error("Missing Cancel button");
     await one.mockMouse.click(cancelButton.x + 2, cancelButton.y);
     expect((await api<{ id: string }>(`/v1/projects/${p.id}`)).id).toBe(p.id);
-    one.mockInput.pressKey("DELETE");
+    await invoke(one, "Delete Project");
     await frame(one, "Confirm Project deletion");
     await one.renderOnce();
     const deleteButton = one.renderer.root.findDescendantById("delete-confirm");
@@ -1548,8 +1551,8 @@ test("public thinking, plans, tools, permission options and context/error notice
       expect(screen.captureCharFrame()).toContain(text);
     expect(screen.captureCharFrame()).not.toContain('"stderrBytes"');
     expect(screen.captureCharFrame()).not.toContain('"nativeSessionRecovered"');
-    for (let i = 0; i < model.rows.length - 1; i++) screen.mockInput.pressKey("]");
-    screen.mockInput.pressKey("r", { ctrl: true });
+    for (let i = 0; i < model.rows.length - 1; i++) screen.mockInput.pressArrow("down");
+    await clickControl(screen, "transcript-raw");
     await frame(screen, "FULL_ERROR_SOURCE");
     expect(screen.captureCharFrame()).toContain('"code": -9');
     model.append([event(8, "approval.decided", { approvalId: "a", optionId: "deny" })]);
@@ -1577,9 +1580,9 @@ test("unknown visible text is concise by default, expandable, and linked to its 
     await frame(screen, "PUBLIC_EXTENSION");
     expect(screen.captureCharFrame()).not.toContain("EXPANDED_EXTENSION_END");
     expect(screen.captureCharFrame()).not.toContain("SOURCE_ONLY_METADATA");
-    screen.mockInput.pressKey("e", { ctrl: true });
+    screen.mockInput.pressEnter();
     await frame(screen, "EXPANDED_EXTENSION_END");
-    screen.mockInput.pressKey("r", { ctrl: true });
+    await clickControl(screen, "transcript-raw");
     await frame(screen, "SOURCE_ONLY_METADATA");
     expect(screen.captureCharFrame()).toContain('"eventId": "event-1"');
     const row = model.rows[0];
@@ -1649,10 +1652,10 @@ test("new Conversation stays empty after worker/auth startup, shows hello and re
   try {
     await frame(screen, "Start a conversation");
     await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "projection-mock" });
-    await frame(screen, "Model (ACP): mock-model");
+    await frame(screen, "Model (ACP) · mock-model");
     expect(screen.captureCharFrame()).toContain("Start a conversation");
     expect(screen.captureCharFrame()).toContain("0 items");
-    screen.mockInput.pressKey("l", { ctrl: true });
+    await focusMessage(screen);
     await frame(screen, "Esc navigate");
     await screen.mockInput.typeText("hello");
     screen.mockInput.pressEnter();

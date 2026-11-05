@@ -35,6 +35,12 @@ export const conversationPatch = conversationInput
   .extend({ archived: z.boolean().optional() })
   .strict()
   .refine((v) => Object.keys(v).length > 0);
+export const standaloneConversationInput = z
+  .object({
+    workspacePath: z.string().min(1).max(4096),
+    title: z.string().trim().min(1).max(200).optional(),
+  })
+  .strict();
 export const conversationDeleteInput = z.object({ confirmed: z.literal(true) }).strict();
 export const projectDeleteInput = conversationDeleteInput;
 export type Project = {
@@ -46,7 +52,7 @@ export type Project = {
 };
 export type Conversation = {
   id: string;
-  projectId: string;
+  projectId: string | null;
   title: string;
   archivedAt: number | null;
   workspaceMode: "shared" | "worktree";

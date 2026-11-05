@@ -1,8 +1,9 @@
 import type { Conversation, Project } from "@harnesshub/shared";
 import type { MouseEvent, ScrollBoxRenderable } from "@opentui/core";
 import { createEffect, createSignal, For, Show, untrack } from "solid-js";
+import { KeyHints, Panel, statusColor, ui } from "./ui";
 
-export type ProjectRow = { id: string; project: Project; conversation?: Conversation };
+export type ProjectRow = { id: string; project: Project | null; conversation?: Conversation };
 export const projectKey = (id: string) => `project-${id}`;
 export const conversationKey = (id: string) => `conversation-${id}`;
 
@@ -91,19 +92,19 @@ export function ProjectTree(props: {
             id={row.id}
             height={row.conversation ? 2 : 3}
             flexShrink={0}
-            flexDirection="row"
-            alignItems="center"
+            flexDirection="column"
+            justifyContent="center"
             paddingLeft={1}
             paddingRight={1}
             backgroundColor={
               props.selected === row.id
-                ? "#264b63"
+                ? ui.selection
                 : hovered() === row.id
-                  ? "#1c2935"
+                  ? ui.hover
                   : !row.conversation &&
-                      props.activeProjectId === row.project.id &&
-                      props.collapsed.has(row.project.id)
-                    ? "#203747"
+                      props.activeProjectId === row.project?.id &&
+                      props.collapsed.has(row.project?.id ?? "")
+                    ? ui.selection
                     : "transparent"
             }
             onMouse={(event) => {
@@ -114,60 +115,95 @@ export function ProjectTree(props: {
               );
             }}
           >
-            <Show
-              when={!row.conversation}
-              fallback={
-                <text selectable={false} width={4} flexShrink={0}>
-                  {"  └ "}
-                </text>
-              }
-            >
-              <text
-                id={`arrow-${row.project.id}`}
-                selectable={false}
-                width={2}
-                flexShrink={0}
-                fg="#80cbc4"
-                onMouse={(event) =>
-                  mouse(`arrow-${row.project.id}`, event, () => props.onToggle(row.project.id))
+            <box flexDirection="row" alignItems="center" height={1} flexShrink={0}>
+              <Show
+                when={!row.conversation}
+                fallback={
+                  <text selectable={false} width={4} flexShrink={0}>
+                    <span
+                      style={{
+                        fg: row.conversation
+                          ? statusColor(row.conversation.runtimeStatus)
+                          : ui.muted,
+                      }}
+                    >
+                      {row.conversation?.runtimeStatus === "IDLE" ? "  · " : "  ● "}
+                    </span>
+                  </text>
                 }
               >
-                {props.collapsed.has(row.project.id) ? "▸ " : "▾ "}
-              </text>
-            </Show>
-            <text
-              selectable={false}
-              flexGrow={1}
-              flexShrink={1}
-              width={0}
-              minWidth={0}
-              height={1}
-              wrapMode="none"
-              fg={!row.conversation ? "#b2dfdb" : props.selected === row.id ? "#ffffff" : "#c9d1d9"}
-            >
-              {row.conversation ? (
-                `${row.conversation.runtimeStatus !== "IDLE" ? `${row.conversation.runtimeStatus} · ` : ""}${row.conversation.title}${row.conversation.archivedAt !== null ? " [archived]" : ""}`
-              ) : (
-                <b>{row.project.name}</b>
-              )}
-            </text>
-            <Show when={row.conversation}>
-              {(conversation) => (
                 <text
-                  id={`actions-${conversation().id}`}
+                  id={`arrow-${row.project?.id}`}
                   selectable={false}
-                  width={3}
+                  width={2}
                   flexShrink={0}
-                  fg="#80cbc4"
+                  fg={ui.accent}
                   onMouse={(event) =>
-                    mouse(`actions-${conversation().id}`, event, () =>
-                      props.onActions(conversation()),
-                    )
+                    mouse(`arrow-${row.project?.id}`, event, () => {
+                      if (row.project) props.onToggle(row.project.id);
+                    })
                   }
                 >
-                  {" ⋯ "}
+                  {props.collapsed.has(row.project?.id ?? "") ? "▸ " : "▾ "}
                 </text>
-              )}
+              </Show>
+              <text
+                selectable={false}
+                flexGrow={1}
+                flexShrink={1}
+                width={0}
+                minWidth={0}
+                height={1}
+                wrapMode="none"
+                fg={
+                  !row.conversation
+                    ? ui.project
+                    : props.selected === row.id
+                      ? ui.text
+                      : ui.secondary
+                }
+              >
+                {row.conversation ? (
+                  <>
+                    {row.conversation.title}
+                    <span style={{ fg: ui.muted }}>
+                      {row.conversation.archivedAt !== null ? " [archived]" : ""}
+                    </span>
+                  </>
+                ) : (
+                  <b>{row.project?.name}</b>
+                )}
+              </text>
+              <Show when={row.conversation}>
+                {(conversation) => (
+                  <text
+                    id={`actions-${conversation().id}`}
+                    selectable={false}
+                    width={3}
+                    flexShrink={0}
+                    fg={props.selected === row.id || hovered() === row.id ? ui.secondary : ui.muted}
+                    onMouse={(event) =>
+                      mouse(`actions-${conversation().id}`, event, () =>
+                        props.onActions(conversation()),
+                      )
+                    }
+                  >
+                    {" ⋯ "}
+                  </text>
+                )}
+              </Show>
+            </box>
+            <Show when={row.conversation && row.conversation.runtimeStatus !== "IDLE"}>
+              <box paddingLeft={4} height={1} flexShrink={0}>
+                <text
+                  height={1}
+                  wrapMode="none"
+                  selectable={false}
+                  fg={statusColor(row.conversation?.runtimeStatus ?? "IDLE")}
+                >
+                  {row.conversation?.runtimeStatus}
+                </text>
+              </box>
             </Show>
           </box>
         )}
@@ -187,19 +223,8 @@ export function ConversationActions(props: {
   const click = mouseClick();
   const [hovered, setHovered] = createSignal("");
   return (
-    <box
-      position="absolute"
-      top={3}
-      left={3}
-      width={38}
-      height={8}
-      border
-      borderColor="#80cbc4"
-      backgroundColor="#10151c"
-      flexDirection="column"
-      title="Conversation actions · Esc close"
-    >
-      <text selectable={false} height={1} wrapMode="none">
+    <Panel title="Conversation actions" hint="Choose an action for this conversation" height={10}>
+      <text selectable={false} height={1} wrapMode="none" fg={ui.secondary}>
         {props.conversation.title}
       </text>
       <For
@@ -222,7 +247,8 @@ export function ConversationActions(props: {
             id={`conversation-action-${action.id}`}
             selectable={false}
             height={1}
-            bg={hovered() === action.id ? "#1c2935" : "transparent"}
+            fg={action.id === "delete" ? ui.error : ui.text}
+            bg={hovered() === action.id ? ui.selection : "transparent"}
             onMouse={(event) => {
               if (event.type === "over") setHovered(action.id);
               if (event.type === "out") setHovered("");
@@ -233,6 +259,7 @@ export function ConversationActions(props: {
           </text>
         )}
       </For>
-    </box>
+      <KeyHints items={[["Esc", "close"]]} />
+    </Panel>
   );
 }

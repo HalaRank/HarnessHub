@@ -8,33 +8,39 @@ import {
 } from "../../apps/tui/src/shortcuts";
 import { shortcutInput, shortcutNames } from "../../packages/shared/src/session-state";
 
-test("all letter actions require exact modifier chords", () => {
+test("Codex CLI defaults reserve Esc interrupt, Ctrl+J newline and Ctrl+O response copy", () => {
+  expect(navigationShortcuts.cancel).toBe("escape");
+  expect(defaultShortcuts.newline).toBe("ctrl+j");
+  expect(defaultShortcuts.copy).toBe("ctrl+o");
+  expect(navigationShortcuts.conversation).toBe("n");
+  expect(navigationShortcuts.standaloneConversation).toBe("ctrl+n");
+  for (const [action, shortcut] of Object.entries(navigationShortcuts)) {
+    if (!["cancel", "conversation", "standaloneConversation"].includes(action))
+      expect(shortcut).toBe("");
+  }
   for (const shortcut of Object.values({ ...defaultShortcuts, ...navigationShortcuts })) {
+    if (!shortcut) {
+      expect(matches({ name: "" }, shortcut)).toBe(false);
+      continue;
+    }
     const key = binding(shortcut);
-    expect(key.ctrl).toBe(true);
-    expect(key.meta).toBe(false);
     expect(matches(key, shortcut)).toBe(true);
-    expect(matches({ name: key.name }, shortcut)).toBe(false);
-    expect(matches({ name: key.name, shift: true }, shortcut)).toBe(false);
     expect(matches({ ...key, shift: true }, shortcut)).toBe(false);
-    expect(matches({ ...key, ctrl: !key.ctrl, meta: !key.meta }, shortcut)).toBe(false);
-    expect(matches({ name: key.name, meta: true }, shortcut)).toBe(false);
+    expect(matches({ ...key, ctrl: !key.ctrl }, shortcut)).toBe(false);
   }
 });
 
-test("shortcut overrides reject bare letters, Shift-only letters and fixed action collisions", () => {
+test("explicit shortcut overrides remain available, can be unbound and reject editor collisions", () => {
   for (const action of shortcutNames) {
     for (const name of "abcdefghijklmnopqrstuvwxyz") {
       expect(shortcutInput.safeParse({ [action]: name }).success).toBe(false);
       expect(shortcutInput.safeParse({ [action]: `shift+${name}` }).success).toBe(false);
     }
-    for (const shortcut of Object.values(navigationShortcuts))
-      expect(shortcutInput.safeParse({ [action]: shortcut }).success).toBe(
-        action === "copy" && shortcut === defaultShortcuts.copy,
-      );
   }
   expect(shortcutInput.safeParse({}).success).toBe(true);
+  expect(shortcutInput.safeParse({ palette: "ctrl+n" }).success).toBe(false);
   expect(shortcutInput.safeParse(defaultShortcuts).success).toBe(true);
+  expect(shortcutInput.safeParse({ copy: "", palette: "" }).success).toBe(true);
   expect(shortcuts()).toEqual(defaultShortcuts);
   const overrides = { palette: "ctrl+s", sidebar: "ctrl+v", newline: "meta+return" };
   expect(shortcutInput.safeParse(overrides).success).toBe(true);

@@ -43,7 +43,7 @@ def read_until(child, needle, timeout=12):
     raise AssertionError("PTY did not display expected content: " + repr(output[-3000:]))
 
 def quit_child(child):
-    os.write(child[1], b"\x11")
+    os.write(child[1], b"\x03")
     deadline = time.monotonic() + 8
     while time.monotonic() < deadline:
         pid, status = os.waitpid(child[0], os.WNOHANG)
@@ -57,16 +57,16 @@ def quit_child(child):
                 os.read(child[1], 65536)
         except OSError:
             pass
-    raise AssertionError("TUI failed to exit after Ctrl+Q")
+    raise AssertionError("TUI failed to exit after Ctrl+C")
 
 try:
     first = launch()
-    read_until(first, b"Workspace:")
+    read_until(first, "Workspace ·".encode())
     second = launch()
-    read_until(second, b"Workspace:")
+    read_until(second, "Workspace ·".encode())
     quit_child(first)
     # The remaining TUI still processes input after the first one closes.
-    os.write(second[1], b"\x17")
+    os.write(second[1], b"/Add Project\r")
     read_until(second, b"~/")
     # Complete the actual project from Home and register its canonical duplicate.
     project_path = os.environ["HARNESSHUB_PTY_PROJECT"]
@@ -78,14 +78,14 @@ try:
     os.write(second[1], b"\r")
     time.sleep(0.3)
     # This shortcut opens a fresh form only if registration closed the first one.
-    os.write(second[1], b"\x17")
-    read_until(second, b"Existing project")
+    os.write(second[1], b"/Add Project\r")
+    read_until(second, b"Add existing project")
     os.write(second[1], b"\x1b")
     time.sleep(0.15)
     quit_child(second)
     # A separate invocation verifies the quick-open path without depending on cwd.
     third = launch(os.environ["HARNESSHUB_PTY_PROJECT"])
-    read_until(third, b"Workspace:")
+    read_until(third, "Workspace ·".encode())
     quit_child(third)
     print(json.dumps({"ptyClients": 3, "twoConcurrent": True, "tabCompletedRegistration": True, "quitExitCode": 0, "cwd": os.path.expanduser("~")}))
 finally:

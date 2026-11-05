@@ -11,37 +11,38 @@ export const draftInput = z
   .refine((d) => !d.pendingSubmission || d.text === "" || d.pendingSubmission.message === d.text);
 export type Draft = z.infer<typeof draftInput> & { conversationId: string };
 export const navigationShortcuts = {
-  quit: "ctrl+q",
-  project: "ctrl+w",
-  conversation: "ctrl+n",
-  actions: "ctrl+o",
-  activity: "ctrl+g",
-  message: "ctrl+l",
-  approval: "ctrl+a",
-  harness: "ctrl+f",
-  cancel: "ctrl+x",
-  cancelSwitch: "ctrl+u",
-  handoff: "ctrl+k",
-  nextTool: "ctrl+t",
-  expand: "ctrl+e",
-  source: "ctrl+r",
-  copySource: "ctrl+y",
-  refreshChanges: "ctrl+r",
+  quit: "",
+  project: "",
+  conversation: "n",
+  standaloneConversation: "ctrl+n",
+  actions: "",
+  activity: "",
+  message: "",
+  approval: "",
+  harness: "",
+  cancel: "escape",
+  cancelSwitch: "",
+  handoff: "",
+  nextTool: "",
+  expand: "",
+  source: "",
+  copySource: "",
+  refreshChanges: "",
 } as const;
 export const shortcutNames = ["palette", "sidebar", "newline", "changes", "copy"] as const;
 export const defaultShortcuts = {
-  palette: "ctrl+p",
-  sidebar: "ctrl+b",
+  palette: "",
+  sidebar: "",
   newline: "ctrl+j",
-  changes: "ctrl+d",
-  copy: "ctrl+y",
+  changes: "",
+  copy: "ctrl+o",
 };
 export const shortcutInput = z
   .partialRecord(
     z.enum(shortcutNames),
     z
       .string()
-      .regex(/^(?:ctrl\+)?(?:meta\+)?(?:shift\+)?[a-z0-9]+$/)
+      .regex(/^(?:(?:ctrl\+)?(?:meta\+)?(?:shift\+)?[a-z0-9]+)?$/)
       .max(60),
   )
   .refine((value) => {
@@ -74,6 +75,8 @@ export const shortcutInput = z
     const effective = { ...defaultShortcuts, ...value };
     return (
       Object.entries(value).every(([action, key]) => {
+        if (key === "") return true;
+        if (["ctrl+r", "ctrl+t"].includes(key)) return false;
         if (action === "copy" && key === defaultShortcuts.copy) return true;
         if (Object.values(navigationShortcuts).some((reserved) => reserved === key)) return false;
         if (action === "newline" && key === "meta+return") return true;
@@ -88,7 +91,9 @@ export const shortcutInput = z
             (action === "changes" && key === "ctrl+d")
           );
         return true;
-      }) && new Set(Object.values(effective)).size === Object.values(effective).length
+      }) &&
+      new Set(Object.values(effective).filter(Boolean)).size ===
+        Object.values(effective).filter(Boolean).length
     );
   }, "Use distinct canonical Ctrl/Meta shortcuts; editor, fixed navigation and quit keys are reserved (Changes is navigation-only)");
 export type Shortcuts = z.infer<typeof shortcutInput>;
@@ -122,7 +127,7 @@ export type Activity = {
   problems: number;
   items: {
     conversationId: string;
-    projectId: string;
+    projectId: string | null;
     status: RuntimeStatus;
     activeTurnId: string | null;
     pendingApprovals: number;

@@ -1,17 +1,27 @@
-import { useKeyboard } from "@opentui/solid";
-import { createMemo, createSignal } from "solid-js";
-export type Command = { id: string; name: string; run: () => void };
+import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import { createMemo, createSignal, Show } from "solid-js";
+import { inputStyle, KeyHints, listStyle, Panel, ui } from "./ui";
+export type Command = { id: string; name: string; description?: string; run: () => void };
 export function CommandPalette(props: {
   commands: Command[];
   onClose: () => void;
   title?: string;
 }) {
+  const dimensions = useTerminalDimensions();
   const [query, setQuery] = createSignal(""),
     [selected, setSelected] = createSignal(0);
   const options = createMemo(() =>
     props.commands
-      .filter((command) => command.name.toLocaleLowerCase().includes(query().toLocaleLowerCase()))
-      .map((command) => ({ name: command.name, description: "", value: command })),
+      .filter((command) =>
+        `${command.name} ${command.description ?? ""}`
+          .toLocaleLowerCase()
+          .includes(query().toLocaleLowerCase()),
+      )
+      .map((command) => ({
+        name: command.name,
+        description: command.description ?? "",
+        value: command,
+      })),
   );
   const choose = () => {
     const command = options()[selected()]?.value;
@@ -31,21 +41,21 @@ export function CommandPalette(props: {
     }
   });
   return (
-    <box
-      position="absolute"
-      top={2}
-      left="8%"
-      width="84%"
+    <Panel
+      title={props.title ?? "Command palette"}
       height="75%"
-      border
-      borderColor="#80cbc4"
-      backgroundColor="#10151c"
-      padding={1}
-      flexDirection="column"
-      gap={1}
-      title={`${props.title ?? "Command palette"} · ↑/↓ choose · Enter execute · Esc close`}
+      hint="Search projects, conversations and actions"
     >
+      <Show when={dimensions().width >= 80 && dimensions().height >= 24 && !query()}>
+        <text fg={ui.secondary} height={1} flexShrink={0} wrapMode="none">
+          Enter send / steer · Tab queue · Esc interrupt · Shift+Enter newline
+        </text>
+        <text fg={ui.muted} height={1} flexShrink={0} wrapMode="none">
+          ↑↓ prompt history · Ctrl+R search history · Ctrl+O copy response · Ctrl+T transcript
+        </text>
+      </Show>
       <input
+        {...inputStyle}
         focused
         placeholder="Search Projects, Conversations and actions…"
         onInput={(value) => {
@@ -54,14 +64,27 @@ export function CommandPalette(props: {
         }}
         onSubmit={choose}
       />
-      <select
-        options={options()}
-        selectedIndex={selected()}
-        showDescription={false}
-        flexGrow={1}
-        onChange={(index) => setSelected(index)}
-        onSelect={choose}
+      <Show
+        when={options().length}
+        fallback={<text fg={ui.muted}>No matching commands. Try a different search.</text>}
+      >
+        <select
+          {...listStyle}
+          options={options()}
+          selectedIndex={selected()}
+          showDescription
+          flexGrow={1}
+          onChange={(index) => setSelected(index)}
+          onSelect={choose}
+        />
+      </Show>
+      <KeyHints
+        items={[
+          ["↑↓", "choose"],
+          ["Enter", "execute"],
+          ["Esc", "close"],
+        ]}
       />
-    </box>
+    </Panel>
   );
 }

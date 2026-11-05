@@ -30,6 +30,7 @@ import { RuntimeStore, type Store } from "@harnesshub/storage";
 import type { z } from "zod";
 import { Handoffs } from "./handoff";
 import { projectRoot } from "./index";
+import { PendingInputs } from "./pending-inputs";
 
 export type Live = {
   id: string;
@@ -47,6 +48,7 @@ type Pending = { live: Live; resolve: (result: RequestPermissionResponse) => voi
 export class Runtime {
   readonly data: RuntimeStore;
   readonly handoffs: Handoffs;
+  readonly inputs: PendingInputs;
   readonly epoch = randomUUID();
   readonly live = new Map<string, Live>();
   readonly pending = new Map<string, Pending>();
@@ -59,6 +61,8 @@ export class Runtime {
   private assertDeletable(id: string) {
     this.assertAvailable(id);
     this.store.assertConversationDeletable(id);
+    if (this.inputs.list(id).some((input) => ["SENDING", "UNCERTAIN"].includes(input.state)))
+      throw new AppError(409, "Inspect pending input delivery before deleting Conversation");
     if (
       [...this.handoffs.operations].some((h) => this.handoffs.data.get(h).conversationId === id) ||
       [...this.handoffs.sources.values()].some((l) => l.conversationId === id)
@@ -109,6 +113,7 @@ export class Runtime {
     this.data = new RuntimeStore(store);
     this.data.recover();
     this.handoffs = new Handoffs(this);
+    this.inputs = new PendingInputs(this);
   }
   profiles() {
     return [
@@ -359,7 +364,9 @@ export class Runtime {
       throw error;
     }
   }
-  submit(conversationId: string, input: z.infer<typeof turnInput>) {
+  submit(conversationId: string, input: z.infer<typeof turnInput>, fromQueue = false) {
+    if (input.delivery)
+      throw new AppError(400, "Use the conversation inputs endpoint for follow-ups");
     const requestHash = createHash("sha256")
       .update(JSON.stringify({ conversationId, ...input }))
       .digest("hex");
@@ -371,6 +378,28 @@ export class Runtime {
       return previous;
     }
     this.assertAvailable(conversationId);
+    if (this.inputs.uncertain(conversationId))
+      throw new AppError(
+        409,
+        "Previous input delivery is UNCERTAIN; inspect history before continuing",
+      );
+    const reservedInput = this.data.inputs().find((item) => item.requestId === input.requestId);
+    if (
+      reservedInput &&
+      (!fromQueue ||
+        reservedInput.conversationId !== conversationId ||
+        reservedInput.state !== "SENDING")
+    )
+      throw new AppError(409, "requestId belongs to an existing queued input");
+    if (
+      this.inputs
+        .list(conversationId)
+        .some(
+          (item) =>
+            item.state === "SENDING" && item.requestId !== (fromQueue ? input.requestId : null),
+        )
+    )
+      throw new AppError(409, "Wait for pending input delivery before starting a new Turn");
     const conversation = this.store.getConversation(conversationId);
     if (this.closing) throw new AppError(503, "Runtime is stopping");
     if (conversation.runtimeStatus === "UNCERTAIN")
@@ -530,6 +559,10 @@ export class Runtime {
         );
         this.data.updateTurn(turnId, { state, endedAt: Date.now(), finishEventSeq: orphan.seq });
         this.status(turn.conversationId, state);
+        this.inputs.hold(
+          turn.conversationId,
+          "Preparation failed; use /queue to resume explicitly",
+        );
         const handle = this.live.get(turn.conversationId);
         if (handle) handle.turnId = null;
       }
@@ -554,6 +587,12 @@ export class Runtime {
       live.conversationId,
       state === "UNCERTAIN" ? "UNCERTAIN" : state === "ERROR" ? "ERROR" : "IDLE",
     );
+    if (state === "COMPLETED") void this.inputs.drain(live.conversationId);
+    else
+      this.inputs.hold(
+        live.conversationId,
+        "Previous turn did not complete normally; use /queue to resume explicitly",
+      );
   }
   lost(live: Live) {
     this.data.updateSession(live.id, {
@@ -646,6 +685,7 @@ export class Runtime {
   async cancel(turnId: string) {
     const turn = this.data.turn(turnId);
     if (turn.endedAt !== null || turn.state === "CANCELLING") return turn;
+    this.inputs.hold(turn.conversationId, "Interrupted by user; use /queue to resume explicitly");
     this.data.updateTurn(turnId, { state: "CANCELLING" });
     this.status(turn.conversationId, "CANCELLING");
     const h = this.handoffs.data.open(turn.conversationId);
@@ -671,6 +711,8 @@ export class Runtime {
   }
   async settings(conversationId: string, input: z.infer<typeof settingInput>) {
     this.assertAvailable(conversationId);
+    if (this.inputs.list(conversationId).some((item) => item.state === "SENDING"))
+      throw new AppError(409, "Wait for pending input delivery before changing session options");
     const live = this.live.get(conversationId);
     if (!live?.session || !live.worker || live.worker.closed)
       throw new AppError(409, "Create a live session first");

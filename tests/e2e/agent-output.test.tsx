@@ -5,6 +5,7 @@ import { NativeEvents } from "../../apps/tui/src/native-events";
 import { sourceParts } from "../../apps/tui/src/rich-content";
 import { newViewState, Transcript } from "../../apps/tui/src/transcript";
 import type { ConversationEvent } from "../../packages/shared/src/index";
+import { clickControl } from "./ui-actions";
 
 const event = (
   seq: number,
@@ -166,9 +167,9 @@ test("styled streaming replies wrap and copy original Markdown while user backgr
     );
     expect(replyLine).toBeDefined();
     expect(replyLine?.spans.some((span) => span.bg.equals(RGBA.fromHex("#2d2d30")))).toBe(false);
-    screen.mockInput.pressKey("]");
+    screen.mockInput.pressArrow("down");
     await frame(screen, "▶ Agent");
-    screen.mockInput.pressKey("y", { ctrl: true });
+    await clickControl(screen, "transcript-source");
     await frame(screen, "Original Markdown / text");
     screen.mockInput.pressEnter();
     await waitFor(() => copied.length > 0);
@@ -233,9 +234,9 @@ test("native tool accents follow streaming status and approvals while preserving
         for (const detail of ["NATIVE_PARAMETERS", "NATIVE_OUTPUT", "Parameters"])
           expect(screen.captureCharFrame()).not.toContain(detail);
       }
-      screen.mockInput.pressKey("t", { ctrl: true });
+      screen.mockInput.pressArrow("up");
       await frame(screen, "▶ NativeExact");
-      screen.mockInput.pressKey("e", { ctrl: true });
+      screen.mockInput.pressEnter();
       await frame(screen, "NATIVE_OUTPUT");
       await frame(screen, "NATIVE_PARAMETERS");
       await frame(screen, "NATIVE_CONTENT");
@@ -244,7 +245,7 @@ test("native tool accents follow streaming status and approvals while preserving
         event(++seq, "tool_call_update", { toolCallId: "styled-tool", status: "completed" }),
       ]);
       await frame(screen, "NATIVE_OUTPUT");
-      screen.mockInput.pressKey("e", { ctrl: true });
+      screen.mockInput.pressEnter();
       await screen.renderOnce();
       expect(screen.captureCharFrame()).not.toContain("NATIVE_OUTPUT");
       model.append([
@@ -303,11 +304,11 @@ test("historical terminal and Guardian Review details stay folded without changi
     screen.mockInput.pressKey("e", { meta: true });
     await screen.renderOnce();
     expect(screen.captureCharFrame()).not.toContain("GUARDIAN_RESULT");
-    screen.mockInput.pressKey("e", { ctrl: true });
+    screen.mockInput.pressEnter();
     await frame(screen, "TERMINAL_PARAMETERS");
     expect(screen.captureCharFrame()).not.toContain("native-terminal-id");
-    screen.mockInput.pressKey("t", { ctrl: true });
-    screen.mockInput.pressKey("e", { ctrl: true });
+    screen.mockInput.pressArrow("down");
+    screen.mockInput.pressEnter();
     await frame(screen, "Show less");
     expect(screen.captureCharFrame()).not.toContain("GUARDIAN_RESULT");
     await screen.dispose();
@@ -317,7 +318,7 @@ test("historical terminal and Guardian Review details stay folded without changi
       height: 30,
     });
     await frame(screen, "Show less");
-    screen.mockInput.pressKey("r", { ctrl: true });
+    await clickControl(screen, "transcript-raw");
     await frame(screen, "GUARDIAN_PARAMETERS");
     expect(model.events).toEqual(events);
     expect(JSON.stringify(events)).toBe(original);
@@ -378,7 +379,7 @@ test("tool summaries bound multiline commands and stdout without exposing protoc
         name: "Terminal internal-terminal-id output",
         text: output,
       });
-      screen.mockInput.pressKey("r", { ctrl: true });
+      await clickControl(screen, "transcript-raw");
       await frame(screen, "Original source");
       expect(JSON.parse(model.source(tool)).title).toBe(title);
       expect(model.events).toEqual(events);

@@ -32,6 +32,8 @@ export class Handoffs {
     const conversation = r.store.getConversation(id);
     if (this.data.open(id) || r.live.get(id)?.configuring || r.closing)
       throw new AppError(409, "Handoff or session operation already in progress");
+    if (conversation.selectedHarnessId !== harnessId)
+      r.inputs.hold(id, "Harness selection changed; select the original Harness before resuming");
     r.metadata(this.data.bind(id, { selectedHarnessId: harnessId }));
     const active = conversation.activeNativeSessionId
       ? r.data.session(conversation.activeNativeSessionId)

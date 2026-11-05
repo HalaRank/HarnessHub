@@ -117,7 +117,7 @@ test("private data and actual multi-generation log rotation retain user-only per
     assert.equal(statSync(`${rotated}${suffix}`).mode & 0o777, 0o600);
 });
 
-test("failed migration rolls back all SQL, preserves schema 6 and a restorable private backup", async () => {
+test("failed migration rolls back all SQL, preserves the schema and a restorable private backup", async () => {
   const dir = join(temp, "migration-failure");
   mkdirSync(dir);
   const file = join(dir, "harnesshub.db"),
@@ -131,8 +131,9 @@ test("failed migration rolls back all SQL, preserves schema 6 and a restorable p
   cpSync(migrations, failing, { recursive: true });
   const journalFile = join(failing, "meta/_journal.json");
   const journal = JSON.parse(readFileSync(journalFile));
+  const schemaVersion = journal.entries.length;
   journal.entries.push({
-    idx: 6,
+    idx: schemaVersion,
     version: "6",
     when: journal.entries.at(-1).when + 1000,
     tag: "0006_failure",
@@ -145,7 +146,7 @@ test("failed migration rolls back all SQL, preserves schema 6 and a restorable p
   );
   await assert.rejects(openStore(file, failing), /not_a_table/);
   const db = new Database(file);
-  assert.equal(db.pragma("user_version", { simple: true }), 6);
+  assert.equal(db.pragma("user_version", { simple: true }), schemaVersion);
   assert.equal(
     db.prepare("SELECT name FROM sqlite_master WHERE name='must_rollback'").get(),
     undefined,

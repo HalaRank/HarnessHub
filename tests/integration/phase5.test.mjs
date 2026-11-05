@@ -460,7 +460,7 @@ test("interrupted worktree creation is not treated as usable; unregistered direc
   assert.ok(existsSync(join(orphanPath, "user.txt")));
 });
 
-test("real schema 5 SQL migrates all existing data to 6 with backup and explicit session binding", async () => {
+test("real schema 5 SQL migrates all existing data to the current schema with backup and explicit session binding", async () => {
   const legacy = join(temp, "schema5");
   mkdirSync(legacy);
   const data = join(legacy, "data/harnesshub");
@@ -501,7 +501,7 @@ test("real schema 5 SQL migrates all existing data to 6 with backup and explicit
   run("daemon", "start");
   run("daemon", "stop");
   const migrated = new Database(file, { readonly: true });
-  assert.equal(migrated.pragma("user_version", { simple: true }), 6);
+  assert.equal(migrated.pragma("user_version", { simple: true }), journal.entries.length);
   assert.deepEqual(migrated.pragma("foreign_key_check"), []);
   const c = migrated.prepare("SELECT * FROM conversations").get();
   assert.equal(c.active_native_session_id, "n");

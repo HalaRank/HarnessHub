@@ -1,6 +1,7 @@
 import { useKeyboard } from "@opentui/solid";
 import { createSignal, type JSX } from "solid-js";
 import { mouseClick } from "./project-tree";
+import { Panel, ui } from "./ui";
 
 export function DeleteConfirmation(props: {
   kind: "Project" | "Conversation";
@@ -30,24 +31,18 @@ export function DeleteConfirmation(props: {
     }
   });
   return (
-    <box
-      position="absolute"
-      top={3}
-      left={3}
-      width="88%"
-      border
-      backgroundColor="#10151c"
-      padding={1}
-      gap={1}
-      flexDirection="column"
-      title={`Confirm ${props.kind} deletion · Esc cancel`}
+    <Panel
+      title={`Confirm ${props.kind} deletion`}
+      hint="Review the application data being deleted. Esc cancels."
     >
       {props.children}
-      <text>This cannot be undone. Project files, Worktrees and Git branches are preserved.</text>
+      <text fg={ui.secondary}>
+        This cannot be undone. Project files, Worktrees and Git branches are preserved.
+      </text>
       <box flexDirection="row" gap={2}>
         <box
           id="delete-cancel"
-          backgroundColor={!confirm() ? "#36404b" : "#10151c"}
+          backgroundColor={!confirm() ? ui.border : ui.canvas}
           paddingX={1}
           onMouse={(event) => {
             if (!props.busy) click("cancel", event, props.onCancel);
@@ -57,18 +52,18 @@ export function DeleteConfirmation(props: {
         </box>
         <box
           id="delete-confirm"
-          backgroundColor={confirm() ? "#632b30" : "#10151c"}
+          backgroundColor={confirm() ? ui.danger : ui.canvas}
           paddingX={1}
           onMouse={(event) => {
             if (!props.busy) click("delete", event, props.onDelete);
           }}
         >
-          <text selectable={false} fg="#ff8b8b">
+          <text selectable={false} fg={ui.error}>
             {props.busy ? "Deleting…" : confirm() ? "› Delete" : "  Delete"}
           </text>
         </box>
       </box>
-      <text fg="#8b949e">Delete to delete · Tab / ← → choose · Enter confirm · Esc cancel</text>
-    </box>
+      <text fg={ui.muted}>Delete to delete · Tab / ← → choose · Enter confirm · Esc cancel</text>
+    </Panel>
   );
 }

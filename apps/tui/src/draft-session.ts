@@ -117,6 +117,7 @@ export class DraftSession {
   prepare(
     harnessId: string,
     nativeCommand?: NonNullable<Draft["pendingSubmission"]>["nativeCommand"],
+    delivery?: "steer" | "queue",
   ) {
     clearTimeout(this.timer);
     return this.enqueue(async () => {
@@ -125,6 +126,7 @@ export class DraftSession {
         pending &&
         (pending.message !== this.text ||
           pending.harnessId !== harnessId ||
+          pending.delivery !== delivery ||
           JSON.stringify(pending.nativeCommand) !== JSON.stringify(nativeCommand))
       )
         throw new Error(
@@ -135,6 +137,7 @@ export class DraftSession {
           requestId: randomUUID(),
           message: this.text,
           harnessId,
+          ...(delivery ? { delivery } : {}),
           ...(nativeCommand ? { nativeCommand } : {}),
         });
       return this.value.pendingSubmission as NonNullable<Draft["pendingSubmission"]>;

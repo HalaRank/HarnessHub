@@ -14,6 +14,7 @@ export function matches(
   key: { name: string; ctrl?: boolean; shift?: boolean; meta?: boolean },
   value: string,
 ) {
+  if (!value) return false;
   const b = binding(value);
   return (
     key.name === b.name && !!key.ctrl === b.ctrl && !!key.shift === b.shift && !!key.meta === b.meta

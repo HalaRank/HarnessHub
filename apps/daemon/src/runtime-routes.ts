@@ -101,10 +101,25 @@ export function runtimeRoutes(app: Hono, runtime: Runtime) {
   app.post("/v1/conversations/:id/turns", async (c) =>
     c.json(runtime.submit(c.req.param("id"), turnInput.parse(await c.req.json())), 202),
   );
+  app.get("/v1/conversations/:id/inputs", (c) => {
+    runtime.store.getConversation(c.req.param("id"));
+    return c.json(runtime.inputs.list(c.req.param("id")));
+  });
+  app.post("/v1/conversations/:id/inputs", async (c) =>
+    c.json(runtime.inputs.accept(c.req.param("id"), turnInput.parse(await c.req.json())), 202),
+  );
+  app.post("/v1/conversations/:id/inputs/resume", (c) =>
+    c.json(runtime.inputs.resume(c.req.param("id"))),
+  );
+  app.delete("/v1/conversations/:id/inputs/:requestId", (c) =>
+    c.json(runtime.inputs.remove(c.req.param("id"), c.req.param("requestId"))),
+  );
   app.get("/v1/turns/:id", (c) => c.json(runtime.data.turn(c.req.param("id"))));
   app.get("/v1/requests/:requestId", (c) => {
     const requestId = z.string().uuid().parse(c.req.param("requestId"));
-    const turn = runtime.data.byRequest(requestId);
+    const turn =
+      runtime.data.byRequest(requestId) ??
+      runtime.data.inputs().find((input) => input.requestId === requestId);
     if (!turn) throw new AppError(404, "Request has not been recorded; it was not resent");
     return c.json(turn);
   });

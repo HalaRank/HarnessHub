@@ -3,6 +3,7 @@ import {
   AppError,
   type ConversationEvent,
   type HarnessProfile,
+  type PendingInput,
   type RuntimeStatus,
   redact,
 } from "@harnesshub/shared";
@@ -83,6 +84,25 @@ export class RuntimeStore {
   }
   byRequest(requestId: string) {
     return this.db.select().from(turns).where(eq(turns.requestId, requestId)).get();
+  }
+  inputs(conversationId?: string): PendingInput[] {
+    const records = this.db
+      .select({ payload: conversationEvents.payload })
+      .from(conversationEvents)
+      .where(
+        and(
+          eq(conversationEvents.kind, "runtime.input_updated"),
+          conversationId ? eq(conversationEvents.conversationId, conversationId) : undefined,
+        ),
+      )
+      .orderBy(conversationEvents.seq)
+      .all();
+    const latest = new Map<string, PendingInput>();
+    for (const record of records) {
+      const input = record.payload as PendingInput;
+      latest.set(input.requestId, input);
+    }
+    return [...latest.values()];
   }
   active(conversationId?: string) {
     return this.db

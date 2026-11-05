@@ -33,6 +33,9 @@ export class Projects {
       ...(patch.rootPath ? { rootPath: projectRoot(patch.rootPath) } : {}),
     });
   }
+  createStandaloneConversation(workspacePath: string, title?: string) {
+    return this.store.addConversation(null, title, undefined, projectRoot(workspacePath));
+  }
   async createConversation(
     projectId: string,
     title?: string,

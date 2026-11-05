@@ -109,8 +109,8 @@ try:
     for item in setup["conversations"]:
         cid = item["conversationId"]
         child = launch(cid)
-        read_until(child, b"Ctrl+X Cancel Turn")
-        os.write(child[1], b"\x0c")
+        read_until(child, b"Esc interrupt")
+        os.write(child[1], b"\r")
         read_until(child, b"Enter send")
         lines = item["message"].split("\n")
         os.write(child[1], lines[0].encode())
@@ -130,7 +130,11 @@ try:
     assert all(api("/v1/turns/" + t["id"])["endedAt"] is None for t in turns), "Turns did not overlap"
     # Switch the first live TUI to the other concurrently running Conversation via its command palette.
     api("/v1/preferences", "PATCH", {"lastConversationId": setup["conversations"][0]["conversationId"]})
-    os.write(children[0][1], b"\x10")
+    os.write(children[0][1], b"\x14")
+    time.sleep(0.1)
+    os.write(children[0][1], b"\x1b")
+    time.sleep(0.1)
+    os.write(children[0][1], b"/")
     read_until(children[0], b"Command palette")
     os.write(children[0][1], ("Conversation · Phase 4 " + setup["conversations"][1]["harnessId"]).encode())
     time.sleep(0.2)
@@ -145,7 +149,7 @@ try:
             os.read(children[0][1], 65536)
     else:
         raise AssertionError("Real command palette did not switch Conversation")
-    os.write(children[0][1], b"\x02")  # Hide sidebar.
+    os.write(children[0][1], b"/Toggle Sidebar\r")  # Command menu action.
     fcntl.ioctl(children[0][1], termios.TIOCSWINSZ, struct.pack("HHHH", 30, 75, 0, 0))
     os.kill(children[0][0], signal.SIGWINCH)
     time.sleep(0.15)
@@ -154,7 +158,7 @@ try:
     assert api("/v1/health")["pid"] == original_pid
     assert any(api("/v1/turns/" + t["id"])["endedAt"] is None for t in turns), "No Agent still running after both TUIs exit"
     reopened = launch(setup["conversations"][0]["conversationId"])
-    read_until(reopened, b"Ctrl+X Cancel Turn")
+    read_until(reopened, b"Esc interrupt")
     for item, session in zip(setup["conversations"], sessions):
         assert api("/v1/conversations/" + item["conversationId"] + "/sessions")[-1]["id"] == session["id"]
     quit_child(reopened)

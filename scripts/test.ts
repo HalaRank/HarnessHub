@@ -15,6 +15,8 @@ const integration = spawnSync(
     "tests/integration/phase6.test.mjs",
     "tests/integration/audit-fixes.test.mjs",
     "tests/integration/deletion.test.mjs",
+    "tests/integration/pending-inputs.test.mjs",
+    "tests/integration/standalone-conversations.test.mjs",
   ],
   { stdio: "inherit", env: { ...process.env, HARNESSHUB_BUN: process.execPath } },
 );
@@ -32,6 +34,9 @@ const ui = spawnSync(
     "tests/e2e/phase5.test.tsx",
     "tests/e2e/mouse-sidebar.test.tsx",
     "tests/e2e/slash-commands.test.tsx",
+    "tests/e2e/codex-inputs.test.tsx",
+    "tests/e2e/ui-hierarchy.test.tsx",
+    "tests/e2e/new-conversation.test.tsx",
   ],
   { stdio: "inherit" },
 );

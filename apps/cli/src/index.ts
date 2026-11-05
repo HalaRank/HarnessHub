@@ -96,6 +96,7 @@ async function main(args: string[]) {
     throw new Error(
       "TUI requires an interactive terminal. Use hhu daemon start/status or hhu doctor for scripts.",
     );
+  const launchCwd = process.cwd();
   const client = await ensureDaemon();
   let projectId: string | undefined;
   if (command) {
@@ -105,7 +106,7 @@ async function main(args: string[]) {
     projectId = project.id;
   }
   const { openTui } = await import("@harnesshub/tui");
-  await openTui(projectId);
+  await openTui(projectId, launchCwd);
 }
 async function doctor() {
   let failed = false;

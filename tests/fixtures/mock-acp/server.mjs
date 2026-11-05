@@ -30,6 +30,7 @@ const app = new AgentApp()
     return {
       protocolVersion: params.protocolVersion,
       agentInfo: { name: "HarnessHub Mock", version: "1" },
+      ...(process.env.HHU_MOCK_STEERING ? { _meta: { steering: { supported: true } } } : {}),
       agentCapabilities: {
         loadSession: false,
         promptCapabilities: {},
@@ -70,6 +71,20 @@ const app = new AgentApp()
       await new Promise((r) => setTimeout(r, Number(process.env.HHU_MOCK_CLOSE_DELAY)));
     return {};
   })
+  .onRequest(
+    "_session/steering",
+    (params) => params,
+    async ({ params, client }) => {
+      if (process.env.HHU_MOCK_STEERING === "disconnect") {
+        process.stdout.end();
+        setTimeout(() => process.exit(19), 30);
+        await new Promise(() => {});
+      }
+      if (process.env.HHU_MOCK_STEERING === "idle") return { outcome: "promptRequired" };
+      await text(client, `steered=${params.prompt[0].text}\n`);
+      return { outcome: "injected" };
+    },
+  )
   .onNotification("session/cancel", () => {
     cancelled = true;
     current?.();
