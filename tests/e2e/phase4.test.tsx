@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { RGBA, type ScrollBoxRenderable, type TextareaRenderable } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
-import { HISTORY_PAGE_SIZE, NativeEvents } from "../../apps/tui/src/native-events";
+import { HISTORY_WINDOW_SIZE, NativeEvents } from "../../apps/tui/src/native-events";
 import { RawEvents } from "../../apps/tui/src/raw-events";
 import { Markdown, sourceParts, UnifiedDiff } from "../../apps/tui/src/rich-content";
 import { SourceViewer } from "../../apps/tui/src/source-viewer";
@@ -418,7 +418,7 @@ test("long history has bounded mounted rows, incremental content, scroll lock, b
     await frame(screen, "row-9999");
     const scroll = () =>
       screen.renderer.root.findDescendantById("native-history") as ScrollBoxRenderable;
-    expect(scroll().getChildrenCount()).toBeLessThanOrEqual(HISTORY_PAGE_SIZE + 3);
+    expect(scroll().getChildrenCount()).toBeLessThanOrEqual(HISTORY_WINDOW_SIZE + 3);
     scroll().scrollTo(20);
     await screen.renderOnce();
     const top = scroll().scrollTop;
@@ -447,7 +447,7 @@ test("long history has bounded mounted rows, incremental content, scroll lock, b
         projectionMs: Math.round(elapsed),
         displaySegments: model.rows.length,
         historyRows: 10000,
-        mountedRowLimit: HISTORY_PAGE_SIZE,
+        mountedRowLimit: HISTORY_WINDOW_SIZE,
       }),
     );
   } finally {
@@ -876,7 +876,7 @@ test("long text segments keep surrogate pairs and original full-message copying 
   }
 });
 
-test("a new history page cannot replace the page being read after the user scrolls up", async () => {
+test("new messages cannot replace the history being read after the user scrolls up", async () => {
   const model = new Transcript();
   model.append(
     Array.from({ length: 120 }, (_, i) =>
@@ -896,7 +896,6 @@ test("a new history page cannot replace the page being read after the user scrol
     const before = scroll.scrollTop;
     model.append([messageEvent(121, "DO_NOT_JUMP_NEW_PAGE")]);
     await screen.renderOnce();
-    expect(screen.captureCharFrame()).toContain("History 2/3");
     expect(screen.captureCharFrame()).not.toContain("DO_NOT_JUMP_NEW_PAGE");
     expect(scroll.scrollTop).toBe(before);
     screen.mockInput.pressKey("END");

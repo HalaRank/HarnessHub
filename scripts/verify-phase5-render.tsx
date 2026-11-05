@@ -36,7 +36,7 @@ for (const row of rows) {
   const view = newViewState(),
     index = model.rows.indexOf(row);
   view.selected = index;
-  view.page = Math.floor(index / 60);
+  view.start = Math.floor(index / 60) * 60;
   view.manual[row.id] = true;
   view.following = false;
   const screen = await testRender(

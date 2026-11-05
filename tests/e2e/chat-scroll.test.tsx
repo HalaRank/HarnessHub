@@ -31,6 +31,79 @@ function history() {
   return model;
 }
 
+test("the 181st Guardian Review keeps context and the wheel reaches all history in both directions", async () => {
+  const model = new Transcript();
+  const shortMessage = (seq: number) => ({ ...message(seq), payload: { text: `MESSAGE_${seq}` } });
+  model.append(Array.from({ length: 180 }, (_, index) => shortMessage(index + 1)));
+  const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+    width: 120,
+    height: 36,
+  });
+  const frame = async (text: string) => {
+    for (let n = 0; n < 100; n++) {
+      await settle(screen);
+      if (screen.captureCharFrame().includes(text)) return;
+    }
+    throw new Error(`Missing ${text}\n${screen.captureCharFrame()}`);
+  };
+  try {
+    await frame("MESSAGE_180");
+    model.append([
+      {
+        ...message(181),
+        kind: "tool_call",
+        payload: {
+          toolCallId: "review",
+          title: "Guardian Review",
+          status: "completed",
+          content: [
+            {
+              type: "content",
+              content: {
+                type: "text",
+                text: "Risk: high\nAuthorization: high\nRationale: Original review text",
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    await frame("Guardian Review");
+    expect(screen.captureCharFrame()).toContain("MESSAGE_180");
+    expect(screen.captureCharFrame()).not.toMatch(/History \d+\/\d+/);
+    const scroll = screen.renderer.root.findDescendantById("native-history") as ScrollBoxRenderable;
+    const seen = new Set<number>();
+    const collect = () => {
+      for (const match of screen.captureCharFrame().matchAll(/MESSAGE_(\d+)\s/g))
+        seen.add(Number(match[1]));
+    };
+    // Only wheel events: no page keys or explicit scrollTo calls are needed.
+    collect();
+    for (let n = 0; n < 300 && !screen.captureCharFrame().includes("MESSAGE_1 "); n++) {
+      await screen.mockMouse.scroll(scroll.x + 3, scroll.y + 2, "up");
+      await screen.renderOnce();
+      collect();
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    await frame("MESSAGE_1 ");
+    expect(scroll.getChildrenCount()).toBeLessThanOrEqual(63);
+    for (let n = 0; n < 300 && !screen.captureCharFrame().includes("Guardian Review"); n++) {
+      await screen.mockMouse.scroll(scroll.x + 3, scroll.y + 2, "down");
+      await screen.renderOnce();
+      collect();
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    await frame("Guardian Review");
+    expect(screen.captureCharFrame()).toContain("MESSAGE_180");
+    expect(scroll.getChildrenCount()).toBeLessThanOrEqual(63);
+    expect([...seen].sort((a, b) => a - b)).toEqual(Array.from({ length: 180 }, (_, i) => i + 1));
+    expect(model.events).toHaveLength(181);
+    expect(model.rows).toHaveLength(181);
+  } finally {
+    await screen.dispose();
+  }
+}, 20000);
+
 test("each chat wheel event scrolls five lines in either direction, clamped at the edges", async () => {
   const screen = await testRender(() => <NativeEvents model={history()} disabled={false} />, {
     width: 120,
@@ -62,7 +135,7 @@ test("each chat wheel event scrolls five lines in either direction, clamped at t
   }
 });
 
-test("Esc returns from scrolled and paginated history to the newest message and resumes following", async () => {
+test("Esc returns from scrolled history to the newest message and resumes following", async () => {
   const model = history();
   const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
     width: 120,
@@ -75,11 +148,9 @@ test("Esc returns from scrolled and paginated history to the newest message and 
     await settle(screen);
     model.append([message(121)]);
     await settle(screen);
-    expect(screen.captureCharFrame()).toContain("History 2/3");
     expect(screen.captureCharFrame()).not.toContain("MESSAGE_121");
     screen.mockInput.pressEscape();
     await settle(screen);
-    expect(screen.captureCharFrame()).toContain("History 3/3");
     expect(screen.captureCharFrame()).toContain("MESSAGE_121");
     expect(scroll.scrollTop + scroll.viewport.height).toBeGreaterThanOrEqual(
       scroll.scrollHeight - 1,
@@ -87,9 +158,10 @@ test("Esc returns from scrolled and paginated history to the newest message and 
     model.append([message(122)]);
     await settle(screen);
     expect(screen.captureCharFrame()).toContain("MESSAGE_122");
+    const before = scroll.scrollTop;
     screen.mockInput.pressKey("\x1b[5;5~");
     await settle(screen);
-    expect(screen.captureCharFrame()).toContain("History 2/3");
+    expect(scroll.scrollTop).toBeLessThan(before);
     screen.mockInput.pressEscape();
     await settle(screen);
     expect(screen.captureCharFrame()).toContain("MESSAGE_122");

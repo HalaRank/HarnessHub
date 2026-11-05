@@ -62,7 +62,7 @@ hhu --version
 
 已有原生 ACP 命令继续按 Agent 发布的名称、说明和参数提示补全。补全本身不发送，未发布的 slash 文本经用户确认后才作为普通消息发送。HarnessHub 本地命令与原生命令同名时优先使用原生命令。`/model`、`/permissions` 通过真实 ACP 选项工作。
 
-工具保持紧凑摘要，标题一行、正文最多末尾三行，手动展开状态优先。Ctrl+T 进入历史后用 ↑↓ 选择、Enter 展开，底部 More / less、Source、Raw 也可点击。Source 展示完整原始 Markdown、代码及工具输出，Enter 复制全文，PgUp/PgDn 滚动、Ctrl+←/→ 分页。鼠标拖选松开自动复制，双击选词、三击选行。Ctrl+C 优先复制有效选区，否则清空非空输入，再次在空输入时退出。
+聊天历史使用滚轮连续上下查看，无需翻页；阅读旧消息时新输出不会拉回底部，Esc / End 返回最新消息。工具保持紧凑摘要，标题一行、正文最多末尾三行，手动展开状态优先。Ctrl+T 进入历史后用 ↑↓ 选择、Enter 展开，底部 More / less、Source、Raw 也可点击。Source 展示完整原始 Markdown、代码及工具输出，Enter 复制全文，PgUp/PgDn 滚动、Ctrl+←/→ 分页。鼠标拖选松开自动复制，双击选词、三击选行。Ctrl+C 优先复制有效选区，否则清空非空输入，再次在空输入时退出。
 
 Changes 用 ↑↓ 选择文件，点击 Refresh 刷新、Source / copy 查看完整 Diff。读取 Conversation 绑定 Workspace 的 Staged、Unstaged 和 Untracked，不推断 Agent 修改归属。单次 Git 输出超过 2 MiB 或查询超过 10 秒时明确报错。
 

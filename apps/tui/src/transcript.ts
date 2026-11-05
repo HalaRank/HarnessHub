@@ -450,10 +450,10 @@ export function toolExpanded(manual: boolean | undefined) {
 export type ViewState = {
   manual: Record<string, boolean>;
   selected: number;
-  page: number | null;
+  start: number | null;
   scrollTop: number;
   following: boolean;
 };
 export function newViewState(): ViewState {
-  return { manual: {}, selected: 0, page: null, scrollTop: 0, following: true };
+  return { manual: {}, selected: 0, start: null, scrollTop: 0, following: true };
 }

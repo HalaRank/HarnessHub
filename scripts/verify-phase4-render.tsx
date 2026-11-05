@@ -59,7 +59,7 @@ for (const item of setup.conversations) {
   assert.ok(outputIndex >= 0);
   const view = newViewState();
   view.selected = toolIndex;
-  view.page = Math.floor(toolIndex / 60);
+  view.start = Math.floor(toolIndex / 60) * 60;
   view.manual[row.id] = true;
   const copy: string[] = [];
   const exact = await testRender(
@@ -137,7 +137,7 @@ for (const item of setup.conversations) {
   const source = sourceParts(markdown, null);
   const messageView = newViewState();
   messageView.selected = messageIndex;
-  messageView.page = Math.floor(messageIndex / 60);
+  messageView.start = Math.floor(messageIndex / 60) * 60;
   const chat = await testRender(
     () => <NativeEvents model={transcript} view={messageView} disabled={false} />,
     { width: 180, height: 55 },

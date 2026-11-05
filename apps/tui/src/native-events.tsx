@@ -16,7 +16,7 @@ import {
   type ViewState,
 } from "./transcript";
 
-export const HISTORY_PAGE_SIZE = 60;
+export const HISTORY_WINDOW_SIZE = 60;
 function rowAccent(value: RowData) {
   if (value.waiting) return "#ffcc80";
   if (value.kind === "tool") {
@@ -43,34 +43,33 @@ export function NativeEvents(props: {
     view = props.view ?? newViewState();
   const [manual, setManual] = createSignal(view.manual),
     [selected, setSelected] = createSignal(view.selected),
-    [page, setPage] = createSignal(view.page);
+    [start, setStart] = createSignal(view.start);
   const [source, setSource] = createSignal<SourcePart[] | null>(null);
   let scroll: ScrollBoxRenderable | undefined;
   let restored = false;
+  let changingWindow = false;
   const rememberScroll = () => {
-    if (!scroll || !restored) return;
+    if (!scroll || !restored || changingWindow) return;
     const bottom = scroll.scrollTop + scroll.viewport.height >= scroll.scrollHeight - 1;
-    if (!bottom && page() === null) setPage(currentPage());
-    else if (bottom && currentPage() === totalPages() - 1 && page() !== null) setPage(null);
+    if (!bottom && start() === null) setStart(windowStart());
+    else if (bottom && windowEnd() === model.size() && start() !== null) setStart(null);
   };
   createEffect(() => {
     const events = props.events;
     if (events) untrack(() => model.append(events.slice(model.events.length)));
   });
-  const totalPages = () => Math.max(1, Math.ceil(model.size() / HISTORY_PAGE_SIZE));
-  const currentPage = () => Math.min(page() ?? totalPages() - 1, totalPages() - 1);
+  const latestStart = () => Math.max(0, model.size() - HISTORY_WINDOW_SIZE);
+  const windowStart = () => Math.min(start() ?? latestStart(), latestStart());
+  const windowEnd = () => Math.min(model.size(), windowStart() + HISTORY_WINDOW_SIZE);
   const visible = createMemo(() => {
     model.size();
-    return model.rows.slice(
-      currentPage() * HISTORY_PAGE_SIZE,
-      (currentPage() + 1) * HISTORY_PAGE_SIZE,
-    );
+    return model.rows.slice(windowStart(), windowEnd());
   });
   createEffect(() => {
     if (!model.size() || restored || !scroll) return;
     restored = true;
     scroll.afterLayout(() => {
-      if (view.following && page() === null) scroll?.scrollTo(Infinity);
+      if (view.following && start() === null) scroll?.scrollTo(Infinity);
       else scroll?.scrollTo(view.scrollTop);
     });
   });
@@ -78,22 +77,25 @@ export function NativeEvents(props: {
     scroll?.verticalScrollBar.off("change", rememberScroll);
     view.manual = manual();
     view.selected = selected();
-    view.page = page();
+    view.start = start();
     if (scroll) {
       view.scrollTop = scroll.scrollTop;
       view.following = scroll.scrollTop + scroll.viewport.height >= scroll.scrollHeight - 1;
     }
   });
   const selectedIndex = () => {
-    const start = currentPage() * HISTORY_PAGE_SIZE,
-      end = Math.min(model.size(), start + HISTORY_PAGE_SIZE);
-    return selected() >= start && selected() < end ? selected() : end - 1;
+    return selected() >= windowStart() && selected() < windowEnd() ? selected() : windowEnd() - 1;
   };
   const selectedRow = () => model.rows[selectedIndex()];
   const reveal = (index: number) => {
     setSelected(index);
-    const target = Math.floor(index / HISTORY_PAGE_SIZE);
-    if (target !== currentPage()) setPage(target === totalPages() - 1 ? null : target);
+    if (index < windowStart() || index >= windowEnd()) {
+      const target = Math.min(
+        Math.floor(index / HISTORY_WINDOW_SIZE) * HISTORY_WINDOW_SIZE,
+        latestStart(),
+      );
+      setStart(target === latestStart() ? null : target);
+    }
     scroll?.scrollChildIntoView(`native-${model.rows[index]?.id}`, { align: "nearest" });
   };
   const toggle = (row: TranscriptRow) =>
@@ -126,8 +128,35 @@ export function NativeEvents(props: {
     props.onModalChange?.(true);
   };
   const followLatest = () => {
-    setPage(null);
+    setStart(null);
     scroll?.afterLayout(() => scroll?.scrollTo(Infinity));
+  };
+  // Shift overlapping windows only at an edge. Keep a shared row in place while layout
+  // changes, so wheel navigation crosses the mount limit without losing its position.
+  const scrollHistory = (
+    direction: "up" | "down",
+    distance: number,
+    unit: "absolute" | "viewport" = "absolute",
+  ) => {
+    if (!scroll || changingWindow) return;
+    const up = direction === "up";
+    const edge = up
+      ? scroll.scrollTop === 0
+      : scroll.scrollTop + scroll.viewport.height >= scroll.scrollHeight - 1;
+    const target = Math.max(0, Math.min(latestStart(), windowStart() + (up ? -30 : 30)));
+    if (edge && target !== windowStart()) {
+      const row = model.rows[up ? windowStart() : windowEnd() - 1];
+      const node = row && scroll.findDescendantById(`native-${row.id}`);
+      const release = node ? scroll.anchor(node) : () => {};
+      changingWindow = true;
+      setStart(target === latestStart() ? null : target);
+      scroll.afterLayout(() => {
+        release();
+        scroll?.scrollBy(up ? -distance : distance, unit);
+        changingWindow = false;
+        rememberScroll();
+      });
+    } else scroll.scrollBy(up ? -distance : distance, unit);
   };
   createEffect(() => {
     if (props.followRequest) followLatest();
@@ -159,15 +188,7 @@ export function NativeEvents(props: {
     if ((key.ctrl || key.meta || key.shift) && !["pageup", "pagedown"].includes(key.name)) return;
     if (key.name === "pageup" || key.name === "pagedown") {
       key.preventDefault();
-      if (key.ctrl) {
-        const next = Math.max(
-          0,
-          Math.min(totalPages() - 1, currentPage() + (key.name === "pageup" ? -1 : 1)),
-        );
-        setPage(next === totalPages() - 1 ? null : next);
-        setSelected(next * HISTORY_PAGE_SIZE);
-        scroll?.scrollTo(key.name === "pageup" ? Infinity : 0);
-      } else scroll?.scrollBy(key.name === "pageup" ? -0.8 : 0.8, "viewport");
+      scrollHistory(key.name === "pageup" ? "up" : "down", 0.8, "viewport");
     }
     if (key.name === "end" || key.name === "escape") {
       key.preventDefault();
@@ -191,6 +212,15 @@ export function NativeEvents(props: {
         stickyStart="bottom"
         scrollAcceleration={{ tick: () => 5, reset() {} }}
         viewportCulling
+        onMouseScroll={(event) => {
+          const direction = event.scroll?.direction;
+          if (direction !== "up" && direction !== "down") return;
+          const edge =
+            direction === "up"
+              ? scroll?.scrollTop === 0
+              : scroll && scroll.scrollTop + scroll.viewport.height >= scroll.scrollHeight - 1;
+          if (edge) scrollHistory(direction, 5 * (event.scroll?.delta ?? 1));
+        }}
       >
         <Show
           when={model.size()}
@@ -312,7 +342,7 @@ export function NativeEvents(props: {
           minWidth={0}
           truncate
           fg="#8b949e"
-        >{`Chat · History ${currentPage() + 1}/${totalPages()} · ${model.size()} items · Ctrl+T transcript · ↑↓ select · Enter expand`}</text>
+        >{`Chat · History · ${model.size()} items · Wheel scroll · Ctrl+T transcript · ↑↓ select · Enter expand`}</text>
         <box
           id="transcript-expand"
           onMouse={(event) => {
