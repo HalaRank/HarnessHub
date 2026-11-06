@@ -14,8 +14,9 @@ test("Codex CLI defaults reserve Esc interrupt, Ctrl+J newline and Ctrl+O respon
   expect(defaultShortcuts.copy).toBe("ctrl+o");
   expect(navigationShortcuts.conversation).toBe("n");
   expect(navigationShortcuts.standaloneConversation).toBe("ctrl+n");
+  expect(navigationShortcuts.harness).toBe("ctrl+h");
   for (const [action, shortcut] of Object.entries(navigationShortcuts)) {
-    if (!["cancel", "conversation", "standaloneConversation"].includes(action))
+    if (!["cancel", "conversation", "standaloneConversation", "harness"].includes(action))
       expect(shortcut).toBe("");
   }
   for (const shortcut of Object.values({ ...defaultShortcuts, ...navigationShortcuts })) {
@@ -39,10 +40,18 @@ test("explicit shortcut overrides remain available, can be unbound and reject ed
   }
   expect(shortcutInput.safeParse({}).success).toBe(true);
   expect(shortcutInput.safeParse({ palette: "ctrl+n" }).success).toBe(false);
+  expect(shortcutInput.safeParse({ palette: "ctrl+h" }).success).toBe(false);
   expect(shortcutInput.safeParse(defaultShortcuts).success).toBe(true);
   expect(shortcutInput.safeParse({ copy: "", palette: "" }).success).toBe(true);
   expect(shortcuts()).toEqual(defaultShortcuts);
   const overrides = { palette: "ctrl+s", sidebar: "ctrl+v", newline: "meta+return" };
   expect(shortcutInput.safeParse(overrides).success).toBe(true);
   expect(shortcuts(overrides)).toEqual({ ...defaultShortcuts, ...overrides });
+});
+
+test("Ctrl+H supports legacy BS without consuming DEL or modified Backspace", () => {
+  expect(matches({ name: "backspace", sequence: "\x08" }, "ctrl+h")).toBe(true);
+  expect(matches({ name: "backspace", sequence: "\x7f" }, "ctrl+h")).toBe(false);
+  expect(matches({ name: "backspace", sequence: "\x08", meta: true }, "ctrl+h")).toBe(false);
+  expect(matches({ name: "backspace", sequence: "\x08", shift: true }, "ctrl+h")).toBe(false);
 });

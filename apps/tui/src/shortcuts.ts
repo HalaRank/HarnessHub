@@ -11,10 +11,12 @@ export function binding(value: string) {
   };
 }
 export function matches(
-  key: { name: string; ctrl?: boolean; shift?: boolean; meta?: boolean },
+  key: { name: string; ctrl?: boolean; shift?: boolean; meta?: boolean; sequence?: string },
   value: string,
 ) {
   if (!value) return false;
+  // Legacy terminals encode Ctrl+H as BS; ordinary Backspace normally sends DEL.
+  if (value === "ctrl+h" && key.sequence === "\x08" && !key.meta && !key.shift) return true;
   const b = binding(value);
   return (
     key.name === b.name && !!key.ctrl === b.ctrl && !!key.shift === b.shift && !!key.meta === b.meta

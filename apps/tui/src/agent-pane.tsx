@@ -552,7 +552,6 @@ export function AgentPane(props: {
       key.preventDefault();
       props.setForm("approval");
     }
-    if (matches(key, navigationShortcuts.harness)) nextHarness();
     if (matches(key, navigationShortcuts.cancel)) cancel();
     if (matches(key, navigationShortcuts.cancelSwitch)) cancelSwitch();
     if (matches(key, navigationShortcuts.handoff) && failedHandoff()) openHandoff();
@@ -680,24 +679,32 @@ export function AgentPane(props: {
         }
       }}
     >
-      <text id="harness-status" fg={ui.secondary} height={1} flexShrink={0} wrapMode="none">
+      <text id="harness-identity" fg={ui.text} flexShrink={0} wrapMode="char">
         <b>{`ACP · ${executionSession()?.harnessId ?? harness()}`}</b>
-        <span
-          style={{ fg: statusColor(props.conversation.runtimeStatus) }}
-        >{` · ${props.conversation.runtimeStatus}`}</span>
-        <span style={{ fg: ui.warning }}>
-          {openHandoffRecord()
-            ? ` · Handoff ${openHandoffRecord()?.sourceHarness} → ${openHandoffRecord()?.targetHarness} · ${openHandoffRecord()?.status}`
-            : activeSession() && activeSession()?.harnessId !== harness()
-              ? ` → ${harness()} (PENDING_SWITCH)`
-              : ""}
+      </text>
+      <text id="harness-model" fg={ui.secondary} flexShrink={0} wrapMode="char">
+        {`Model (ACP) · ${executionSession() ? actualModel(executionSession()) : "not initialized"}`}
+      </text>
+      <text id="harness-status" fg={ui.secondary} height={1} flexShrink={0} wrapMode="none">
+        <span style={{ fg: statusColor(props.conversation.runtimeStatus) }}>
+          {props.conversation.runtimeStatus}
         </span>
-        <span style={{ fg: ui.muted }}>{` · ${changes() ? "Changes" : "Chat"}`}</span>
-        <span
-          style={{ fg: ui.muted }}
-        >{` · Model (ACP) · ${actualModel(executionSession())} · `}</span>
+        <span style={{ fg: ui.muted }}>{` · ${changes() ? "Changes" : "Chat"} · `}</span>
         <span style={{ fg: statusColor(connection()) }}>{connection()}</span>
       </text>
+      <Show
+        when={openHandoffRecord() || (activeSession() && activeSession()?.harnessId !== harness())}
+      >
+        <text fg={ui.warning} flexShrink={0} wrapMode="char">
+          <span style={{ fg: ui.warning }}>
+            {openHandoffRecord()
+              ? `Handoff ${openHandoffRecord()?.sourceHarness} → ${openHandoffRecord()?.targetHarness} · ${openHandoffRecord()?.status}`
+              : activeSession() && activeSession()?.harnessId !== harness()
+                ? ` → ${harness()} (PENDING_SWITCH)`
+                : ""}
+          </span>
+        </text>
+      </Show>
       <Show when={activeSession() && activeSession()?.harnessId !== harness()}>
         <text fg={ui.warning}>
           First target message starts Handoff. Wait for source execution/approval/cancellation to

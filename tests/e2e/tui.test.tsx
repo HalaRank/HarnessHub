@@ -89,7 +89,9 @@ test("Solid view registers real workspace and empty conversation through authent
     title.value = "Real empty conversation";
     screen.mockInput.pressEnter();
     await waitFor("Conversation · Real empty conversation");
-    await waitFor("· IDLE");
+    await waitFor("IDLE · Chat · Connected");
+    expect(screen.captureCharFrame()).toContain("ACP · codex");
+    expect(screen.captureCharFrame()).toContain("Model (ACP) · not initialized");
     expect(screen.captureCharFrame()).toContain("Start a conversation");
     const client = await connect();
     const snapshot = await client?.request<{

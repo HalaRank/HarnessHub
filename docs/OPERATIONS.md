@@ -45,6 +45,8 @@ hhu daemon stop --cancel-active
 
 Worker 关闭分别等待 stdio 和同一 Linux session 中的进程组结束；拒绝退出则保留句柄，不默认 SIGKILL。HarnessHub 不是进程沙箱，Agent 主动通过 setsid 脱离 session 的独立服务仍需按原生工具的生命周期核查。
 
+Chat / Changes 顶部常驻显示当前 Agent 与 ACP 报告的模型。`Ctrl+H` 循环选择下一个 Harness，首次发送目标消息才启动交接；待切换时模型仍对应源会话，目标单独标为 `PENDING_SWITCH`。没有初始化或 ACP 没有报告模型时如实显示未知，不读取原生配置。传统终端的 Ctrl+H 使用 BS (`0x08`)，普通 Backspace 通常使用 DEL (`0x7f`)；若终端把物理 Backspace 也映射成 BS，两者无法区分，需将 Backspace 映射为 DEL，或启用可区分按键的键盘协议。
+
 安全停止后更新源码，再运行 `bun install --frozen-lockfile` 和 `bun run install:local`。安装器在构建及写启动器期间持有同一 Daemon `flock`：活动、启动中、无响应或缺少实例元数据但仍持锁的 Daemon 均会阻止安装；另一终端也不能在此时启动 Daemon。当前版本与旧版本不混连；匹配协议且通过 token/实例身份检查的旧 Daemon 可被正常请求停止。
 
 0.5.0 / 0.6.0 → 0.6.1 不改变 schema 6；schema 5 → 6 使用已有增量迁移。迁移前备份到同目录 `harnesshub.db.backup-*`（0600）。锁定的 Drizzle 在一个事务中执行全部待迁移 SQL；SQL 失败会回滚，旧库与备份均保留，不自动覆盖库文件。高于支持版本的 schema 拒绝打开。备份不会自动清除，请按自己的保留策略妥善管理。

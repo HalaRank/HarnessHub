@@ -4,6 +4,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { TextareaRenderable } from "@opentui/core";
+import { createMockKeys } from "@opentui/core/testing";
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
 import { connect } from "../../packages/shared/src/client";
@@ -13,6 +14,7 @@ import type {
   PendingInput,
   Turn,
 } from "../../packages/shared/src/index";
+import { invoke, openCommands } from "./ui-actions";
 
 const root = mkdtempSync(join(tmpdir(), "hhu-codex-input-ui-"));
 const previous = { ...process.env };
@@ -215,3 +217,84 @@ test("prompt history uses Up/Down and Ctrl+R while Ctrl+T opens transcript navig
     await screen.dispose();
   }
 });
+
+test("Agent/model remain visible and Ctrl+H switches without editing drafts or starting Handoff", async () => {
+  const { screen, c } = await setup();
+  try {
+    await frame(screen, "Model (ACP) · mock-model");
+    await api(`/v1/conversations/${c.id}/settings`, "POST", {
+      kind: "config",
+      configId: "model",
+      value: "other",
+    });
+    await frame(screen, "Model (ACP) · other");
+    await screen.mockInput.typeText("preserved draft!");
+    screen.mockInput.pressBackspace();
+    expect(editor(screen).plainText).toBe("preserved draft");
+    const profiles = await api<{ id: string }[]>("/v1/harness-profiles");
+    let index = profiles.findIndex((profile) => profile.id === "mock");
+    const switchHarness = async (press: () => void) => {
+      press();
+      index = (index + 1) % profiles.length;
+      await until(
+        async () =>
+          (await api<Conversation>(`/v1/conversations/${c.id}`)).selectedHarnessId ===
+          profiles[index]?.id,
+      );
+      await frame(screen, "PENDING_SWITCH");
+      expect(editor(screen).plainText).toBe("preserved draft");
+      expect(screen.captureCharFrame()).toContain("ACP · mock");
+      expect(screen.captureCharFrame()).toContain("Model (ACP) · other");
+    };
+    await switchHarness(() => screen.mockInput.pressKey("h", { ctrl: true }));
+    await until(() => editor(screen).focused);
+    // Exercise the real parser's legacy BS encoding as well as Kitty Ctrl+H.
+    const legacy = createMockKeys(screen.renderer);
+    await switchHarness(() => legacy.pressKey("h", { ctrl: true }));
+    await until(() => editor(screen).focused);
+    legacy.pressKey("\x7f");
+    expect(editor(screen).plainText).toBe("preserved draf");
+    await screen.mockInput.typeText("t");
+    screen.mockInput.pressKey("t", { ctrl: true });
+    await frame(screen, "Chat · History");
+    await switchHarness(() => screen.mockInput.pressKey("h", { ctrl: true }));
+    await invoke(screen, "Toggle Changes / Chat");
+    await frame(screen, "Changes");
+    await switchHarness(() => screen.mockInput.pressKey("h", { ctrl: true }));
+    await openCommands(screen);
+    screen.mockInput.pressKey("h", { ctrl: true });
+    await screen.renderOnce();
+    expect((await api<Conversation>(`/v1/conversations/${c.id}`)).selectedHarnessId).toBe(
+      profiles[index]?.id,
+    );
+    screen.mockInput.pressEscape();
+    await frame(screen, "Model (ACP) · other");
+    for (const width of [80, 32]) {
+      screen.resize(width, 36);
+      await frame(screen, "Model (ACP) · other");
+      expect(screen.captureCharFrame()).toContain("ACP · mock");
+      const identity = screen.renderer.root.findDescendantById("harness-identity");
+      const model = screen.renderer.root.findDescendantById("harness-model");
+      expect(identity && model && identity.y + identity.height <= model.y).toBe(true);
+    }
+    expect((await events(c)).filter((event) => event.kind === "user.message")).toHaveLength(0);
+    expect(
+      (await events(c)).filter(
+        (event) => (event.raw as { method?: string } | null)?.method === "session/prompt",
+      ),
+    ).toHaveLength(0);
+    expect(await api<unknown[]>(`/v1/conversations/${c.id}/sessions`)).toHaveLength(1);
+    expect(await api<unknown[]>(`/v1/conversations/${c.id}/handoffs`)).toHaveLength(0);
+  } finally {
+    await screen.dispose();
+  }
+  const reopened = await testRender(() => <App onExit={() => {}} />, { width: 80, height: 36 });
+  try {
+    await frame(reopened, "Model (ACP) · other");
+    expect(reopened.captureCharFrame()).toContain("ACP · mock");
+    await frame(reopened, "PENDING_SWITCH");
+    await until(() => editor(reopened)?.plainText === "preserved draft");
+  } finally {
+    await reopened.dispose();
+  }
+}, 20000);

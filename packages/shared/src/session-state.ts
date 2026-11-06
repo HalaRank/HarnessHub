@@ -19,7 +19,7 @@ export const navigationShortcuts = {
   activity: "",
   message: "",
   approval: "",
-  harness: "",
+  harness: "ctrl+h",
   cancel: "escape",
   cancelSwitch: "",
   handoff: "",

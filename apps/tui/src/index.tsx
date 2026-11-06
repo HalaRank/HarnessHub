@@ -310,6 +310,16 @@ export function App(props: {
     }
     if (
       (!form() || form() === "message" || form() === "transcript") &&
+      row()?.value.conversation &&
+      matches(key, navigationShortcuts.harness)
+    ) {
+      key.preventDefault();
+      key.stopPropagation();
+      dispatch("harness");
+      return;
+    }
+    if (
+      (!form() || form() === "message" || form() === "transcript") &&
       matches(key, navigationShortcuts.standaloneConversation)
     ) {
       key.preventDefault();
@@ -649,7 +659,7 @@ export function App(props: {
           {
             id: "harness",
             name: "Select Next Harness",
-            description: "The first message to the target starts Handoff",
+            description: "Ctrl+H · The first message to the target starts Handoff",
             run: () => dispatch("harness"),
           },
           {
@@ -1092,12 +1102,14 @@ export function App(props: {
             form() === "message"
               ? [
                   ["/", "Commands"],
+                  ["Ctrl+H", "Harness"],
                   ["Ctrl+N", "New at launch path"],
                   ["Ctrl+T", "Transcript"],
                   ["Ctrl+C", "Copy / Clear / Quit"],
                 ]
               : [
                   ["/", "Commands"],
+                  ["Ctrl+H", "Harness"],
                   ["N", "New in project"],
                   ["Ctrl+N", "New at launch path"],
                   ["Enter", "Message"],

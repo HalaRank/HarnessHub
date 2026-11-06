@@ -1195,7 +1195,17 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
       "native-history",
     ) as ScrollBoxRenderable;
     const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
-    expect(history.height).toBeGreaterThanOrEqual(20);
+    // Agent and model now each have a persistent row above the runtime status.
+    const identity = screen.renderer.root.findDescendantById("harness-identity");
+    const model = screen.renderer.root.findDescendantById("harness-model");
+    const status = screen.renderer.root.findDescendantById("harness-status");
+    expect(identity?.height).toBe(1);
+    expect(model?.height).toBe(1);
+    expect(status?.height).toBe(1);
+    expect(identity && model && identity.y + identity.height <= model.y).toBe(true);
+    expect(model && status && model.y + model.height <= status.y).toBe(true);
+    expect(status && status.y + status.height <= history.y).toBe(true);
+    expect(history.height).toBeGreaterThanOrEqual(18);
     expect(input.height).toBe(1);
     await focusMessage(screen);
     await screen.mockInput.typeText("one");
@@ -1209,6 +1219,7 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
     await screen.renderOnce();
     expect(screen.captureCharFrame()).not.toContain("Projects → Conversations");
     expect(input.plainText).toBe("one\ntwo\nthree");
+    expect(history.y + history.height).toBeLessThanOrEqual(input.y);
     screen.resize(120, 30);
     await frame(screen, "Projects → Conversations");
   } finally {
