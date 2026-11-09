@@ -92,8 +92,7 @@ test("Solid view registers real workspace and empty conversation through authent
     await waitFor("● IDLE");
     expect(screen.captureCharFrame()).toContain("Chat");
     expect(screen.captureCharFrame()).toContain("Connected");
-    expect(screen.captureCharFrame()).toContain("ACP · codex");
-    expect(screen.captureCharFrame()).toContain("Model (ACP) · not initialized");
+    expect(screen.captureCharFrame()).toContain("codex · not initialized");
     expect(screen.captureCharFrame()).toContain("Start a conversation");
     const client = await connect();
     const snapshot = await client?.request<{
@@ -226,7 +225,7 @@ test("minimal ACP view sends once, preserves native choices and waits for a user
     await waitFor("Start a conversation");
     await waitFor("Esc interrupt");
     for (let i = 0; i < 4; i++) await invoke(screen, "Select Next Harness");
-    await waitFor("ACP · mock");
+    await waitFor("mock ·");
     await focusMessage(screen);
     await waitFor("Enter send");
     await screen.mockInput.typeText("permission");

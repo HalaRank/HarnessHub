@@ -108,7 +108,7 @@ async function screenFor(c: Conversation, onExit = () => {}) {
     height: 32,
     kittyKeyboard: true,
   });
-  await frame(s, "ACP ·");
+  await frame(s, "● IDLE");
   await until(() => !!editor(s));
   await focusMessage(s);
   await until(() => editor(s).focused, "initial editor focus");

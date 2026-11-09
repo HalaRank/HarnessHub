@@ -851,32 +851,45 @@ export function App(props: {
               </box>
             }
           >
-            <text
-              id="workspace-heading"
-              height={1}
+            <box
+              id="workspace-header"
+              flexDirection={row()?.value.conversation ? "row" : "column"}
               flexShrink={0}
-              fg={ui.text}
-              wrapMode="none"
-              truncate
+              columnGap={2}
             >
-              <Show when={row()?.value.conversation} fallback={<b>{row()?.value.project?.name}</b>}>
-                <b>{row()?.value.conversation?.title}</b>
-                <Show when={row()?.value.conversation?.archivedAt !== null}>
-                  <span style={{ fg: ui.warning }}> [archived]</span>
+              <text
+                id="workspace-heading"
+                height={1}
+                flexGrow={1}
+                flexShrink={1}
+                minWidth={0}
+                fg={ui.text}
+                wrapMode="none"
+                truncate
+              >
+                <Show
+                  when={row()?.value.conversation}
+                  fallback={<b>{row()?.value.project?.name}</b>}
+                >
+                  <b>{row()?.value.conversation?.title}</b>
+                  <Show when={row()?.value.conversation?.archivedAt !== null}>
+                    <span style={{ fg: ui.warning }}> [archived]</span>
+                  </Show>
                 </Show>
-              </Show>
-            </text>
-            <text
-              id="workspace-path"
-              height={1}
-              flexShrink={0}
-              fg={ui.secondary}
-              wrapMode="none"
-              truncate
-            >
-              <span style={{ fg: ui.muted }}>Workspace · </span>
-              {row()?.value.conversation?.workspacePath ?? row()?.value.project?.rootPath}
-            </text>
+              </text>
+              <text
+                id="workspace-path"
+                height={1}
+                flexShrink={0}
+                width={row()?.value.conversation ? "40%" : "100%"}
+                fg={ui.muted}
+                wrapMode="none"
+                truncate
+              >
+                <Show when={!row()?.value.conversation}>Workspace · </Show>
+                {row()?.value.conversation?.workspacePath ?? row()?.value.project?.rootPath}
+              </text>
+            </box>
           </Show>
           <Show
             when={row() && !row()?.value.conversation ? row()?.value.project?.rootPath : undefined}

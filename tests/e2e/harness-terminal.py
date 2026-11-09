@@ -122,7 +122,7 @@ try:
     index = next(i for i, profile in enumerate(profiles) if profile["id"] == "mock")
     first = launch()
     ready_frame(first)
-    assert "ACP" in visible(first) and "mock" in visible(first)
+    assert "mock" in visible(first) and "mock-model" in visible(first)
     os.write(first["fd"], b"\r")
     until(first, lambda: "Shift+Enter" in visible(first), "composer not focused")
     os.write(first["fd"], b"preserved draft!")

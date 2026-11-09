@@ -215,7 +215,7 @@ test("TUI Harness selection persists pending state, explicit menu cancellation r
   ).length;
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 38 });
   try {
-    await frame(screen, "ACP · a");
+    await frame(screen, "a ·");
     await frame(screen, "Esc interrupt");
     await invoke(screen, "Select Next Harness");
     await frame(screen, "PENDING_SWITCH");
@@ -237,12 +237,12 @@ test("TUI Harness selection persists pending state, explicit menu cancellation r
     screen.mockInput.pressEnter();
     screen.mockInput.pressEnter();
     await frame(screen, "Handoff a → b · DELIVERING");
-    expect(screen.captureCharFrame()).toContain("ACP · b");
+    expect(screen.captureCharFrame()).toContain("b ·");
     await until(
       async () =>
         (await api<Handoff[]>(`/v1/conversations/${c.id}/handoffs`))[0]?.status === "COMMITTED",
     );
-    await frame(screen, "ACP · b");
+    await frame(screen, "b ·");
     expect((await es(c)).events.filter((e) => e.kind === "user.message").length).toBe(2);
     expect(
       (await es(c)).events.filter(

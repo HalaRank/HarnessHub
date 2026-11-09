@@ -679,50 +679,44 @@ export function AgentPane(props: {
         }
       }}
     >
-      <box flexDirection="row" flexShrink={0} alignItems="flex-start" gap={1}>
-        <text
-          id="harness-identity"
-          fg={ui.text}
-          flexGrow={1}
-          flexShrink={1}
-          minWidth={0}
-          wrapMode="char"
-        >
-          <span style={{ fg: ui.muted }}>ACP · </span>
-          <b>{executionSession()?.harnessId ?? harness()}</b>
-        </text>
-        <text
-          id="harness-status"
-          fg={statusColor(props.conversation.runtimeStatus)}
-          height={1}
-          flexShrink={0}
-          wrapMode="none"
-        >
-          {`● ${props.conversation.runtimeStatus}`}
-        </text>
-      </box>
-      <text id="harness-model" fg={ui.secondary} flexShrink={0} wrapMode="char">
-        <span style={{ fg: ui.muted }}>Model (ACP) · </span>
-        {executionSession() ? actualModel(executionSession()) : "not initialized"}
-      </text>
       <box
         id="conversation-toolbar"
         flexDirection="row"
-        height={1}
+        flexWrap="wrap"
         flexShrink={0}
-        alignItems="center"
-        gap={1}
+        alignItems="flex-start"
+        justifyContent="space-between"
+        columnGap={2}
       >
-        <text fg={ui.accent} flexShrink={0}>
-          <b>{changes() ? "Changes" : "Chat"}</b>
-        </text>
-        <box height={1} flexGrow={1} minWidth={0} border={["bottom"]} borderColor={ui.border} />
         <text
-          id="conversation-connection"
-          fg={connection() === "Connected" ? ui.muted : statusColor(connection())}
-          flexShrink={0}
+          id="harness-identity"
+          fg={ui.secondary}
+          flexShrink={1}
+          minWidth={0}
+          maxWidth="100%"
+          wrapMode="char"
         >
-          {connection()}
+          <span style={{ fg: ui.text }}>
+            <b>{executionSession()?.harnessId ?? harness()}</b>
+          </span>
+          <span style={{ fg: ui.muted }}> · </span>
+          {executionSession() ? actualModel(executionSession()) : "not initialized"}
+        </text>
+        <text
+          id="harness-status"
+          fg={ui.muted}
+          flexShrink={1}
+          minWidth={0}
+          maxWidth="100%"
+          wrapMode="char"
+        >
+          <span style={{ fg: statusColor(props.conversation.runtimeStatus) }}>
+            {`● ${props.conversation.runtimeStatus}`}
+          </span>
+          {` · ${changes() ? "Changes" : "Chat"}`}
+          <Show when={connection() !== "Connected"}>
+            <span style={{ fg: statusColor(connection()) }}>{` · ${connection()}`}</span>
+          </Show>
         </text>
       </box>
       <Show

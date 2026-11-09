@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import type { TextareaRenderable } from "@opentui/core";
+import type { TextareaRenderable, TextRenderable } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
 import { conversationKey, projectKey } from "../../apps/tui/src/project-tree";
@@ -108,7 +108,12 @@ test("Ctrl+N works without projects and restores an ungrouped conversation at th
     height: 35,
   });
   try {
-    await waitFor(screen, () => screen.captureCharFrame().includes(`Workspace · ${launchCwd}`));
+    await waitFor(
+      screen,
+      () =>
+        (screen.renderer.root.findDescendantById("workspace-path") as TextRenderable | undefined)
+          ?.plainText === launchCwd,
+    );
     expect(screen.captureCharFrame()).toContain("New conversation");
     expect((await api<Conversation>(`/v1/conversations/${created?.id}`)).workspacePath).toBe(
       launchCwd,

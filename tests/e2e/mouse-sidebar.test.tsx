@@ -119,11 +119,11 @@ async function command(screen: Screen, text: string) {
 }
 async function current(screen: Screen, conversation: Conversation) {
   await waitHeading(screen, conversation.title);
-  await frame(screen, "Model (ACP)");
   await waitFor(async () => {
     await screen.renderOnce();
     return (
       !!screen.renderer.root.findDescendantById("message-draft") &&
+      !!screen.renderer.root.findDescendantById("harness-identity") &&
       !screen.captureCharFrame().includes("ACP operation pending")
     );
   }, "draft ready");

@@ -223,7 +223,7 @@ Slash 菜单、顶部/底部、侧栏、项目目录、命令面板、设置、�
 
 ## 会话顶部信息层级
 
-2026-11-09 调整顶部标题、Workspace、Agent、模型、运行状态与连接栏，保留通常五行高度。布局、窄屏与 Linux PTY 验证见[专项验收记录](phase-6-conversation-header.md)。
+2026-11-09 调整顶部标题、Workspace、Agent、模型、运行状态与连接栏，首版五行布局见[历史验收记录](phase-6-conversation-header.md)。用户随后要求减少空间占用，当前采用常规两行、窄屏按需换行，见[压缩验收记录](phase-6-compact-conversation-header.md)。
 
 ## 会话文字与配色层级
 

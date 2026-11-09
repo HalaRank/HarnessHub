@@ -221,13 +221,13 @@ test("prompt history uses Up/Down and Ctrl+R while Ctrl+T opens transcript navig
 test("Agent/model remain visible and Ctrl+H switches without editing drafts or starting Handoff", async () => {
   const { screen, c } = await setup();
   try {
-    await frame(screen, "Model (ACP) · mock-model");
+    await frame(screen, "mock · mock-model");
     await api(`/v1/conversations/${c.id}/settings`, "POST", {
       kind: "config",
       configId: "model",
       value: "other",
     });
-    await frame(screen, "Model (ACP) · other");
+    await frame(screen, "mock · other");
     await screen.mockInput.typeText("preserved draft!");
     screen.mockInput.pressBackspace();
     expect(editor(screen).plainText).toBe("preserved draft");
@@ -243,8 +243,8 @@ test("Agent/model remain visible and Ctrl+H switches without editing drafts or s
       );
       await frame(screen, "PENDING_SWITCH");
       expect(editor(screen).plainText).toBe("preserved draft");
-      expect(screen.captureCharFrame()).toContain("ACP · mock");
-      expect(screen.captureCharFrame()).toContain("Model (ACP) · other");
+      expect(screen.captureCharFrame()).toContain("mock ·");
+      expect(screen.captureCharFrame()).toContain("mock · other");
     };
     await switchHarness(() => screen.mockInput.pressKey("h", { ctrl: true }));
     await until(() => editor(screen).focused);
@@ -268,14 +268,15 @@ test("Agent/model remain visible and Ctrl+H switches without editing drafts or s
       profiles[index]?.id,
     );
     screen.mockInput.pressEscape();
-    await frame(screen, "Model (ACP) · other");
+    await frame(screen, "mock · other");
     for (const width of [80, 32]) {
       screen.resize(width, 36);
-      await frame(screen, "Model (ACP) · other");
-      expect(screen.captureCharFrame()).toContain("ACP · mock");
+      await frame(screen, "mock · other");
+      expect(screen.captureCharFrame()).toContain("mock ·");
       const identity = screen.renderer.root.findDescendantById("harness-identity");
-      const model = screen.renderer.root.findDescendantById("harness-model");
-      expect(identity && model && identity.y + identity.height <= model.y).toBe(true);
+      const toolbar = screen.renderer.root.findDescendantById("conversation-toolbar");
+      expect(identity && toolbar && identity.y >= toolbar.y).toBe(true);
+      expect(identity?.height).toBe(1);
     }
     expect((await events(c)).filter((event) => event.kind === "user.message")).toHaveLength(0);
     expect(
@@ -290,8 +291,8 @@ test("Agent/model remain visible and Ctrl+H switches without editing drafts or s
   }
   const reopened = await testRender(() => <App onExit={() => {}} />, { width: 80, height: 36 });
   try {
-    await frame(reopened, "Model (ACP) · other");
-    expect(reopened.captureCharFrame()).toContain("ACP · mock");
+    await frame(reopened, "mock · other");
+    expect(reopened.captureCharFrame()).toContain("mock ·");
     await frame(reopened, "PENDING_SWITCH");
     await until(() => editor(reopened)?.plainText === "preserved draft");
   } finally {

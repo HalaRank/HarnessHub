@@ -8,6 +8,7 @@ import {
   type ScrollBoxRenderable,
   TextAttributes,
   type TextareaRenderable,
+  type TextRenderable,
 } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
@@ -610,7 +611,7 @@ test("Enter sends once, Kitty Shift+Enter and Ctrl+J insert newlines without sub
   });
   try {
     await frame(screen, "Esc interrupt");
-    expect(screen.captureCharFrame()).toContain("Model (ACP) · mock-model");
+    expect(screen.captureCharFrame()).toContain("mock · mock-model");
     await frame(screen, "Esc interrupt");
     await focusMessage(screen);
     await frame(screen, "Esc navigate");
@@ -1302,7 +1303,7 @@ test("two Delete presses confirm Conversation and Project deletion", async () =>
   }
 }, 20000);
 
-test("conversation header separates title, metadata, execution and connection across terminal widths", async () => {
+test("conversation header uses two rows with title, path, Agent, model and status, wrapping safely when narrow", async () => {
   const { c } = await setup("会话顶部信息层级与很长的标题展示检查".repeat(4));
   await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "mock" });
   await api("/v1/preferences", "PATCH", { showSidebar: false });
@@ -1310,7 +1311,7 @@ test("conversation header separates title, metadata, execution and connection ac
   try {
     for (const width of [100, 80, 32]) {
       screen.resize(width, 30);
-      await frame(screen, "Model (ACP) · mock-model");
+      await frame(screen, "mock · mock-model");
       await frame(screen, "Esc interrupt");
       const node = (id: string) => {
         const value = screen.renderer.root.findDescendantById(id);
@@ -1321,41 +1322,56 @@ test("conversation header separates title, metadata, execution and connection ac
       const path = node("workspace-path");
       const identity = node("harness-identity");
       const status = node("harness-status");
-      const model = node("harness-model");
       const toolbar = node("conversation-toolbar");
       const history = node("native-history");
-      writeFileSync(join(temp, `conversation-header-${width}.txt`), screen.captureCharFrame());
+      writeFileSync(join(temp, `compact-header-${width}.txt`), screen.captureCharFrame());
       expect(heading.height).toBe(1);
       expect(path.height).toBe(1);
-      expect(identity.y).toBe(status.y);
-      expect(identity.x + identity.width).toBeLessThan(status.x);
-      expect(identity.y + identity.height).toBeLessThanOrEqual(model.y);
-      expect(model.y + model.height).toBeLessThanOrEqual(toolbar.y);
+      expect(path.y).toBe(heading.y);
+      expect(heading.x + heading.width).toBeLessThan(path.x);
+      expect((path as TextRenderable).plainText).toBe(c.workspacePath);
+      expect(heading.y + heading.height).toBe(toolbar.y);
+      expect(toolbar.height).toBe(width >= 80 ? 1 : 2);
+      expect(identity.y).toBe(toolbar.y);
+      expect(status.y).toBeGreaterThanOrEqual(identity.y);
       expect(toolbar.y + toolbar.height).toBeLessThanOrEqual(history.y);
-      expect(history.height).toBeGreaterThanOrEqual(18);
-      for (const value of [heading, path, identity, status, model, toolbar]) {
+      expect(history.height).toBeGreaterThanOrEqual(width >= 80 ? 21 : 20);
+      for (const value of [heading, path, identity, status, toolbar]) {
         expect(value.x).toBeGreaterThanOrEqual(0);
         expect(value.x + value.width).toBeLessThanOrEqual(width);
       }
       const spans = screen.captureSpans().lines;
       const title =
-        spans[heading.y]?.spans.filter((span) => /[\u4e00-\u9fff]/u.test(span.text)) ?? [];
+        spans[heading.y]?.spans.filter((span) => (span.attributes & TextAttributes.BOLD) !== 0) ??
+        [];
       expect(title.length).toBeGreaterThan(0);
-      expect(title.every((span) => (span.attributes & TextAttributes.BOLD) !== 0)).toBe(true);
-      for (const [label, row] of [
-        ["ACP · ", identity.y],
-        ["Model (ACP) · ", model.y],
-        ["Connected", toolbar.y],
-      ] as const) {
-        const matches = spans[row]?.spans.filter((span) => span.text.includes(label)) ?? [];
-        expect(matches.length).toBeGreaterThan(0);
-        expect(matches.every((span) => span.fg.equals(RGBA.fromHex(ui.muted)))).toBe(true);
-        expect(matches.every((span) => (span.attributes & TextAttributes.BOLD) === 0)).toBe(true);
-      }
+      expect(title.some((span) => /[\u4e00-\u9fff]/u.test(span.text))).toBe(true);
+      const models =
+        spans[identity.y]?.spans.filter((span) => span.text.includes("mock-model")) ?? [];
+      expect(models.length).toBeGreaterThan(0);
+      expect(models.every((span) => span.fg.equals(RGBA.fromHex(ui.secondary)))).toBe(true);
+      expect(models.every((span) => (span.attributes & TextAttributes.BOLD) === 0)).toBe(true);
+      expect(screen.captureCharFrame()).toContain("● IDLE · Chat");
     }
+    const turn = await api<{ id: string }>(`/v1/conversations/${c.id}/turns`, "POST", {
+      requestId: crypto.randomUUID(),
+      harnessId: "mock",
+      message: "permission",
+    });
+    try {
+      await frame(screen, "WAITING_APPROVAL");
+      expect(screen.captureCharFrame()).toContain("mock · mock-model");
+      const identity = screen.renderer.root.findDescendantById("harness-identity");
+      const status = screen.renderer.root.findDescendantById("harness-status");
+      expect(identity && status && identity.y + identity.height <= status.y).toBe(true);
+      expect(screen.captureCharFrame().replace(/\s+/g, "")).toContain("Reject(native)");
+    } finally {
+      await api(`/v1/turns/${turn.id}/cancel`, "POST");
+    }
+    await frame(screen, "● IDLE · Chat");
     await invoke(screen, "Toggle Changes / Chat");
     await frame(screen, "Changes");
-    expect(screen.renderer.root.findDescendantById("harness-model")).toBeDefined();
+    expect(screen.captureCharFrame()).toContain("mock · mock-model");
     expect(screen.renderer.root.findDescendantById("conversation-toolbar")).toBeDefined();
   } finally {
     await screen.dispose();
@@ -1375,20 +1391,17 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
       "native-history",
     ) as ScrollBoxRenderable;
     const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
-    // Execution status sits beside the Agent; model and toolbar keep their own rows.
+    // Title/path and Agent/model/status each occupy one row at normal widths.
     const identity = screen.renderer.root.findDescendantById("harness-identity");
-    const model = screen.renderer.root.findDescendantById("harness-model");
     const status = screen.renderer.root.findDescendantById("harness-status");
     const toolbar = screen.renderer.root.findDescendantById("conversation-toolbar");
     expect(identity?.height).toBe(1);
-    expect(model?.height).toBe(1);
     expect(status?.height).toBe(1);
-    expect(identity && model && identity.y + identity.height <= model.y).toBe(true);
     expect(identity?.y).toBe(status?.y);
     expect(identity && status && identity.x + identity.width < status.x).toBe(true);
-    expect(model && toolbar && model.y + model.height <= toolbar.y).toBe(true);
+    expect(toolbar?.height).toBe(1);
     expect(toolbar && toolbar.y + toolbar.height <= history.y).toBe(true);
-    expect(history.height).toBeGreaterThanOrEqual(18);
+    expect(history.height).toBeGreaterThanOrEqual(21);
     expect(input.height).toBe(1);
     await focusMessage(screen);
     await screen.mockInput.typeText("one");
@@ -1845,7 +1858,7 @@ test("new Conversation stays empty after worker/auth startup, shows hello and re
   try {
     await frame(screen, "Start a conversation");
     await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "projection-mock" });
-    await frame(screen, "Model (ACP) · mock-model");
+    await frame(screen, "mock · mock-model");
     expect(screen.captureCharFrame()).toContain("Start a conversation");
     expect(screen.captureCharFrame()).toContain("0 items");
     await focusMessage(screen);
