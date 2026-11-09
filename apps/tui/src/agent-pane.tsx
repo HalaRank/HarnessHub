@@ -17,6 +17,7 @@ import { ChangesPane } from "./changes-pane";
 import { useClipboard } from "./clipboard";
 import { DraftSession } from "./draft-session";
 import { NativeEvents } from "./native-events";
+import { PasteBlocks } from "./paste-blocks";
 import { RawEvents } from "./raw-events";
 import { binding, matches, navigationShortcuts, shortcuts } from "./shortcuts";
 import { matchingCommands, SlashCommands, slashQuery } from "./slash-commands";
@@ -99,17 +100,33 @@ export function AgentPane(props: {
     selectionFailure = "";
   let disposed = false,
     textarea: TextareaRenderable | undefined;
+  let pasteBlocks: PasteBlocks | undefined;
+  const messageText = () => pasteBlocks?.text ?? textarea?.plainText ?? draft.text;
   const copyText = useClipboard();
   const [inputLines, setInputLines] = createSignal(1);
   const [followRequest, setFollowRequest] = createSignal(0);
   const dimensions = useTerminalDimensions();
   const composerLines = () =>
     Math.min(inputLines(), Math.max(1, Math.min(8, dimensions().height - 12)));
+  const measureInput = () => {
+    if (textarea && !textarea.isDestroyed)
+      setInputLines(
+        Math.max(
+          1,
+          textarea.lineCount,
+          textarea.plainText ? textarea.editorView.getTotalVirtualLineCount() : 1,
+        ),
+      );
+  };
   const [editorRevision, setEditorRevision] = createSignal(0),
     [slashDismissedText, setSlashDismissedText] = createSignal<string | null>(null),
     [slashPasted, setSlashPasted] = createSignal(false),
     [slashSelected, setSlashSelected] = createSignal(0),
     [rawConfirm, setRawConfirm] = createSignal(false);
+  const foldedPastes = () => {
+    editorRevision();
+    return pasteBlocks?.blocks.length ?? 0;
+  };
   const commandSession = () => {
     const session = activeSession();
     return !openHandoffRecord() && session?.harnessId === harness() ? session : undefined;
@@ -220,10 +237,6 @@ export function AgentPane(props: {
     if (!disposed) setHandoffs(result);
   };
   onMount(() => {
-    const measureInput = () => {
-      if (textarea && !textarea.isDestroyed)
-        setInputLines(Math.max(1, textarea.lineCount, textarea.virtualLineCount));
-    };
     renderer.on("frame", measureInput);
     onCleanup(() => renderer.off("frame", measureInput));
     void run(async () => {
@@ -474,7 +487,7 @@ export function AgentPane(props: {
       if (atEdge && messageHistory().length && (up || historyIndex !== null)) {
         key.preventDefault();
         key.stopPropagation();
-        if (historyIndex === null) historyDraft = textarea.plainText;
+        if (historyIndex === null) historyDraft = messageText();
         historyIndex = Math.max(
           0,
           Math.min(
@@ -559,7 +572,7 @@ export function AgentPane(props: {
     run(async () => {
       await selectionQueue;
       if (selectionFailure) throw new Error(selectionFailure);
-      const message = textarea?.plainText ?? "";
+      const message = messageText();
       if (!message.trim()) return;
       const token = message.split(/\s/, 1)[0] ?? "";
       const command = commands()?.find((c) => `/${c.name}` === token);
@@ -824,13 +837,17 @@ export function AgentPane(props: {
         )}
       </Show>
       <Show when={draftReady()}>
-        <box flexDirection="column" height={composerLines() + 2} flexShrink={0}>
+        <box
+          flexDirection="column"
+          height={composerLines() + 2 + (foldedPastes() ? 1 : 0)}
+          flexShrink={0}
+        >
           <Show when={slashOpen()}>
             <SlashCommands
               title="Native ACP commands"
               commands={options()}
               selected={slashSelected()}
-              bottom={composerLines() + 2}
+              bottom={composerLines() + 2 + (foldedPastes() ? 1 : 0)}
               height={Math.max(
                 3,
                 Math.min(
@@ -871,16 +888,26 @@ export function AgentPane(props: {
                 props.form === "message" ? null : "Type a message, / for commands, ? for shortcuts"
               }
               onContentChange={() => {
-                const text = textarea?.plainText ?? draft.text;
+                const text = messageText();
                 draft.update(text);
-                setInputLines(Math.max(1, text.split("\n").length));
+                measureInput();
                 setEditorRevision((n) => n + 1);
               }}
               onCursorChange={() => setEditorRevision((n) => n + 1)}
-              onPaste={() => {
+              onPaste={(event) => {
                 setSlashPasted(true);
+                pasteBlocks?.paste(event);
               }}
               onKeyDown={(key) => {
+                if (key.name === "f2" && foldedPastes()) {
+                  key.preventDefault();
+                  pasteBlocks?.expand();
+                  return;
+                }
+                pasteBlocks?.onKeyDown(
+                  key,
+                  (key.name === "return" && key.shift) || matches(key, keys().newline),
+                );
                 if (
                   !key.ctrl &&
                   !key.meta &&
@@ -893,15 +920,11 @@ export function AgentPane(props: {
               }}
               ref={(element) => {
                 textarea = element;
+                pasteBlocks = new PasteBlocks(element);
                 if (props.form === "message") textarea.gotoBufferEnd();
-                setInputLines(Math.max(1, draft.text.split("\n").length));
+                measureInput();
               }}
-              onSizeChange={() => {
-                if (textarea && !textarea.isDestroyed)
-                  setInputLines(
-                    Math.max(1, textarea.virtualLineCount, textarea.plainText.split("\n").length),
-                  );
-              }}
+              onSizeChange={measureInput}
               focused={props.form === "message" && !busy()}
               minHeight={1}
               keyBindings={[
@@ -920,6 +943,30 @@ export function AgentPane(props: {
               flexGrow={1}
             />
           </box>
+          <Show when={foldedPastes()}>
+            <box
+              id="expand-pasted-text"
+              height={1}
+              flexShrink={0}
+              onMouse={(event) => {
+                if (
+                  event.type !== "down" ||
+                  event.button !== 0 ||
+                  busy() ||
+                  (props.form && props.form !== "message")
+                )
+                  return;
+                event.preventDefault();
+                event.stopPropagation();
+                props.setForm("message");
+                pasteBlocks?.expand();
+              }}
+            >
+              <text fg={ui.secondary} selectable={false} wrapMode="none">
+                F2 / 点击展开粘贴并编辑 · Backspace 整块删除
+              </text>
+            </box>
+          </Show>
         </box>
       </Show>
       <Show

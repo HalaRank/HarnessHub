@@ -108,6 +108,19 @@ try:
     os.write(fd, b"\x03")
     until(lambda: api(base + "/draft")["text"] == "", "Ctrl+C did not clear")
     assert os.waitpid(pid, os.WNOHANG)[0] == 0, "nonempty Ctrl+C exited"
+    pasted = "粘贴原文 👋\nsecond\nthird\nfourth\nfifth\nsixth"
+    os.write(fd, b"\x1b[200~" + pasted.encode() + b"\x1b[201~")
+    until(lambda: "[粘贴#1·6行]" in visible().replace(" ", ""), "large paste did not fold")
+    until(lambda: api(base + "/draft")["text"] == pasted, "folded draft lost original text")
+    os.write(fd, b"\x1bOQ")
+    until(lambda: "sixth" in visible(), "F2 did not expand paste")
+    os.write(fd, b"\x03")
+    until(lambda: api(base + "/draft")["text"] == "", "expanded paste did not clear")
+    os.write(fd, b"\x1b[200~" + pasted.encode() + b"\x1b[201~")
+    until(lambda: api(base + "/draft")["text"] == pasted, "second pasted draft missing")
+    os.write(fd, b"\r")
+    until(lambda: len([event for event in api(base + "/events?limit=1000")["events"] if event["kind"] == "user.message"]) == 2, "folded paste not submitted")
+    until(lambda: api(base)["runtimeStatus"] == "IDLE" and api(base + "/draft")["text"] == "", "folded paste Turn unfinished")
     os.write(fd, b"\x03")
 
     def exited():
@@ -123,9 +136,11 @@ try:
     assert api("/v1/health")["pid"] == instance["pid"]
     assert api(base + "/sessions")[0]["id"] == native["id"]
     es = api(base + "/events?limit=1000")["events"]
-    assert len([e for e in es if e["kind"] == "user.message"]) == 1
-    assert len([e for e in es if e["origin"] == "client" and (e["raw"] or {}).get("method") == "session/prompt"]) == 1
-    evidence = {"linuxPty": True, "launchCwd": os.path.expanduser("~"), "nativeCwd": native["cwd"], "completionTurns": 0, "explicitTurns": 1, "utf8AndNewlines": True, "paletteSidebarPreserveDraft": True, "ctrlCClearThenExit": True, "daemonAndSessionSurvive": True}
+    assert len([e for e in es if e["kind"] == "user.message"]) == 2
+    prompts = [e for e in es if e["origin"] == "client" and (e["raw"] or {}).get("method") == "session/prompt"]
+    assert len(prompts) == 2
+    assert prompts[-1]["raw"]["params"]["prompt"] == [{"type": "text", "text": pasted}]
+    evidence = {"linuxPty": True, "launchCwd": os.path.expanduser("~"), "nativeCwd": native["cwd"], "completionTurns": 0, "explicitTurns": 2, "utf8AndNewlines": True, "foldedPasteOriginalText": True, "pasteExpansion": True, "paletteSidebarPreserveDraft": True, "ctrlCClearThenExit": True, "daemonAndSessionSurvive": True}
     with open(root + "/evidence.json", "w", encoding="utf8") as target:
         json.dump(evidence, target, ensure_ascii=False, indent=2)
     print(json.dumps({"root": root, **evidence}, ensure_ascii=False))

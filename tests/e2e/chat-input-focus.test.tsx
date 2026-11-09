@@ -9,6 +9,126 @@ import { AgentPane } from "../../apps/tui/src/agent-pane";
 import { DraftSession, flushDrafts } from "../../apps/tui/src/draft-session";
 import type { Conversation, Draft } from "../../packages/shared/src/index";
 
+test("message composer grows upward for newlines and wrapped text, then shrinks", async () => {
+  const previousState = process.env.XDG_STATE_HOME;
+  process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "hhu-composer-height-"));
+  const conversation: Conversation = {
+    id: "offline-composer-height",
+    projectId: "project",
+    title: "Composer height",
+    archivedAt: null,
+    workspaceMode: "shared",
+    workspacePath: "/tmp",
+    runtimeStatus: "IDLE",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+  let saved: Draft = {
+    conversationId: conversation.id,
+    text: "restored\ndraft",
+    revision: 0,
+    pendingSubmission: null,
+  };
+  const request = spyOn(DraftSession.prototype, "request").mockImplementation(
+    async <Response,>(_path: string, method = "GET", body?: unknown): Promise<Response> => {
+      if (method === "PUT") saved = { ...saved, ...(body as Draft), revision: saved.revision + 1 };
+      return { ...saved } as Response;
+    },
+  );
+  const [form, setForm] = createSignal<Parameters<typeof AgentPane>[0]["form"]>("message");
+  const screen = await testRender(
+    () => (
+      <AgentPane
+        conversation={conversation}
+        form={form()}
+        setForm={setForm}
+        onDraftError={() => {}}
+      />
+    ),
+    { width: 60, height: 30, kittyKeyboard: true },
+  );
+  const settle = async () => {
+    for (let count = 0; count < 5; count++) {
+      await screen.renderOnce();
+      await Bun.sleep(20);
+    }
+  };
+  try {
+    await settle();
+    const editor = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
+    const composer = screen.renderer.root.findDescendantById("message-composer");
+    if (!composer) throw new Error("Missing composer");
+    const bottom = composer.y + composer.height;
+    const expectLines = (lines: number) => {
+      expect(editor.height).toBe(lines);
+      expect(composer.height).toBe(lines + 2);
+      expect(composer.y + composer.height).toBe(bottom);
+    };
+    expectLines(2);
+    editor.setText("");
+    await screen.mockInput.typeText("first");
+    await settle();
+    expectLines(1);
+    screen.mockInput.pressEnter({ shift: true });
+    await screen.mockInput.typeText("second");
+    await settle();
+    expectLines(2);
+    expect(screen.captureCharFrame()).toContain("first");
+    expect(screen.captureCharFrame()).toContain("second");
+    for (let count = 0; count < "second".length + 1; count++) screen.mockInput.pressBackspace();
+    await settle();
+    expectLines(1);
+    expect(editor.plainText).toBe("first");
+
+    editor.setText("");
+    await screen.mockInput.typeText("word ".repeat(16));
+    await settle();
+    expect(editor.width).toBeLessThanOrEqual(58);
+    expect(editor.editorView.getTotalVirtualLineCount()).toBe(2);
+    expectLines(2);
+    screen.resize(32, 30);
+    await settle();
+    expectLines(3);
+    screen.resize(100, 30);
+    await settle();
+    expectLines(1);
+
+    editor.setText("");
+    await screen.mockInput.pasteBracketedText("中文👋".repeat(20));
+    await settle();
+    expectLines(2);
+    editor.setText("x".repeat(120));
+    await settle();
+    expectLines(2);
+
+    editor.setText("");
+    await screen.mockInput.pasteBracketedText("中文 👋\n第二行\n第三行");
+    await settle();
+    expectLines(3);
+    editor.setText(Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join("\n"));
+    editor.gotoBufferEnd();
+    await settle();
+    expectLines(8);
+    expect(screen.captureCharFrame()).toContain("line 12");
+    editor.setText("short");
+    await settle();
+    expectLines(1);
+    editor.setText("");
+    await settle();
+    expectLines(1);
+    setForm(null);
+    screen.resize(32, 30);
+    await settle();
+    expectLines(1);
+  } finally {
+    await screen.dispose();
+    await flushDrafts();
+    request.mockRestore();
+    if (previousState === undefined) delete process.env.XDG_STATE_HOME;
+    else process.env.XDG_STATE_HOME = previousState;
+  }
+});
+
 test("message placeholder clears on focus before IME composition and returns only outside editing", async () => {
   const previousState = process.env.XDG_STATE_HOME;
   process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "hhu-placeholder-offline-"));

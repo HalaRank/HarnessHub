@@ -6,15 +6,17 @@ import { join, resolve } from "node:path";
 import type { TextareaRenderable } from "@opentui/core";
 import { createMockKeys } from "@opentui/core/testing";
 import { testRender } from "@opentui/solid";
+import { flushDrafts } from "../../apps/tui/src/draft-session";
 import { App } from "../../apps/tui/src/index";
 import { connect } from "../../packages/shared/src/client";
 import type {
   Conversation,
   ConversationEvent,
+  Draft,
   PendingInput,
   Turn,
 } from "../../packages/shared/src/index";
-import { invoke, openCommands } from "./ui-actions";
+import { clickControl, invoke, openCommands } from "./ui-actions";
 
 const root = mkdtempSync(join(tmpdir(), "hhu-codex-input-ui-"));
 const previous = { ...process.env };
@@ -86,6 +88,126 @@ const inputs = (c: Conversation) => api<PendingInput[]>(`/v1/conversations/${c.i
 const events = async (c: Conversation) =>
   (await api<{ events: ConversationEvent[] }>(`/v1/conversations/${c.id}/events?limit=1000`))
     .events;
+
+test("folded pastes expand for editing and send original text exactly once", async () => {
+  const { screen, c } = await setup();
+  const pasted = "中文 👋\nsecond\nthird\nfourth\nfifth\nsixth";
+  try {
+    await screen.mockInput.pasteBracketedText(pasted);
+    await frame(screen, "[粘贴 #1 · 6 行]");
+    await flushDrafts();
+    expect((await api<Draft>(`/v1/conversations/${c.id}/draft`)).text).toBe(pasted);
+    expect((await events(c)).filter((event) => event.kind === "user.message")).toHaveLength(0);
+    screen.mockInput.pressKey("F2");
+    await screen.renderOnce();
+    expect(editor(screen).plainText).toBe(pasted);
+    expect(screen.renderer.root.findDescendantById("expand-pasted-text")).toBeUndefined();
+    await screen.mockInput.typeText(" edited");
+    expect(editor(screen).plainText).toBe(`${pasted} edited`);
+    editor(screen).setText("");
+    await screen.mockInput.pasteBracketedText(pasted);
+    await clickControl(screen, "expand-pasted-text");
+    expect(editor(screen).plainText).toBe(pasted);
+    editor(screen).setText("");
+    await screen.mockInput.typeText("Review this: ");
+    await screen.mockInput.pasteBracketedText(pasted);
+    await screen.mockInput.typeText(" suffix");
+    screen.mockInput.pressEnter();
+    await until(async () =>
+      (await events(c)).some((event) => event.kind === "runtime.turn_finished"),
+    );
+    const prompts = (await events(c)).filter(
+      (event) => (event.raw as { method?: string } | null)?.method === "session/prompt",
+    );
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]?.raw).toMatchObject({
+      params: { prompt: [{ type: "text", text: `Review this: ${pasted} suffix` }] },
+    });
+    await until(() => editor(screen).plainText === "");
+    expect(screen.renderer.root.findDescendantById("expand-pasted-text")).toBeUndefined();
+    expect((await api<Draft>(`/v1/conversations/${c.id}/draft`)).text).toBe("");
+    await screen.mockInput.pasteBracketedText(pasted);
+    screen.mockInput.pressArrow("up");
+    await screen.renderOnce();
+    expect(editor(screen).plainText).toBe(`Review this: ${pasted} suffix`);
+    screen.mockInput.pressArrow("down");
+    await screen.renderOnce();
+    expect(editor(screen).plainText).toBe(pasted);
+  } finally {
+    await screen.dispose();
+    await flushDrafts();
+  }
+});
+
+test("folded drafts survive reopening as full editable text without submitting", async () => {
+  const { screen, c } = await setup();
+  const pasted = "restored\n中文\nthird\nfourth\nfifth\nsixth";
+  try {
+    await screen.mockInput.pasteBracketedText(pasted);
+    await frame(screen, "[粘贴 #1 · 6 行]");
+  } finally {
+    await screen.dispose();
+    await flushDrafts();
+  }
+  const reopened = await testRender(() => <App onExit={() => {}} />, { width: 100, height: 30 });
+  try {
+    await until(async () => {
+      await reopened.renderOnce();
+      return editor(reopened)?.plainText === pasted;
+    });
+    expect((await api<Draft>(`/v1/conversations/${c.id}/draft`)).text).toBe(pasted);
+    expect((await events(c)).filter((event) => event.kind === "user.message")).toHaveLength(0);
+    expect(reopened.renderer.root.findDescendantById("expand-pasted-text")).toBeUndefined();
+  } finally {
+    await reopened.dispose();
+    await flushDrafts();
+  }
+});
+
+test("queueing folded text persists the original payload without submitting a new Turn", async () => {
+  const { screen, c } = await setup();
+  const pasted = "queued\n中文\nthird\nfourth\nfifth\nsixth";
+  try {
+    await screen.mockInput.typeText("wait");
+    screen.mockInput.pressEnter();
+    await frame(screen, "RUNNING");
+    await until(() => editor(screen).focused && editor(screen).plainText === "");
+    await screen.mockInput.pasteBracketedText(pasted);
+    screen.mockInput.pressTab();
+    await until(async () => (await inputs(c)).some((input) => input.state === "QUEUED"));
+    expect((await inputs(c))[0]?.input.message).toBe(pasted);
+    expect(
+      (await events(c)).filter(
+        (event) => (event.raw as { method?: string } | null)?.method === "session/prompt",
+      ),
+    ).toHaveLength(1);
+    await until(() => editor(screen).focused && editor(screen).plainText === "");
+    screen.mockInput.pressEscape();
+    await until(async () => (await inputs(c)).some((input) => input.state === "HELD"));
+    expect((await inputs(c))[0]?.input.message).toBe(pasted);
+  } finally {
+    await screen.dispose();
+    await flushDrafts();
+  }
+});
+
+test("folding never bypasses confirmation for unadvertised slash text", async () => {
+  const { screen, c } = await setup();
+  const pasted = "/unknown\nsecond\nthird\nfourth\nfifth\nsixth";
+  try {
+    await screen.mockInput.pasteBracketedText(pasted);
+    screen.mockInput.pressEnter();
+    await frame(screen, "Unadvertised slash text");
+    await flushDrafts();
+    expect((await api<Draft>(`/v1/conversations/${c.id}/draft`)).text).toBe(pasted);
+    expect((await events(c)).filter((event) => event.kind === "user.message")).toHaveLength(0);
+    screen.mockInput.pressEscape();
+    await frame(screen, "[粘贴 #1 · 6 行]");
+  } finally {
+    await screen.dispose();
+    await flushDrafts();
+  }
+});
 
 test("Enter steers while running, Tab queues, Esc dismisses suggestions before interrupting and preserves a draft", async () => {
   const { screen, c } = await setup();
