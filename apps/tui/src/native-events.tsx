@@ -2,7 +2,7 @@ import type { ConversationEvent } from "@harnesshub/shared";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/solid";
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack } from "solid-js";
-import { Markdown, type SourcePart, sourceParts, ToolContent } from "./rich-content";
+import { Markdown, type SourcePart, sourceParts, ToolContent, ToolTitle } from "./rich-content";
 import { matches, navigationShortcuts } from "./shortcuts";
 import { SourceViewer } from "./source-viewer";
 import {
@@ -15,19 +15,18 @@ import {
   toolExpanded,
   type ViewState,
 } from "./transcript";
+import { chat } from "./ui";
 
 export const HISTORY_WINDOW_SIZE = 60;
 function rowAccent(value: RowData) {
-  if (value.waiting) return "#ffcc80";
+  if (value.waiting) return chat.warning;
   if (value.kind === "tool") {
-    if (value.tool?.status === "failed") return "#ef9a9a";
-    if (value.tool?.status === "completed") return "#4ade80";
-    return "#80cbc4";
+    if (value.tool?.status === "failed") return chat.error;
+    if (value.tool?.status === "completed") return chat.success;
+    return chat.operator;
   }
-  if (value.label === "Agent") return "#a5d6ff";
-  if (value.label === "Public thinking") return "#8b949e";
-  if (value.kind === "notice") return "#ffcc80";
-  return "#80cbc4";
+  if (value.kind === "notice") return chat.warning;
+  return chat.muted;
 }
 
 export function NativeEvents(props: {
@@ -199,7 +198,13 @@ export function NativeEvents(props: {
     }
   });
   return (
-    <box flexGrow={1} flexBasis={0} minHeight={3} flexDirection="column">
+    <box
+      flexGrow={1}
+      flexBasis={0}
+      minHeight={3}
+      flexDirection="column"
+      backgroundColor={chat.canvas}
+    >
       <scrollbox
         id="native-history"
         ref={(el) => {
@@ -225,7 +230,9 @@ export function NativeEvents(props: {
       >
         <Show
           when={model.size()}
-          fallback={<text>Start a conversation. Press Enter to write a message.</text>}
+          fallback={
+            <text fg={chat.muted}>Start a conversation. Press Enter to write a message.</text>
+          }
         >
           <For each={visible()}>
             {(row) => (
@@ -234,7 +241,7 @@ export function NativeEvents(props: {
                 flexDirection="row"
                 flexShrink={0}
                 marginBottom={1}
-                backgroundColor={row.value().label === "You" ? "#2d2d30" : "transparent"}
+                backgroundColor={row.value().label === "You" ? chat.user : "transparent"}
                 paddingX={row.value().label === "You" ? 1 : 0}
                 paddingY={row.value().label === "You" ? 1 : 0}
               >
@@ -250,8 +257,8 @@ export function NativeEvents(props: {
                       <text>
                         <span
                           style={{
-                            fg: row.value().label === "You" ? "#b7bdc8" : rowAccent(row.value()),
-                            bold: true,
+                            fg: row.value().kind === "text" ? chat.muted : rowAccent(row.value()),
+                            bold: row.value().kind !== "text",
                           }}
                         >
                           {`${row.value().label === "You" && selectedRow()?.id === row.id ? "▶ " : ""}${row.value().label}`}
@@ -268,30 +275,35 @@ export function NativeEvents(props: {
                         wrapMode="none"
                         truncate
                       >
-                        <span style={{ fg: rowAccent(row.value()), bold: true }}>
-                          {
-                            String(
-                              row.value().tool?.title ?? row.value().tool?.name ?? "Tool",
-                            ).split(/\r?\n/, 1)[0]
-                          }
-                        </span>
+                        <ToolTitle tool={row.value().tool ?? {}} />
                       </text>
-                      <text fg={rowAccent(row.value())} flexShrink={0}>
+                      <text
+                        fg={
+                          !row.value().waiting && row.value().tool?.status === "completed"
+                            ? chat.muted
+                            : rowAccent(row.value())
+                        }
+                        flexShrink={0}
+                      >
                         {` · ${row.value().waiting ? "WAITING_APPROVAL" : (row.value().tool?.status ?? "pending")}`}
                       </text>
                     </box>
                   </Show>
                   <Show when={row.value().kind === "text"}>
-                    <Markdown text={row.value().text} streaming={row.value().streaming} />
+                    <Markdown
+                      text={row.value().text}
+                      streaming={row.value().streaming}
+                      muted={row.value().label === "Public thinking"}
+                    />
                   </Show>
                   <Show when={row.value().kind === "handoff"}>
                     <Show when={row.value().handoff?.error}>
-                      <text fg="#ffcc80">{row.value().handoff?.error}</text>
+                      <text fg={chat.warning}>{row.value().handoff?.error}</text>
                     </Show>
                     <Show when={row.value().handoff?.incomplete}>
-                      <text fg="#ffcc80">Context may be incomplete / 上下文可能不完整</text>
+                      <text fg={chat.warning}>Context may be incomplete / 上下文可能不完整</text>
                     </Show>
-                    <text fg="#80cbc4">
+                    <text fg={chat.operator}>
                       {row.value().text
                         ? "Enter expand/collapse report · Source for full materials and events"
                         : row.value().handoff?.fallbackAvailable
@@ -316,7 +328,7 @@ export function NativeEvents(props: {
                     />
                   </Show>
                   <Show when={row.value().kind === "notice"}>
-                    <text selectable fg="#ffcc80">
+                    <text selectable fg={chat.warning}>
                       {manual()[row.id]
                         ? row.value().text.slice(0, 24000)
                         : row
@@ -336,7 +348,9 @@ export function NativeEvents(props: {
                     >
                       {(entry) => (
                         <box flexDirection="column" flexShrink={0}>
-                          <text fg="#80cbc4">{`[${String(object(entry).status ?? "")}] ${String(object(entry).priority ?? "")}`}</text>
+                          <text
+                            fg={chat.operator}
+                          >{`[${String(object(entry).status ?? "")}] ${String(object(entry).priority ?? "")}`}</text>
                           <Markdown text={String(object(entry).content ?? "")} />
                         </box>
                       )}
@@ -349,7 +363,7 @@ export function NativeEvents(props: {
         </Show>
       </scrollbox>
       <Show when={props.running}>
-        <text fg="#80cbc4" height={1} flexShrink={0}>
+        <text fg={chat.operator} height={1} flexShrink={0}>
           Agent is working…
         </text>
       </Show>
@@ -358,7 +372,7 @@ export function NativeEvents(props: {
           flexGrow={1}
           minWidth={0}
           truncate
-          fg="#8b949e"
+          fg={chat.muted}
         >{`Chat · History · ${model.size()} items · Wheel scroll · Ctrl+T transcript · ↑↓ select · Enter expand`}</text>
         <box
           id="transcript-expand"
@@ -369,7 +383,7 @@ export function NativeEvents(props: {
             toggle(selectedRow() as TranscriptRow);
           }}
         >
-          <text selectable={false} fg="#8b949e">
+          <text selectable={false} fg={chat.muted}>
             More / less{" "}
           </text>
         </box>
@@ -382,7 +396,7 @@ export function NativeEvents(props: {
             inspect(false);
           }}
         >
-          <text selectable={false} fg="#8b949e">
+          <text selectable={false} fg={chat.muted}>
             Source{" "}
           </text>
         </box>
@@ -395,7 +409,7 @@ export function NativeEvents(props: {
             inspect(true);
           }}
         >
-          <text selectable={false} fg="#8b949e">
+          <text selectable={false} fg={chat.muted}>
             Raw
           </text>
         </box>

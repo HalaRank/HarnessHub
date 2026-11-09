@@ -3,7 +3,7 @@ import { RGBA, TextAttributes } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { CommandPalette } from "../../apps/tui/src/command-palette";
 import { SlashCommands } from "../../apps/tui/src/slash-commands";
-import { inputStyle, listStyle, ui } from "../../apps/tui/src/ui";
+import { chat, inputStyle, listStyle, ui } from "../../apps/tui/src/ui";
 
 test("slash commands distinguish names, native hints and descriptions in both selection states", async () => {
   for (const width of [100, 35]) {
@@ -116,6 +116,11 @@ test("chrome text, descriptions and placeholders meet normal-text contrast", () 
     [listStyle.selectedDescriptionColor, listStyle.selectedBackgroundColor],
     [inputStyle.placeholderColor, inputStyle.backgroundColor],
     [ui.accent, ui.selection],
+    ...Object.entries(chat)
+      .filter(([name]) => name !== "canvas" && name !== "user")
+      .map(([, color]) => [color, chat.canvas]),
+    [chat.text, chat.user],
+    [chat.muted, chat.user],
   ]) {
     const values = [luminance(foreground ?? ""), luminance(background ?? "")].sort((a, b) => a - b);
     expect(((values[1] ?? 0) + 0.05) / ((values[0] ?? 0) + 0.05)).toBeGreaterThanOrEqual(4.5);

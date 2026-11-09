@@ -19,6 +19,21 @@ export const ui = {
   danger: "#632b30",
 };
 
+export const chat = {
+  canvas: "#181a1b",
+  user: "#2d2d30",
+  text: "#d4d4d8",
+  heading: "#e1e4e5",
+  muted: "#979a9b",
+  command: "#75baff",
+  option: "#e9a1a8",
+  string: "#b7dc88",
+  operator: "#8dd5df",
+  success: "#40cf92",
+  error: "#ff8c8c",
+  warning: "#e8bd79",
+};
+
 export const listStyle = {
   backgroundColor: ui.panel,
   focusedBackgroundColor: ui.panel,

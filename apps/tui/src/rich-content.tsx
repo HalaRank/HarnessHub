@@ -3,18 +3,19 @@ import { useRenderer } from "@opentui/solid";
 import { createMemo, For, onCleanup, Show } from "solid-js";
 import { mouseClick } from "./project-tree";
 import { object, pretty, type TerminalContent } from "./transcript";
+import { chat } from "./ui";
 
-export function useSyntax() {
+export function useSyntax(muted = false) {
   const style = SyntaxStyle.fromStyles(
     {
-      default: { fg: "#d4d4d8" },
-      "markup.heading": { fg: "#a5d6ff", bold: true },
-      "markup.heading.1": { fg: "#a5d6ff", bold: true },
+      default: { fg: muted ? chat.muted : chat.text },
+      "markup.heading": { fg: chat.heading, bold: true },
+      "markup.heading.1": { fg: chat.heading, bold: true },
       "markup.strong": { bold: true },
       "markup.italic": { italic: true },
-      "markup.raw": { fg: "#a5d6a7" },
-      "markup.link": { fg: "#80cbc4", underline: true },
-      "markup.list": { fg: "#80cbc4" },
+      "markup.raw": { fg: chat.string },
+      "markup.link": { fg: chat.command, underline: true },
+      "markup.list": { fg: chat.muted },
       "punctuation.special": { fg: "#90a4ae" },
       comment: { fg: "#8b949e", italic: true },
       keyword: { fg: "#c5a5ff" },
@@ -29,17 +30,52 @@ export function useSyntax() {
   onCleanup(() => style.destroy());
   return style;
 }
-export function Markdown(props: { text: string; streaming?: boolean }) {
-  const syntax = useSyntax();
+export function Markdown(props: { text: string; streaming?: boolean; muted?: boolean }) {
+  const syntax = useSyntax(props.muted);
   return (
     <markdown
       content={props.text}
+      fg={props.muted ? chat.muted : chat.text}
       syntaxStyle={syntax}
       concealCode={false}
       streaming={props.streaming ?? false}
       flexShrink={0}
       tableOptions={{ style: "grid", selectable: true, wrapMode: "word" }}
     />
+  );
+}
+
+// Lightweight lexical colors for native command titles. Every character is retained.
+export function ToolTitle(props: { tool: Record<string, unknown> }) {
+  const tokens = createMemo(() => {
+    const title = String(props.tool.title ?? props.tool.name ?? "Tool").split(/\r?\n/, 1)[0] ?? "";
+    const command = object(props.tool.rawInput).command;
+    const isCommand =
+      (typeof command === "string" && command.split(/\r?\n/, 1)[0] === title) ||
+      (props.tool.kind === "execute" && (typeof command === "string" || Array.isArray(command)));
+    if (!isCommand) return [{ text: title, color: chat.heading, bold: true }];
+    let commandStart = true;
+    return Array.from(
+      title.matchAll(/"(?:\\.|[^"\\])*"|'[^']*'|\\.|&&|\|\||[|;&<>]|\s+|[^\s"'\\|;&<>]+|./gu),
+      ([text]) => {
+        let color = chat.text;
+        if (/^[|;&<>]+$/.test(text)) {
+          color = chat.operator;
+          commandStart = true;
+        } else if (!/^\s+$/.test(text)) {
+          if (/^["']/.test(text)) color = chat.string;
+          else if (/^--?\w/.test(text)) color = chat.option;
+          else if (commandStart) color = chat.command;
+          commandStart = false;
+        }
+        return { text, color, bold: false };
+      },
+    );
+  });
+  return (
+    <For each={tokens()}>
+      {(token) => <span style={{ fg: token.color, bold: token.bold }}>{token.text}</span>}
+    </For>
   );
 }
 export function UnifiedDiff(props: { value: string; path?: string }) {
@@ -121,7 +157,7 @@ export function ToolContent(props: {
   };
   return (
     <box flexDirection="row" flexShrink={0}>
-      <text width={2} flexShrink={0} fg="#8b949e">
+      <text width={2} flexShrink={0} fg={chat.muted}>
         └
       </text>
       <box flexDirection="column" flexGrow={1} flexBasis={0} minWidth={0}>
@@ -131,14 +167,14 @@ export function ToolContent(props: {
             <>
               <For each={preview().lines}>
                 {(line) => (
-                  <text fg="#8b949e" height={1} wrapMode="none" truncate selectable>
+                  <text fg={chat.muted} height={1} wrapMode="none" truncate selectable>
                     {line}
                   </text>
                 )}
               </For>
               <text
                 id={props.id}
-                fg="#8b949e"
+                fg={chat.muted}
                 height={1}
                 wrapMode="none"
                 truncate
@@ -151,21 +187,21 @@ export function ToolContent(props: {
           }
         >
           <Show when={command()}>
-            <text selectable flexShrink={0}>
+            <text fg={chat.text} selectable flexShrink={0}>
               {command().slice(0, 24000)}
             </text>
           </Show>
           <For each={Object.values(props.terminals ?? {})}>
             {(value) => (
               <Show when={value.output}>
-                <text selectable flexShrink={0}>
+                <text fg={chat.muted} selectable flexShrink={0}>
                   {value.output.slice(-24000)}
                 </text>
               </Show>
             )}
           </For>
           <Show when={typeof props.tool.rawOutput === "string"}>
-            <text selectable flexShrink={0}>
+            <text fg={chat.muted} selectable flexShrink={0}>
               {String(props.tool.rawOutput).slice(0, 24000)}
             </text>
           </Show>
@@ -178,7 +214,7 @@ export function ToolContent(props: {
                   when={block.type === "diff" && nativeDiff(block)}
                   fallback={
                     <Show when={content.type === "text" && typeof content.text === "string"}>
-                      <Markdown text={String(content.text).slice(0, 24000)} />
+                      <Markdown text={String(content.text).slice(0, 24000)} muted />
                     </Show>
                   }
                 >
@@ -193,7 +229,7 @@ export function ToolContent(props: {
           </For>
           <text
             id={props.id}
-            fg="#8b949e"
+            fg={chat.muted}
             height={1}
             wrapMode="none"
             truncate

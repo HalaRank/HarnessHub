@@ -4,6 +4,7 @@ import { testRender } from "@opentui/solid";
 import { NativeEvents } from "../../apps/tui/src/native-events";
 import { sourceParts } from "../../apps/tui/src/rich-content";
 import { newViewState, Transcript } from "../../apps/tui/src/transcript";
+import { chat } from "../../apps/tui/src/ui";
 import type { ConversationEvent } from "../../packages/shared/src/index";
 import { clickControl } from "./ui-actions";
 
@@ -64,8 +65,8 @@ test("Agent replies and public thinking have distinct gutters and headings witho
       await frame(screen, "REPLY_SECOND");
       const lines = screen.captureSpans().lines;
       for (const [label, marker, color] of [
-        ["Public thinking", "▶", "#8b949e"],
-        ["Agent", "•", "#a5d6ff"],
+        ["Public thinking", "▶", chat.muted],
+        ["Agent", "•", chat.muted],
       ] as const) {
         const heading = lines.find((line) =>
           line.spans
@@ -91,7 +92,7 @@ test("Agent replies and public thinking have distinct gutters and headings witho
         }
         expect(
           heading.spans.some(
-            (span) => span.text.includes(label) && (span.attributes & TextAttributes.BOLD) !== 0,
+            (span) => span.text.includes(label) && (span.attributes & TextAttributes.BOLD) === 0,
           ),
         ).toBe(true);
       }
@@ -106,6 +107,14 @@ test("Agent replies and public thinking have distinct gutters and headings witho
           throw new Error(`Missing ${text} at width ${width}\n${screen.captureCharFrame()}`);
         expect(line).toBeDefined();
         expect(line?.spans.map((span) => span.text).join("")).toStartWith("  ");
+        if (["THOUGHT_TEXT", "REPLY_FIRST", "REPLY_SECOND"].includes(text))
+          expect(
+            line.spans.some(
+              (span) =>
+                span.text.includes(text) &&
+                span.fg.equals(RGBA.fromHex(text === "THOUGHT_TEXT" ? chat.muted : chat.text)),
+            ),
+          ).toBe(true);
         expect(line?.spans.some((span) => span.bg.equals(RGBA.fromHex("#2d2d30")))).toBe(false);
       }
       expect(model.rows.map((row) => model.source(row))).toEqual([thought, reply]);
@@ -201,11 +210,11 @@ test("native tool accents follow streaming status and approvals while preserving
     try {
       let seq = 1;
       for (const [status, color] of [
-        ["pending", "#80cbc4"],
-        ["in_progress", "#80cbc4"],
-        ["completed", "#4ade80"],
-        ["failed", "#ef9a9a"],
-        ["WAITING_APPROVAL", "#ffcc80"],
+        ["pending", chat.operator],
+        ["in_progress", chat.operator],
+        ["completed", chat.success],
+        ["failed", chat.error],
+        ["WAITING_APPROVAL", chat.warning],
       ] as const) {
         if (status === "WAITING_APPROVAL") {
           model.append([
@@ -226,7 +235,20 @@ test("native tool accents follow streaming status and approvals while preserving
         );
         expect(
           heading?.spans.some(
-            (span) => span.text.includes("NativeExact") && span.fg.equals(RGBA.fromHex(color)),
+            (span) =>
+              span.text.includes("NativeExact") && span.fg.equals(RGBA.fromHex(chat.heading)),
+          ),
+        ).toBe(true);
+        expect(
+          heading?.spans.some(
+            (span) => /[•▶]/.test(span.text) && span.fg.equals(RGBA.fromHex(color)),
+          ),
+        ).toBe(true);
+        expect(
+          heading?.spans.some(
+            (span) =>
+              span.text.includes(status) &&
+              span.fg.equals(RGBA.fromHex(status === "completed" ? chat.muted : color)),
           ),
         ).toBe(true);
         await frame(screen, "NATIVE_CONTENT");
@@ -259,6 +281,89 @@ test("native tool accents follow streaming status and approvals while preserving
         name: "Native tool output",
         text: "NATIVE_OUTPUT",
       });
+    } finally {
+      await screen.dispose();
+    }
+  }
+});
+
+test("command syntax keeps its colors across tool states and narrow layouts", async () => {
+  const title = "git -C 'a' | pwd\nprintf 'NATIVE_SECOND_LINE'";
+  for (const width of [100, 32]) {
+    const model = new Transcript();
+    model.append([
+      event(1, "tool_call", {
+        toolCallId: "command",
+        title,
+        rawInput: { command: title },
+        status: "completed",
+        content: [{ type: "content", content: { type: "text", text: "NATIVE_PREVIEW" } }],
+      }),
+    ]);
+    const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+      width,
+      height: 18,
+    });
+    try {
+      let seq = 1;
+      for (const status of ["completed", "failed", "in_progress"]) {
+        model.append([event(++seq, "tool_call_update", { toolCallId: "command", status })]);
+        await frame(screen, status);
+        const heading = screen.captureSpans().lines.find((line) =>
+          line.spans
+            .map((span) => span.text)
+            .join("")
+            .includes("git -C"),
+        );
+        for (const [text, color] of [
+          ["git", chat.command],
+          ["-C", chat.option],
+          ["'a'", chat.string],
+          ["|", chat.operator],
+          ["pwd", chat.command],
+        ] as const)
+          expect(
+            heading?.spans.some(
+              (span) =>
+                span.text.includes(text) &&
+                span.fg.equals(RGBA.fromHex(color)) &&
+                !(span.attributes & TextAttributes.BOLD),
+            ),
+          ).toBe(true);
+        expect(screen.captureCharFrame()).not.toContain("NATIVE_SECOND_LINE");
+      }
+      await frame(screen, "NATIVE_PREVIEW");
+      expect(
+        screen
+          .captureSpans()
+          .lines.flatMap((line) => line.spans)
+          .some(
+            (span) =>
+              span.text.includes("NATIVE_PREVIEW") && span.fg.equals(RGBA.fromHex(chat.muted)),
+          ),
+      ).toBe(true);
+      screen.mockInput.pressEnter();
+      await frame(screen, "NATIVE_SECOND_LINE");
+      const row = model.rows[0];
+      if (!row) throw new Error("Missing native command");
+      expect(JSON.parse(model.source(row)).title).toBe(title);
+      model.append([
+        event(++seq, "tool_call_update", {
+          toolCallId: "command",
+          kind: "execute",
+          title: "git --short",
+          rawInput: { command: ["/bin/bash", "-lc", "git --short"] },
+        }),
+      ]);
+      await frame(screen, "git --short");
+      expect(
+        screen
+          .captureSpans()
+          .lines.flatMap((line) => line.spans)
+          .some(
+            (span) => span.text.includes("--short") && span.fg.equals(RGBA.fromHex(chat.option)),
+          ),
+      ).toBe(true);
     } finally {
       await screen.dispose();
     }
