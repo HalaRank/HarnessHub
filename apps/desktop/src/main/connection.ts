@@ -1,7 +1,14 @@
-import type { ConversationEvent, Snapshot } from "@harnesshub/shared";
+import type {
+  Approval,
+  ConversationEvent,
+  Handoff,
+  NativeSession,
+  Snapshot,
+} from "@harnesshub/shared";
 import { Client, HttpError } from "@harnesshub/shared/client";
 import WebSocket from "ws";
-import type { DesktopState } from "../contracts";
+import type { DesktopRequest, DesktopState } from "../contracts";
+import { performAction } from "./actions";
 import { BridgeError, type WslBridge } from "./wsl";
 
 export class DesktopConnection {
@@ -15,9 +22,12 @@ export class DesktopConnection {
     events: [],
     historyLoading: false,
   };
+  private refreshNow: (() => Promise<void>) | undefined;
+  private readonly submissions = new Map<string, Promise<unknown>>();
   private client: Client | undefined;
   private socket: WebSocket | undefined;
   private epoch = 0;
+  private metadataRevision = 0;
   private selection = 0;
   private historyRead: Promise<void> = Promise.resolve();
   private preferenceWrite: Promise<unknown> = Promise.resolve();
@@ -38,7 +48,8 @@ export class DesktopConnection {
   private update(patch: Partial<DesktopState>) {
     if (this.disposed) return;
     this.state = { ...this.state, ...patch, revision: this.state.revision + 1 };
-    this.emit(this.state);
+    // Keep only a bounded inspection tail in Main; IPC carries the new batch once.
+    this.emit({ ...this.state, events: patch.events ?? [] });
   }
   private clearTransport() {
     clearTimeout(this.timer);
@@ -46,6 +57,7 @@ export class DesktopConnection {
     this.timer = undefined;
     this.poll = undefined;
     this.client = undefined;
+    this.refreshNow = undefined;
     this.socket?.removeAllListeners();
     this.socket?.on("error", () => {});
     this.socket?.terminate();
@@ -60,7 +72,16 @@ export class DesktopConnection {
       distribution,
       status: "starting",
       detail: "正在检查 WSL 与 Daemon…",
-      ...(changed ? { snapshot: null, conversationId: null, events: [] } : {}),
+      ...(changed
+        ? {
+            snapshot: null,
+            conversationId: null,
+            events: [],
+            interaction: null,
+            eventCursor: 0,
+            historyVersion: (this.state.historyVersion ?? 0) + 1,
+          }
+        : {}),
     });
     try {
       const instance = await this.bridge.connect(distribution);
@@ -118,23 +139,68 @@ export class DesktopConnection {
         try {
           while (dirty && epoch === this.epoch && !this.disposed) {
             dirty = false;
+            const metadataRevision = this.metadataRevision;
             const snapshot = await client.request<Snapshot>("/v1/snapshot");
             if (epoch !== this.epoch || this.disposed) return;
-            this.update({ snapshot, status: "connected", detail: `已连接 · ${distribution}` });
+            const profiles =
+              await client.request<{ id: string; name: string }[]>("/v1/harness-profiles");
+            if (epoch !== this.epoch || this.disposed) return;
+            if (metadataRevision !== this.metadataRevision) {
+              dirty = true;
+              continue;
+            }
+            this.update({
+              snapshot,
+              profiles: profiles.map(({ id, name }) => ({ id, name })),
+              status: "connected",
+              detail: `已连接 · ${distribution}`,
+            });
             if (
               this.state.conversationId &&
               !snapshot.conversations.some((c) => c.id === this.state.conversationId)
             ) {
               this.selection++;
-              this.update({ conversationId: null, events: [], historyLoading: false });
+              this.update({
+                conversationId: null,
+                events: [],
+                interaction: null,
+                eventCursor: 0,
+                historyLoading: false,
+              });
             }
             await this.readHistory(client, epoch);
+            const id = this.state.conversationId;
+            if (id) {
+              const [sessions, approvals, handoffs] = await Promise.all([
+                client.request<NativeSession[]>(`/v1/conversations/${id}/sessions`),
+                client.request<Approval[]>(`/v1/conversations/${id}/approvals`),
+                client.request<Handoff[]>(`/v1/conversations/${id}/handoffs`),
+              ]);
+              if (epoch === this.epoch && id === this.state.conversationId && !this.disposed) {
+                const interaction = { conversationId: id, sessions, approvals, handoffs };
+                if (JSON.stringify(interaction) !== JSON.stringify(this.state.interaction))
+                  this.update({ interaction });
+              }
+            }
           }
         } catch (error) {
-          this.failed(error, epoch);
+          // A concurrent confirmed deletion can invalidate a history/session read.
+          // Refresh the snapshot, rather than treating a missing entity as lost transport.
+          if (error instanceof HttpError && error.status === 404) dirty = true;
+          else this.failed(error, epoch);
         } finally {
           busy = false;
+          if (dirty && epoch === this.epoch && !this.disposed) void refresh();
         }
+      };
+      this.refreshNow = refresh;
+      let scheduled: ReturnType<typeof setTimeout> | undefined;
+      const schedule = () => {
+        if (!scheduled)
+          scheduled = setTimeout(() => {
+            scheduled = undefined;
+            if (epoch === this.epoch && !this.disposed) void refresh();
+          }, 40);
       };
       socket.on("message", (packet) => {
         if (epoch !== this.epoch || this.disposed) return;
@@ -147,8 +213,7 @@ export class DesktopConnection {
             clearTimeout(this.timer);
             this.timer = undefined;
           }
-          if (hello && ["hello", "change", "conversation.event"].includes(message.type))
-            void refresh();
+          if (hello && ["hello", "change", "conversation.event"].includes(message.type)) schedule();
         } catch (error) {
           this.failed(error, epoch);
         }
@@ -201,7 +266,7 @@ export class DesktopConnection {
     if (!id) return;
     const selected = this.selection;
     const valid = () => epoch === this.epoch && selected === this.selection && !this.disposed;
-    let cursor = this.state.events.at(-1)?.seq ?? 0;
+    let cursor = this.state.eventCursor ?? 0;
     this.update({ historyLoading: true });
     while (valid()) {
       const page: { events: ConversationEvent[]; cursor: number } = await client.request<{
@@ -211,7 +276,11 @@ export class DesktopConnection {
       if (!valid()) return;
       if (page.cursor < cursor) {
         cursor = 0;
-        this.update({ events: [] });
+        this.update({
+          events: [],
+          eventCursor: 0,
+          historyVersion: (this.state.historyVersion ?? 0) + 1,
+        });
         continue;
       }
       const batch: ConversationEvent[] = [];
@@ -222,7 +291,11 @@ export class DesktopConnection {
         cursor = event.seq;
         batch.push(event);
       }
-      if (batch.length) this.update({ events: [...this.state.events, ...batch] });
+      if (batch.length) {
+        const tail = [...this.state.events, ...batch].slice(-200);
+        this.update({ events: batch, eventCursor: cursor });
+        this.state = { ...this.state, events: tail };
+      }
       if (cursor >= page.cursor) break;
       if (!batch.length) throw new BridgeError("IDENTITY", "会话历史不完整；未跳过事件。");
     }
@@ -239,9 +312,16 @@ export class DesktopConnection {
     if (id === this.state.conversationId) return;
     this.selection++;
     const epoch = this.epoch;
-    this.update({ conversationId: id, events: [], historyLoading: true });
+    this.update({
+      conversationId: id,
+      events: [],
+      interaction: null,
+      eventCursor: 0,
+      historyVersion: (this.state.historyVersion ?? 0) + 1,
+      historyLoading: true,
+    });
     try {
-      // Preferences are the only Phase 1 write. No prompts, approvals, sessions or workspace writes.
+      // Selecting a conversation never starts a native session or Turn.
       const write = this.preferenceWrite
         .catch(() => {})
         .then(() => {
@@ -250,14 +330,46 @@ export class DesktopConnection {
         });
       this.preferenceWrite = write;
       await write;
-      if (epoch === this.epoch && id === this.state.conversationId)
-        await this.readHistory(client, epoch);
+      if (epoch === this.epoch && id === this.state.conversationId) await this.refreshNow?.();
     } catch (error) {
       if (epoch !== this.epoch || id !== this.state.conversationId || this.disposed) return;
       if (error instanceof HttpError && error.status === 404)
-        this.update({ conversationId: null, events: [], historyLoading: false });
+        this.update({
+          conversationId: null,
+          events: [],
+          interaction: null,
+          eventCursor: 0,
+          historyLoading: false,
+        });
       else this.failed(error, epoch);
     }
+  }
+  async action(request: DesktopRequest): Promise<unknown> {
+    const client = this.client;
+    if (!client || this.state.status !== "connected" || this.disposed)
+      throw new Error("Daemon 未连接；未重发任务。");
+    if (request.type === "turn.submit") {
+      const key = `${this.epoch}:${request.conversationId}`;
+      if (this.submissions.has(key)) throw new Error("此会话正在提交，请等待或查询请求状态。");
+      const promise = performAction(client, request);
+      this.submissions.set(key, promise);
+      try {
+        return await promise;
+      } finally {
+        this.submissions.delete(key);
+        void this.refreshNow?.();
+      }
+    }
+    const epoch = this.epoch;
+    const result = await performAction(client, request);
+    if (request.type.startsWith("conversation.") || request.type === "harness.select") {
+      this.metadataRevision++;
+      const snapshot = await client.request<Snapshot>("/v1/snapshot");
+      if (epoch === this.epoch && !this.disposed) this.update({ snapshot });
+    }
+    if (!["history", "draft.load", "draft.save", "request.lookup"].includes(request.type))
+      await this.refreshNow?.();
+    return result;
   }
   dispose() {
     this.disposed = true;
@@ -265,3 +377,5 @@ export class DesktopConnection {
     this.clearTransport();
   }
 }
+
+export { performAction } from "./actions";

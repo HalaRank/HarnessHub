@@ -1,0 +1,79 @@
+Windows smoke evidence: /mnt/c/Users/31970/AppData/Local/Temp/hhu-desktop-smoke-0MZ6AH
+Isolated WSL data: /tmp/hhu-windows-smoke-c9SuZX
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Real mouse conversation switching, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+    "Project expand/collapse",
+    "Empty conversation switching",
+    "Sidebar hide/restore",
+    "Empty conversation switching, sidebar hide/restore and mouse resize",
+    "Native Windows editor and SQLite per-conversation draft restore",
+    "IME confirmation does not send, real timed streaming, manual scrolling suspends follow",
+    "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    "Native approval UI displays actual options and explicit reject resolves once",
+    "Project expand/collapse, details panel, resize/110% zoom without horizontal overflow",
+    "Closing the real Windows window preserves Daemon and active Mock ACP Worker",
+    "Reopened Electron restores WSL distro and SQLite conversation selection",
+    "Closing/reopening Electron persists SQLite drafts while active Agent survives"
+  ],
+  "realHarnesses": [
+    {
+      "harnessId": "codex",
+      "startedAt": "2026-11-09T08:48:43.122Z",
+      "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+      "manualApprovalRequired": false,
+      "turn": {
+        "id": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+        "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+        "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+        "requestId": "41d9c9c0-734e-46ed-840b-eb8512a2b178",
+        "requestHash": "a4da2c6cd20b571251327d0670ec3f56b3ee657c9a3d2a97d05ac5e250972977",
+        "harnessId": "codex",
+        "origin": "user",
+        "state": "COMPLETED",
+        "stopReason": "end_turn",
+        "startEventSeq": 2,
+        "finishEventSeq": 38,
+        "createdAt": 1794214123807,
+        "endedAt": 1794214229018
+      },
+      "timedOut": false,
+      "messageChunks": 17,
+      "toolCalls": 0,
+      "failures": [],
+      "passed": false
+    },
+    {
+      "harnessId": "grok",
+      "startedAt": "2026-11-09T08:50:29.281Z",
+      "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+      "manualApprovalRequired": false,
+      "turn": {
+        "id": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+        "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+        "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+        "requestId": "f7585632-f152-4862-a721-0d0aab0de8d5",
+        "requestHash": "6a7b9ed4a9341850c87ca53f39ae6dbde6e136c6aa97a2e6e9065b3a3b29c123",
+        "harnessId": "grok",
+        "origin": "user",
+        "state": "COMPLETED",
+        "stopReason": "end_turn",
+        "startEventSeq": 2,
+        "finishEventSeq": 135,
+        "createdAt": 1794214229852,
+        "endedAt": 1794214242690
+      },
+      "timedOut": false,
+      "messageChunks": 71,
+      "toolCalls": 2,
+      "failures": [],
+      "passed": true
+    }
+  ],
+  "passed": true
+}

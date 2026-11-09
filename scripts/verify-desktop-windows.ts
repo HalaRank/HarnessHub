@@ -38,7 +38,10 @@ const bridgeDir = join(temp, ".local/lib/harnesshub");
 mkdirSync(bridgeDir, { recursive: true });
 writeFileSync(
   join(bridgeDir, "desktop-bridge"),
-  bridgeLauncher(process.execPath, resolve("dist"), process.env.PATH ?? "/usr/bin:/bin", p),
+  bridgeLauncher(process.execPath, resolve("dist"), process.env.PATH ?? "/usr/bin:/bin", p).replace(
+    "# HarnessHub desktop bridge launcher",
+    `# HarnessHub desktop bridge launcher\nexport HOME='${(process.env.HOME ?? "").replaceAll("'", "'\\''")}'`,
+  ),
   { mode: 0o700 },
 );
 const winTemp = execFileSync(
@@ -48,6 +51,8 @@ const winTemp = execFileSync(
 ).trim();
 const winMount = execFileSync("wslpath", ["-u", winTemp], { encoding: "utf8" }).trim();
 const output = mkdtempSync(join(winMount, "hhu-desktop-smoke-"));
+let companion: ReturnType<typeof spawn> | undefined;
+let companionDone: Promise<unknown> | undefined;
 const windowsPath = (path: string) =>
   execFileSync("wslpath", ["-w", path], { encoding: "utf8" }).trim();
 console.log(`Windows smoke evidence: ${output}\nIsolated WSL data: ${temp}`);
@@ -56,6 +61,9 @@ try {
   const client = new Client(i);
   const workspace = join(temp, "project");
   mkdirSync(workspace);
+  writeFileSync(join(workspace, "sentinel.txt"), "HARNESSHUB_DESKTOP_PHASE2_世界\n", {
+    mode: 0o600,
+  });
   const project = await client.request<{ id: string }>("/v1/projects", "POST", {
     rootPath: workspace,
     name: "HarnessHub Desktop",
@@ -76,7 +84,11 @@ try {
     name: "Desktop smoke",
     command: node,
     args: [resolve("tests/fixtures/mock-acp/server.mjs")],
-    envOverrides: {},
+    envOverrides: {
+      HHU_MOCK_COMMANDS: JSON.stringify([
+        { name: "silent", description: "Real ACP published mock command" },
+      ]),
+    },
   });
   const turn = await client.request<{ id: string }>(
     `/v1/conversations/${conversation.id}/turns`,
@@ -114,6 +126,7 @@ try {
       otherId: other.id,
       workspace,
       output: windowsPath(output),
+      ...(process.env.HHU_DESKTOP_REAL === "1" ? { realHarnesses: ["codex", "grok"] } : {}),
     }),
   );
   // Run official Electron executable from a separately extracted, checksum-verified archive.
@@ -143,6 +156,12 @@ try {
     electronDir,
   ]);
   const log = Bun.file(join(output, "stdout.log"));
+  companion = spawn(
+    "python3",
+    [resolve("tests/e2e/desktop-companion.py"), process.execPath, cliFile, output],
+    { env, stdio: "ignore" },
+  );
+  companionDone = new Promise((resolve) => companion?.on("exit", resolve));
   const child = spawn(join(electronDir, "electron.exe"), [windowsPath(join(output, "app"))], {
     stdio: ["ignore", "pipe", "pipe"],
     env: Object.fromEntries(
@@ -167,6 +186,8 @@ try {
   console.log(JSON.stringify(evidence, null, 2));
   if (code !== 0 || !evidence.passed) throw new Error(`Windows smoke failed; see ${output}`);
 } finally {
+  writeFileSync(join(output, "stop-tui"), "stop");
+  await companionDone;
   try {
     cli("daemon", "stop");
   } catch {

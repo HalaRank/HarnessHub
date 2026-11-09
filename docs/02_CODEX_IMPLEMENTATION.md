@@ -2,7 +2,7 @@
 
 > 产品名称 HarnessHub；CLI `hhu`。按照 `01_ARCHITECTURE.md` 作为架构真源，阶段制实现完整 MVP，不将尚未实现功能伪装为完成。每阶段产生代码、自动化测试、真实运行演示、验收记录。必须以 `AGENTS.md` 为执行约束。
 
-> 新增独立 Desktop 阶段线：原六阶段实施记录不改写。Desktop Phase 1 只交付 Windows Electron + React、WSL2 Bridge 和只读会话 UI，见 [架构决策](03_DESKTOP_ARCHITECTURE.md) 与 [阶段验收](acceptance/desktop-phase-1.md)。未经下一阶段授权不实现正式聊天/审批/完整管理 GUI。
+> 新增独立 Desktop 阶段线：原六阶段实施记录不改写。Desktop Phase 1 只交付 Windows Electron + React、WSL2 Bridge 和只读会话 UI，见 [架构决策](03_DESKTOP_ARCHITECTURE.md) 与 [阶段验收](acceptance/desktop-phase-1.md)。此为 Phase 1 历史边界；用户已授权的 Desktop Phase 2 实施与验收见文末。
 
 ## 0. 全局开发约定
 
@@ -132,3 +132,8 @@
 ## 交付流程和最终 Done 定义
 
 每阶段完成代码、测试和 `phase-N.md`；用户认可后进入下一阶段。六阶段全部通过后，完整 MVP 的验收包括：真实 Agent 接入、正确 workspace、后台存活、无重复任务、原生审批、交接可追溯、TUI 行为、数据保护、安装运行。发现架构级问题可以记录并调整实现方案，但不得悄悄重启第二轮无限决策。
+
+
+## Desktop Phase 2 实施记录
+
+2026-11-09 用户授权正式聊天、草稿 CAS/提交幂等、原生审批/取消/工具、ACP 设置/Slash Commands、Conversation 管理和增量流式性能。仍复用 WSL 后端，不进入 Desktop Phase 3/4。代码、测试、Windows 与真实 Harness 证据及限制见 [desktop-phase-2.md](acceptance/desktop-phase-2.md)。等待本阶段验收。

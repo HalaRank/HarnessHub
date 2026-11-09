@@ -60,9 +60,9 @@ test("native tool titles and status retained, protocol body stays out of chat", 
   ]);
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ role: "Read README", text: "completed" });
-  expect(JSON.stringify(rows)).not.toContain("authStatus");
+  expect(rows[0]?.tool?.rawInput).toEqual({ authStatus: "secret" });
 });
-test("React renders safe read-only layout with navigation, composer and empty states", () => {
+test("React renders safe layout with navigation, composer and empty states", () => {
   const html = renderToStaticMarkup(
     <App
       api={{ request: async () => ({ ok: false, error: "unused" }), subscribe: () => () => {} }}
@@ -71,7 +71,7 @@ test("React renders safe read-only layout with navigation, composer and empty st
   expect(html).toContain("项目与会话");
   expect(html).toContain("会话列表");
   expect(html).toContain("切换工作面板");
-  expect(html).toContain("Desktop Phase 1");
+  expect(html).toContain("新建会话");
   expect(html).toContain("继续你的项目");
   expect(html).not.toContain("dangerouslySetInnerHTML");
 });

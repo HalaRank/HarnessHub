@@ -271,3 +271,296 @@ test("WSL Bridge refuses a live incompatible Daemon without stop, spawn, or meta
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("Desktop Phase 2 typed actions: draft CAS, duplicate submit, native settings/slash, approvals, cancellation and management", async () => {
+  const connection = new DesktopConnection({ connect: bridge }, 100);
+  try {
+    await connection.connect("Ubuntu-test");
+    await waitFor(() => connection.getState().status === "connected");
+    const created = await connection.action({
+      type: "conversation.create",
+      projectId: project.id,
+      title: "Desktop chat",
+    });
+    const id = created.id;
+    await connection.select(id);
+    await client.request("/v1/harness-profiles", "POST", {
+      id: "desktop-commands",
+      name: "Commands",
+      command: process.execPath,
+      args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+      envOverrides: {
+        HHU_MOCK_COMMANDS: JSON.stringify([
+          { name: "silent", description: "Native silent command" },
+        ]),
+      },
+    });
+    await connection.action({
+      type: "harness.select",
+      conversationId: id,
+      harnessId: "desktop-commands",
+    });
+    assert.equal((await client.request(`/v1/conversations/${id}/sessions`)).length, 0);
+    const native = await connection.action({
+      type: "session.prepare",
+      conversationId: id,
+      harnessId: "desktop-commands",
+    });
+    assert.equal(native.cwd, project.rootPath);
+    await connection.action({
+      type: "session.settings",
+      conversationId: id,
+      setting: { kind: "config", configId: "model", value: "other" },
+    });
+    let draft = await connection.action({ type: "draft.load", conversationId: id });
+    const saved = await connection.action({
+      type: "draft.save",
+      conversationId: id,
+      draft: { revision: draft.revision, text: "hello", pendingSubmission: null },
+    });
+    await assert.rejects(
+      connection.action({
+        type: "draft.save",
+        conversationId: id,
+        draft: { revision: draft.revision, text: "stale TUI", pendingSubmission: null },
+      }),
+    );
+    const input = { requestId: randomUUID(), harnessId: "desktop-commands", message: "hello" };
+    const actions = await Promise.allSettled([
+      connection.action({
+        type: "turn.submit",
+        conversationId: id,
+        revision: saved.revision,
+        input,
+      }),
+      connection.action({
+        type: "turn.submit",
+        conversationId: id,
+        revision: saved.revision,
+        input,
+      }),
+    ]);
+    assert.equal(actions.filter((a) => a.status === "fulfilled").length, 1);
+    const turn = await connection.action({
+      type: "request.lookup",
+      conversationId: id,
+      requestId: input.requestId,
+    });
+    assert.match(turn.requestHash, /^[a-f0-9]{64}$/);
+    await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).state === "COMPLETED");
+    draft = await connection.action({ type: "draft.load", conversationId: id });
+    assert.equal(draft.text, "");
+    assert.equal(draft.pendingSubmission, null);
+    const submit = async (message, nativeCommand) => {
+      const draft = await connection.action({ type: "draft.load", conversationId: id });
+      return connection.action({
+        type: "turn.submit",
+        conversationId: id,
+        revision: draft.revision,
+        input: {
+          requestId: randomUUID(),
+          harnessId: "desktop-commands",
+          message,
+          ...(nativeCommand ? { nativeCommand } : {}),
+        },
+      });
+    };
+    const slash = await submit("/silent", { nativeSessionId: native.id, name: "silent" });
+    await waitFor(
+      async () => (await client.request(`/v1/turns/${slash.id}`)).state === "COMPLETED",
+    );
+    const permission = await submit("permission");
+    const approval = await waitFor(
+      async () => (await client.request(`/v1/conversations/${id}/approvals`))[0],
+    );
+    const decisions = await Promise.allSettled([
+      connection.action({
+        type: "approval.decide",
+        conversationId: id,
+        approvalId: approval.id,
+        optionId: "native-reject",
+      }),
+      client.request(`/v1/approvals/${approval.id}/decision`, "POST", {
+        optionId: "native-reject",
+      }),
+    ]);
+    assert.equal(decisions.filter((d) => d.status === "fulfilled").length, 1);
+    await waitFor(async () => (await client.request(`/v1/turns/${permission.id}`)).endedAt);
+    const waiting = await submit("wait");
+    await waitFor(
+      async () => (await client.request(`/v1/conversations/${id}`)).runtimeStatus === "RUNNING",
+    );
+    await connection.action({ type: "turn.cancel", conversationId: id, turnId: waiting.id });
+    await waitFor(
+      async () => (await client.request(`/v1/turns/${waiting.id}`)).state === "CANCELLED",
+    );
+    await connection.action({
+      type: "conversation.patch",
+      conversationId: id,
+      patch: { title: "Renamed", archived: true },
+    });
+    assert.ok((await client.request(`/v1/conversations/${id}`)).archivedAt);
+    await connection.action({
+      type: "conversation.patch",
+      conversationId: id,
+      patch: { archived: false },
+    });
+    assert.equal((await client.request(`/v1/conversations/${id}`)).title, "Renamed");
+    await connection.action({ type: "conversation.delete", conversationId: id, confirmed: true });
+    await assert.rejects(client.request(`/v1/conversations/${id}`));
+    const { existsSync } = await import("node:fs");
+    assert.ok(existsSync(project.rootPath));
+    const standalone = await connection.action({
+      type: "conversation.standalone",
+      workspacePath: project.rootPath,
+      title: "Standalone",
+    });
+    assert.equal(standalone.projectId, null);
+    assert.equal(standalone.workspacePath, project.rootPath);
+    await connection.action({
+      type: "conversation.delete",
+      conversationId: standalone.id,
+      confirmed: true,
+    });
+  } finally {
+    connection.dispose();
+  }
+});
+
+test("Desktop HTTP ACK loss retains one SQLite request and hash; reopening and lookup never replay", async () => {
+  const { performAction } = await import("../../dist/desktop/test/connection.js");
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {
+    title: "ACK loss",
+  });
+  const input = { requestId: randomUUID(), harnessId: "desktop-mock", message: "timed" };
+  let posts = 0;
+  const dropping = {
+    request: async (path, method, body) => {
+      const result = await client.request(path, method, body);
+      if (path.endsWith("/turns") && method === "POST") {
+        posts++;
+        throw new Error("HTTP ACK lost after SQLite commit");
+      }
+      return result;
+    },
+  };
+  await assert.rejects(
+    performAction(dropping, { type: "turn.submit", conversationId: c.id, revision: 0, input }),
+    /ACK lost/,
+  );
+  const recorded = await performAction(client, {
+    type: "request.lookup",
+    conversationId: c.id,
+    requestId: input.requestId,
+  });
+  assert.equal(recorded.requestId, input.requestId);
+  assert.match(recorded.requestHash, /^[a-f0-9]{64}$/);
+  await waitFor(async () => (await client.request(`/v1/turns/${recorded.id}`)).endedAt);
+  const page = await client.request(`/v1/conversations/${c.id}/events?limit=1000`);
+  assert.equal(page.events.filter((e) => e.kind === "user.message").length, 1);
+  assert.equal(posts, 1);
+  await client.request(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+});
+
+test("large streaming history uses bounded Main memory and incremental IPC, paginated replay stays continuous", async () => {
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {
+    title: "Long history",
+  });
+  const connection = new DesktopConnection({ connect: bridge }, 100);
+  const batches = [];
+  let transferred = 0;
+  connection.onState((state) => {
+    assert.ok(state.events.length <= 200);
+    transferred += state.events.length;
+    if (state.events.length) batches.push(state.events);
+  });
+  try {
+    await connection.connect("Ubuntu-test");
+    await waitFor(() => connection.getState().status === "connected");
+    await connection.select(c.id);
+    const turn = await connection.action({
+      type: "turn.submit",
+      conversationId: c.id,
+      revision: 0,
+      input: { requestId: randomUUID(), harnessId: "desktop-mock", message: "long-history" },
+    });
+    await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
+    const first = await connection.action({ type: "history", conversationId: c.id, after: 0 });
+    await waitFor(() => connection.getState().eventCursor === first.cursor);
+    assert.ok(first.cursor > 2500);
+    assert.ok(connection.getState().events.length <= 200);
+    const flat = batches.flat().filter((e) => e.conversationId === c.id);
+    assert.equal(flat.length, first.cursor);
+    assert.ok(transferred < first.cursor + 500);
+    assert.deepEqual(
+      flat.map((e) => e.seq),
+      Array.from({ length: first.cursor }, (_, i) => i + 1),
+    );
+    let after = 0;
+    while (after < first.cursor) {
+      const page = await connection.action({ type: "history", conversationId: c.id, after });
+      for (const event of page.events) {
+        assert.equal(event.seq, after + 1);
+        after = event.seq;
+      }
+    }
+    assert.equal(after, first.cursor);
+  } finally {
+    connection.dispose();
+    await client.request(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+  }
+});
+
+test("Desktop Harness selection is inert; failed Handoff is visible; stale native command is refused", async () => {
+  const connection = new DesktopConnection({ connect: bridge }, 100);
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {
+    title: "Handoff failure",
+  });
+  await client.request("/v1/harness-profiles", "POST", {
+    id: "desktop-failed-source",
+    name: "Failed source",
+    command: process.execPath,
+    args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+    envOverrides: { HHU_MOCK_REPORT_FAIL: "1" },
+  });
+  try {
+    await connection.connect("Ubuntu-test");
+    await waitFor(() => connection.getState().status === "connected");
+    await connection.select(c.id);
+    const first = await connection.action({
+      type: "turn.submit",
+      conversationId: c.id,
+      revision: 0,
+      input: { requestId: randomUUID(), harnessId: "desktop-failed-source", message: "hello" },
+    });
+    await waitFor(async () => (await client.request(`/v1/turns/${first.id}`)).endedAt);
+    await connection.action({
+      type: "harness.select",
+      conversationId: c.id,
+      harnessId: "desktop-mock",
+    });
+    assert.equal((await client.request(`/v1/conversations/${c.id}/handoffs`)).length, 0);
+    const draft = await connection.action({ type: "draft.load", conversationId: c.id });
+    const turn = await connection.action({
+      type: "turn.submit",
+      conversationId: c.id,
+      revision: draft.revision,
+      input: { requestId: randomUUID(), harnessId: "desktop-mock", message: "target work" },
+    });
+    await waitFor(() =>
+      connection.getState().interaction?.handoffs.some((h) => h.status === "FAILED"),
+    );
+    assert.ok(connection.getState().interaction.handoffs[0].error);
+    assert.equal((await client.request(`/v1/conversations/${c.id}/sessions`)).length, 1);
+    const handoff = connection.getState().interaction.handoffs[0];
+    await connection.action({
+      type: "handoff.action",
+      conversationId: c.id,
+      input: { handoffId: handoff.id, action: "cancel" },
+    });
+    assert.equal((await client.request(`/v1/turns/${turn.id}`)).state, "CANCELLED");
+  } finally {
+    connection.dispose();
+    await client.request(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+  }
+});

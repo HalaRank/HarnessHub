@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { app, BrowserWindow, ipcMain, Menu, session } from "electron";
+import { HttpError } from "@harnesshub/shared/client";
+import { app, BrowserWindow, clipboard, ipcMain, Menu, session } from "electron";
 import { type DesktopReply, desktopRequest, IPC_REQUEST, IPC_STATE } from "../contracts";
 import { DesktopConnection } from "./connection";
 import { trustedSender, windowSecurity } from "./security";
@@ -32,7 +33,17 @@ export async function openDesktopWindow(
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       { label: "HarnessHub", submenu: [{ role: "quit" }] },
-      { label: "Edit", submenu: [{ role: "copy" }, { role: "selectAll" }] },
+      {
+        label: "Edit",
+        submenu: [
+          { role: "undo" },
+          { role: "redo" },
+          { role: "cut" },
+          { role: "copy" },
+          { role: "paste" },
+          { role: "selectAll" },
+        ],
+      },
       {
         label: "View",
         submenu: [
@@ -81,14 +92,20 @@ export async function openDesktopWindow(
       if (request.type === "reconnect" && controller.getState().distribution)
         void controller.connect(controller.getState().distribution as string);
       if (request.type === "select") await controller.select(request.conversationId);
-      return { ok: true, state: controller.getState() };
+      let data: unknown;
+      // Renderer sends this only after its draft queues settle. Destroy avoids a
+      // second beforeunload cycle while Chromium is still cancelling the first close.
+      if (request.type === "window.close") win.destroy();
+      else if (request.type === "clipboard.copy") clipboard.writeText(request.text);
+      else if (!["state", "discover", "connect", "reconnect", "select"].includes(request.type))
+        data = await controller.action(request);
+      return { ok: true, state: { ...controller.getState(), events: [] }, data };
     } catch (error) {
       return {
         ok: false,
         error:
-          error instanceof BridgeError
-            ? error.message
-            : "操作失败。请检查连接后重试；未发送 Agent 任务。",
+          error instanceof Error ? error.message : "操作结果未确认。请查询请求状态，勿重复发送。",
+        ...(error instanceof HttpError ? { status: error.status } : {}),
       };
     }
   });

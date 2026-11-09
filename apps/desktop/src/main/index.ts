@@ -13,7 +13,7 @@ else {
     window?.focus();
   });
   app.on("window-all-closed", () => app.quit());
-  app.on("before-quit", () => connection?.dispose());
+  app.on("will-quit", () => connection?.dispose());
   void app.whenReady().then(async () => {
     ({ window, connection } = await openDesktopWindow());
   });

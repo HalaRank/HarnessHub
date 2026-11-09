@@ -4,13 +4,17 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@harnesshub/shared": "workspace:*",
+    "lowlight": "3.3.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "@harnesshub/shared": "workspace:*",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
     "ws": "8.21.0",
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@types/hast": "3.0.5",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "electron": "45.2.3",

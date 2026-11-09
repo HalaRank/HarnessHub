@@ -1,0 +1,608 @@
+[
+  {
+    "id": "c6a46d76-5eac-4533-b356-f02f9fa211ab",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": null,
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 2,
+    "raw": null,
+    "kind": "user.message",
+    "payload": {
+      "text": "In this temporary test directory only, use native tools to print pwd and read sentinel.txt. Return its exact text and a small Markdown code block. Do not edit files, use network, or spawn subagents. Respect native permissions; do not work around an approval request.",
+      "requestId": "41d9c9c0-734e-46ed-840b-eb8512a2b178"
+    },
+    "origin": "client",
+    "purpose": "user",
+    "createdAt": 1794214123808
+  },
+  {
+    "id": "1c28ec8e-5641-4ed3-9563-f09f3e3a24bc",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 12,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "Warning: Model metadata for `gpt-6-astra` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.\n\n"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "Warning: Model metadata for `gpt-6-astra` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.\n\n"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214124713
+  },
+  {
+    "id": "c69b4eca-43ed-4d77-b480-6bc84e624be1",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 14,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": "I"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": "I"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130371
+  },
+  {
+    "id": "6c6a35dc-7636-4ff8-9ce1-b73d43c80df4",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 15,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": "’ll"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": "’ll"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130373
+  },
+  {
+    "id": "ccaccd8a-aae5-466f-adbc-75b8ad34b7b9",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 16,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " print"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " print"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130374
+  },
+  {
+    "id": "bb48a818-ef2d-4361-8c64-c8a8b2a8406e",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 17,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " the"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " the"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130375
+  },
+  {
+    "id": "507666c5-c0d2-48fb-b4bd-f21e6412d69c",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 18,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " working"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " working"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130376
+  },
+  {
+    "id": "a42916be-2509-447b-84d6-38d47b821772",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 19,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " directory"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " directory"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130377
+  },
+  {
+    "id": "f7dc43cb-6732-4966-a538-57c0530ed552",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 20,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " and"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " and"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130378
+  },
+  {
+    "id": "fa171c0d-e580-47da-9e70-e0e55ef6c58c",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 21,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " read"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " read"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130379
+  },
+  {
+    "id": "c7df77b1-beef-4891-82a9-4077ee49dfc8",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 22,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " "
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " "
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130380
+  },
+  {
+    "id": "26e71501-11ec-4f02-8156-2ca20550b400",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 23,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": "`sent"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": "`sent"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130381
+  },
+  {
+    "id": "33a397f2-8dff-43c6-a61f-1188e4e6135e",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 24,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": "inel"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": "inel"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130382
+  },
+  {
+    "id": "7aeb857c-553d-4202-b5e9-9706b95e3826",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 25,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": ".txt"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": ".txt"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130383
+  },
+  {
+    "id": "dc249f7a-e7a4-4167-abd8-4dd4a1a43c8b",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 26,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": "` without"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": "` without"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130384
+  },
+  {
+    "id": "7d0179b0-2bcd-4c23-9426-ebd3dff0919f",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 27,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": " changes"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": " changes"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130385
+  },
+  {
+    "id": "1b18744d-6b0f-4b46-9b19-ab8672a4864a",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 28,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+          "content": {
+            "type": "text",
+            "text": ".\n"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "messageId": "msg_0ad3974f1e0ad1f8016af188e8fd5c87d0a3c6664a4519c46c",
+      "content": {
+        "type": "text",
+        "text": ".\n"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214130386
+  },
+  {
+    "id": "adcd9161-5bd7-4626-bd9a-06002e8d4927",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 35,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf7e-dc2d-73a1-8f37-9d5cee01438e",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "unexpected status 502 Bad Gateway: {\"error\":{\"code\":\"invalid_prompt\",\"message\":\"该会话已在当前渠道触发上游安全限制，暂停该会话的后续请求，每次命中后续期 1 小时，请新建会话后重试。\",\"type\":\"invalid_request_error\"},\"type\":\"error\"}, url: https://ai-api-gateway.app.baizhi.cloud/api/openai/responses, request id: vzDkRTvIaNWYfyoQhjAQLwXMHoBGQtII\n\n"
+          }
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "unexpected status 502 Bad Gateway: {\"error\":{\"code\":\"invalid_prompt\",\"message\":\"该会话已在当前渠道触发上游安全限制，暂停该会话的后续请求，每次命中后续期 1 小时，请新建会话后重试。\",\"type\":\"invalid_request_error\"},\"type\":\"error\"}, url: https://ai-api-gateway.app.baizhi.cloud/api/openai/responses, request id: vzDkRTvIaNWYfyoQhjAQLwXMHoBGQtII\n\n"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214228992
+  },
+  {
+    "id": "1f94a9bc-60f1-4152-bdb1-2c4a379d7441",
+    "conversationId": "018cc596-a580-4fb0-aa35-cabb8beeb1e9",
+    "nativeSessionId": "952d4867-196f-4cde-a2b7-b5eb2e49f7da",
+    "turnId": "c1a69e8d-d467-4afd-8059-76ffb4e7796f",
+    "seq": 38,
+    "raw": null,
+    "kind": "runtime.turn_finished",
+    "payload": {
+      "state": "COMPLETED",
+      "stopReason": "end_turn"
+    },
+    "origin": "runtime",
+    "purpose": "user",
+    "createdAt": 1794214229017
+  }
+]

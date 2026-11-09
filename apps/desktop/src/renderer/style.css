@@ -27,10 +27,6 @@ body {
 button,
 input,
 select,
-textarea {
-  font: inherit;
-  color: inherit;
-}
 button {
   border: 0;
   background: transparent;
@@ -387,6 +383,8 @@ h2 {
   margin: 0 auto;
 }
 .composer textarea {
+  color: inherit;
+  font: inherit;
   resize: none;
   width: 100%;
   border: 0;
@@ -425,7 +423,7 @@ h2 {
   padding: 12px 8px;
   gap: 1px;
 }
-.work-panel > header button {
+.work-panel :where(header button) {
   font-size: 11px;
 }
 .work-panel button[aria-pressed="true"] {
@@ -500,4 +498,201 @@ summary {
   .composer-footer .subtle {
     display: none;
   }
+}
+
+/* Phase 2: native content, bounded history pages, fixed composer. */
+textarea:focus {
+  outline: none;
+}
+.composer-area {
+  max-height: 58vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.composer {
+  position: relative;
+}
+.composer textarea {
+  min-height: 52px;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+.composer-footer {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.composer-footer select {
+  max-width: 170px;
+  padding: 5px;
+  font-size: 12px;
+}
+.composer-footer label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.send {
+  margin-left: auto;
+  background: var(--selected);
+}
+.slash-menu {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.slash-menu button {
+  display: block;
+  text-align: left;
+  width: 100%;
+}
+.slash-menu small {
+  display: block;
+  color: var(--muted);
+}
+.slash-menu [aria-selected="true"] {
+  background: var(--selected);
+}
+.message-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.message-label button {
+  opacity: 0.5;
+  font-size: 10px;
+}
+.message:hover :where(.message-label button) {
+  opacity: 1;
+}
+.markdown {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.markdown h1 {
+  white-space: normal;
+  font-size: 23px;
+}
+.markdown h2 {
+  font-size: 20px;
+}
+.markdown p {
+  margin: 8px 0;
+}
+.markdown table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+.markdown th,
+.markdown td {
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+}
+.markdown blockquote {
+  border-left: 3px solid var(--line);
+  margin-left: 0;
+  padding-left: 16px;
+  color: var(--muted);
+}
+.markdown pre,
+.tool-body pre {
+  font-size: 12px;
+  white-space: pre;
+  overflow: auto;
+  max-height: 360px;
+}
+.markdown code {
+  font-family: Consolas, monospace;
+}
+.code-block {
+  background: var(--sidebar);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+.code-block > button {
+  float: right;
+  font-size: 11px;
+}
+.safe-link,
+.hljs-string {
+  color: #a4c8aa;
+}
+.hljs-keyword,
+.hljs-literal {
+  color: #c2acf0;
+}
+.hljs-title,
+.hljs-number {
+  color: #e4c29a;
+}
+.hljs-comment {
+  color: var(--muted);
+}
+.tool-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.tool-heading {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+  gap: 10px;
+}
+.tool-heading small {
+  color: var(--muted);
+}
+.tool-body {
+  padding: 12px;
+}
+.approval {
+  padding: 12px;
+  border: 1px solid #b89d64;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.approval pre {
+  max-height: 160px;
+  overflow: auto;
+}
+.approval button {
+  border: 1px solid var(--line);
+  margin: 4px;
+}
+.history-navigation {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  padding: 6px;
+  text-align: center;
+}
+dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 520px;
+}
+dialog::backdrop {
+  background: #0008;
+}
+dialog :where(label) {
+  display: block;
+  margin: 16px 0;
+}
+dialog :where(input) {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+}
+dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }

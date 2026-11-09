@@ -1,7 +1,11 @@
-import type { Conversation, Project } from "@harnesshub/shared";
+import type { Conversation, ConversationEvent, Project } from "@harnesshub/shared";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DesktopApi, DesktopRequest, DesktopState, Distribution } from "../contracts";
-import { messages } from "./history";
+import { Composer } from "./Composer";
+import { ConversationDialog, type ConversationDialogValue } from "./ConversationDialog";
+import { call, DesktopDraft } from "./drafts";
+import { DesktopTranscript } from "./history";
+import { MessageView } from "./Message";
 
 declare global {
   interface Window {
@@ -49,17 +53,46 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [archived, setArchived] = useState(false);
+  const drafts = useRef(new Map<string, DesktopDraft>());
+  const expanded = useRef(new Map<string, boolean>());
+  const [dialog, setDialog] = useState<ConversationDialogValue | null>(null);
+  const [historyPage, setHistoryPage] = useState<number | null>(null);
   const [debugPage, setDebugPage] = useState(0);
   const history = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
   const accept = useCallback(
     (value: DesktopState) =>
-      setState((previous) => (value.revision >= previous.revision ? value : previous)),
+      setState((previous) => {
+        if (value.revision < previous.revision) return previous;
+        const reset =
+          value.distribution !== previous.distribution ||
+          value.conversationId !== previous.conversationId ||
+          value.historyVersion !== previous.historyVersion;
+        const events = reset ? [] : previous.events;
+        let cursor = events.at(-1)?.seq ?? 0;
+        const batch = value.events.filter((event) => {
+          if (event.seq <= cursor) return false;
+          if (event.seq !== cursor + 1) return false; // Gap is repaired through typed history IPC below.
+          cursor = event.seq;
+          return true;
+        });
+        return { ...value, events: batch.length ? [...events, ...batch] : events };
+      }),
     [],
   );
+  const flushDrafts = async () => {
+    await Promise.all([...drafts.current.values()].map((draft) => draft.flush()));
+  };
   const request = async (input: DesktopRequest) => {
     setError("");
     try {
+      if (["select", "connect"].includes(input.type)) {
+        if (input.type === "connect" && [...drafts.current.values()].some((draft) => draft.busy))
+          throw new Error("等待当前提交确认后再切换发行版。");
+        await flushDrafts();
+        if (input.type === "connect" && input.distribution !== state.distribution)
+          drafts.current.clear();
+      }
       const reply = await api.request(input);
       if (!reply.ok) {
         setError(reply.error);
@@ -67,8 +100,8 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
       }
       accept(reply.state);
       if (reply.distributions) setDistros(reply.distributions);
-    } catch {
-      setError("Desktop 连接服务不可用，请重新打开窗口。");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Desktop 连接服务不可用，请重新打开窗口。");
     }
   };
   useEffect(() => {
@@ -108,15 +141,100 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
     if (state.distribution) setChoice(state.distribution);
   }, [state.distribution]);
   const current = state.snapshot?.conversations.find((c) => c.id === state.conversationId);
-  const rows = useMemo(() => messages(state.events), [state.events]);
+  const projection = useMemo(
+    () =>
+      new DesktopTranscript(
+        `${state.distribution}:${state.conversationId}:${state.historyVersion}`,
+      ),
+    [state.conversationId, state.distribution, state.historyVersion],
+  );
+  const rows = useMemo(() => {
+    projection.append(state.events.slice(projection.cursor));
+    return projection.rows.slice();
+  }, [state.events, projection]);
+  const visibleStart = historyPage ?? Math.max(0, rows.length - 100);
+  const visibleRows = rows.slice(visibleStart, visibleStart + 100);
+  useEffect(() => {
+    if (state.status === "connected" && state.snapshot) {
+      const ids = new Set(state.snapshot.conversations.map((c) => c.id));
+      for (const [key, editor] of drafts.current)
+        if (!ids.has(editor.conversationId)) drafts.current.delete(key);
+    }
+  }, [state.status, state.snapshot]);
+  const draftKey = `${state.distribution}:${current?.id}`;
+  let draft = drafts.current.get(draftKey);
+  if (current && !draft) {
+    draft = new DesktopDraft(api, current.id);
+    drafts.current.set(draftKey, draft);
+  }
+  useEffect(() => {
+    const id = state.conversationId;
+    let active = true;
+    const after = state.events.at(-1)?.seq ?? 0;
+    if (!id || state.status !== "connected" || after >= (state.eventCursor ?? 0)) return;
+    const version = state.historyVersion;
+    void call<{ events: ConversationEvent[]; cursor: number }>(api, {
+      type: "history",
+      conversationId: id,
+      after,
+    })
+      .then((page) => {
+        if (!active) return;
+        let seq = after;
+        for (const event of page.events) {
+          if (event.conversationId !== id || event.seq !== ++seq) throw new Error("历史事件不连续");
+        }
+        setState((previous) => {
+          if (
+            previous.conversationId !== id ||
+            previous.historyVersion !== version ||
+            (previous.events.at(-1)?.seq ?? 0) !== after
+          )
+            return previous;
+          return { ...previous, events: [...previous.events, ...page.events] };
+        });
+      })
+      .catch((e) => {
+        if (active) setError(String(e));
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    api,
+    state.conversationId,
+    state.historyVersion,
+    state.status,
+    state.eventCursor,
+    state.events,
+  ]);
+  useEffect(() => {
+    let closing = false;
+    const handler = (event: BeforeUnloadEvent) => {
+      if (closing) return;
+      event.preventDefault();
+      event.returnValue = "";
+      void Promise.all([...drafts.current.values()].map((editor) => editor.flush()))
+        .then(() => {
+          if ([...drafts.current.values()].some((editor) => editor.busy))
+            throw new Error("正在提交消息，请等待请求确认再关闭。");
+          closing = true;
+          return api.request({ type: "window.close" });
+        })
+        .catch((e) => setError(`关闭前草稿未保存：${String(e)}`));
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [api]);
   useEffect(() => {
     follow.current = state.conversationId !== null;
     setDebugPage(0);
+    setHistoryPage(null);
   }, [state.conversationId]);
   useEffect(() => {
-    if (rows.length && follow.current && history.current)
+    if (rows.length && follow.current && historyPage === null && history.current)
       history.current.scrollTop = history.current.scrollHeight;
-  }, [rows]);
+  }, [rows, historyPage]);
   const conversations =
     state.snapshot?.conversations.filter(
       (c) =>
@@ -133,7 +251,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const group = (project: Project | null) => {
     const id = project?.id ?? "standalone";
     const items = conversations.filter((c) => c.projectId === (project?.id ?? null));
-    if (!project && !items.length) return null;
+
     if (query && !items.length) return null;
     return (
       <section className="project" key={id}>
@@ -152,8 +270,15 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
           <button
             type="button"
             className="icon"
-            disabled
-            title="新建会话 · Desktop Phase 2"
+            disabled={state.status !== "connected"}
+            onClick={() =>
+              setDialog({
+                kind: "create",
+                ...(project ? { projectId: project.id } : {}),
+                workspace: current?.workspacePath,
+              })
+            }
+            title="新建会话"
             aria-label="新建会话"
           >
             ＋
@@ -205,6 +330,16 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
           重新连接
         </button>
       </header>
+      {dialog && (
+        <ConversationDialog
+          value={dialog}
+          api={api}
+          close={() => setDialog(null)}
+          created={(id) => {
+            void request({ type: "select", conversationId: id });
+          }}
+        />
+      )}
       <div className={`workspace ${sidebar ? "" : "sidebar-hidden"} ${panel ? "panel-open" : ""}`}>
         {sidebar && (
           <>
@@ -347,6 +482,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
             onScroll={(event) => {
               const element = event.currentTarget;
               follow.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
+              if (!follow.current) setHistoryPage((value) => value ?? visibleStart);
             }}
           >
             {!current ? (
@@ -369,41 +505,60 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                 {!state.historyLoading && !rows.length && (
                   <div className="empty-chat">
                     <h2>还没有可显示的消息</h2>
-                    <p>此阶段提供只读预览，可在 WSL TUI 中继续对话。</p>
+                    <p>选择 Harness，发送第一条消息开始工作。</p>
                   </div>
                 )}
-                {rows.map((row) => (
-                  <article
-                    key={row.id}
-                    className={`message ${row.role === "You" ? "user-message" : "agent-message"} ${row.kind}`}
+                {visibleStart > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      follow.current = false;
+                      setHistoryPage(Math.max(0, visibleStart - 100));
+                      if (history.current) history.current.scrollTop = 0;
+                    }}
                   >
-                    <div className="message-label">{row.role}</div>
-                    <div className="message-body">{row.text}</div>
-                  </article>
+                    查看较早消息（{visibleStart}）
+                  </button>
+                )}
+                {visibleRows.map((row) => (
+                  <MessageView key={row.id} row={row} api={api} expanded={expanded.current} />
                 ))}
+                {historyPage !== null && (
+                  <div className="history-navigation">
+                    {visibleStart + 100 < rows.length && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHistoryPage(visibleStart + 100);
+                          if (history.current) history.current.scrollTop = 0;
+                        }}
+                      >
+                        查看较新消息
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        follow.current = true;
+                        setHistoryPage(null);
+                        if (history.current)
+                          history.current.scrollTop = history.current.scrollHeight;
+                      }}
+                    >
+                      回到最新消息
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
-          <div className="composer-area">
-            <div className="composer">
-              <textarea
-                aria-label="消息输入（Phase 1 只读）"
-                placeholder="Desktop Phase 1 · 只读预览，请在 WSL TUI 中继续对话"
-                disabled
-                rows={2}
-              />
-              <div className="composer-footer">
-                <span>
-                  {current?.selectedHarnessId ?? "Harness"}
-                  <span className="subtle"> · 模型与推理选项将在交互阶段接入</span>
-                </span>
-                <button type="button" disabled aria-label="发送（Phase 2）">
-                  ↑
-                </button>
-              </div>
+          {current && draft ? (
+            <Composer key={draftKey} api={api} state={state} conversation={current} draft={draft} />
+          ) : (
+            <div className="composer-area">
+              <p className="composer-note">选择或新建会话开始聊天 · 关闭窗口不会停止后台任务</p>
             </div>
-            <p className="composer-note">关闭窗口不会停止后台任务</p>
-          </div>
+          )}
         </main>
         {panel && (
           <aside className="work-panel" aria-label="工作面板">
@@ -415,7 +570,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               >
                 Details
               </button>
-              <button type="button" disabled title="Desktop Phase 2">
+              <button type="button" disabled title="Desktop Phase 3">
                 Changes
               </button>
               <button
@@ -448,15 +603,38 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                     <dt>执行状态</dt>
                     <dd>{current?.runtimeStatus ?? "—"}</dd>
                   </dl>
-                  <p className="subtle">Changes、Diff、文件详情和 Handoff 报告将在后续阶段接入。</p>
+                  <p className="subtle">Changes / Diff 完整工作面板将在 Desktop Phase 3 接入。</p>
                   <details>
                     <summary>会话管理</summary>
                     <div className="management-actions">
-                      {["重命名", "归档", "恢复归档", "删除"].map((action) => (
-                        <button type="button" key={action} disabled>
-                          {action} · Phase 2
-                        </button>
-                      ))}
+                      {current && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setDialog({ kind: "rename", conversation: current })}
+                          >
+                            重命名
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void request({
+                                type: "conversation.patch",
+                                conversationId: current.id,
+                                patch: { archived: !current.archivedAt },
+                              })
+                            }
+                          >
+                            {current.archivedAt ? "恢复归档" : "归档"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDialog({ kind: "delete", conversation: current })}
+                          >
+                            删除
+                          </button>
+                        </>
+                      )}
                     </div>
                   </details>
                 </>

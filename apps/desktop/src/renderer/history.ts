@@ -1,18 +1,59 @@
 import type { ConversationEvent } from "@harnesshub/shared";
-import { object, projectEvent } from "@harnesshub/shared/event-projection";
+import { object, pretty, projectEvent } from "@harnesshub/shared/event-projection";
 export type Message = {
   id: string;
   role: string;
   text: string;
   kind: "text" | "activity" | "notice";
   turn: string | null;
+  session?: string | null;
+  tool?: Record<string, unknown>;
+  waiting?: boolean;
+  handoff?: { report: string; incomplete: boolean; source: string; target: string };
 };
-export function messages(events: ConversationEvent[]): Message[] {
-  const rows: Message[] = [];
-  for (const event of events) {
+
+// O(new events), stable row identities, O(1) native tool lookup. Raw events stay in SQLite.
+export class DesktopTranscript {
+  constructor(readonly identity = "") {}
+  readonly rows: Message[] = [];
+  cursor = 0;
+  private tools = new Map<string, number>();
+  private handoffs = new Map<string, number>();
+  private approvals = new Map<string, string>();
+  append(events: ConversationEvent[]) {
+    for (const event of events) {
+      if (event.seq <= this.cursor) continue;
+      if (event.seq !== this.cursor + 1) throw new Error("聊天事件序号不连续");
+      this.cursor = event.seq;
+      this.add(event);
+    }
+  }
+  private add(event: ConversationEvent) {
     const projection = projectEvent(event);
-    if (projection.category === "INTERNAL_DIAGNOSTIC") continue;
     const p = object(event.payload);
+    if (event.kind.startsWith("approval.")) {
+      const request = object(p.request);
+      const tool = object(request.toolCall);
+      if (event.kind === "approval.requested") {
+        const key = `${event.nativeSessionId}:${event.turnId}:${String(tool.toolCallId)}`;
+        this.approvals.set(String(p.id), key);
+        this.mergeTool(event, tool, true);
+      } else {
+        const key = this.approvals.get(String(p.approvalId));
+        const index = key ? this.tools.get(key) : undefined;
+        this.approvals.delete(String(p.approvalId));
+        if (index !== undefined && this.rows[index])
+          this.rows[index] = {
+            ...this.rows[index],
+            waiting: [...this.approvals.values()].includes(key ?? ""),
+          };
+      }
+    }
+    if (projection.category === "INTERNAL_DIAGNOSTIC") return;
+    if (["tool_call", "tool_call_update"].includes(event.kind)) {
+      this.mergeTool(event, p);
+      return;
+    }
     const chunk = ["agent_message_chunk", "agent_thought_chunk", "user_message_chunk"].includes(
       event.kind,
     );
@@ -27,14 +68,22 @@ export function messages(events: ConversationEvent[]): Message[] {
             : event.kind === "agent_message_chunk"
               ? "Agent"
               : (projection.label ?? "Notice");
-      const tail = rows.at(-1);
-      if (chunk && tail?.role === role && tail.turn === event.turnId) tail.text += text;
+      const tail = this.rows.at(-1);
+      if (
+        chunk &&
+        tail?.role === role &&
+        tail.turn === event.turnId &&
+        tail.session === event.nativeSessionId &&
+        tail.text.length < 16000
+      )
+        this.rows[this.rows.length - 1] = { ...tail, text: tail.text + text };
       else
-        rows.push({
+        this.rows.push({
           id: event.id,
           role,
           text,
           turn: event.turnId,
+          session: event.nativeSessionId,
           kind:
             projection.category === "CHAT_CONTENT"
               ? "text"
@@ -42,36 +91,67 @@ export function messages(events: ConversationEvent[]): Message[] {
                 ? "activity"
                 : "notice",
         });
-    } else if (["tool_call", "tool_call_update"].includes(event.kind)) {
-      const id = `tool:${event.nativeSessionId}:${String(p.toolCallId)}`;
-      let row = rows.find((row) => row.id === id);
-      if (!row) {
-        row = { id, role: "Tool", text: "", kind: "activity", turn: event.turnId };
-        rows.push(row);
-      }
-      if (typeof p.title === "string") row.role = p.title;
-      if (typeof p.status === "string") row.text = p.status;
     } else if (event.kind === "plan") {
-      const text = Array.isArray(p.entries)
-        ? p.entries
-            .map((entry) => {
-              const e = object(entry);
-              return typeof e.content === "string" ? e.content : "";
-            })
-            .filter(Boolean)
-            .join("\n")
-        : "";
-      if (text)
-        rows.push({ id: event.id, role: "Plan", text, kind: "activity", turn: event.turnId });
-    } else if (event.kind === "handoff.record") {
-      rows.push({
+      this.rows.push({
         id: event.id,
-        role: "Handoff",
-        text: typeof p.status === "string" ? p.status : "交接记录 · 原文见 Debug",
-        kind: "notice",
+        role: "Plan",
+        text: Array.isArray(p.entries)
+          ? p.entries
+              .map((entry) => {
+                const e = object(entry);
+                return `${String(e.status ?? "")} · ${String(e.content ?? "")}`;
+              })
+              .join("\n")
+          : pretty(p),
+        kind: "activity",
         turn: event.turnId,
       });
+    } else if (event.kind === "handoff.record") {
+      const key = String(p.id ?? event.id);
+      const index = this.handoffs.get(key) ?? this.rows.length;
+      this.rows[index] = {
+        id: `handoff:${key}`,
+        role: "Handoff",
+        text: `${String(p.status)}${p.error ? ` · ${String(p.error)}` : ""}`,
+        kind: "notice",
+        turn: event.turnId,
+        handoff: {
+          report: typeof p.reportText === "string" ? p.reportText : "",
+          incomplete: p.degraded === true || p.status === "FAILED",
+          source: String(p.sourceHarness ?? ""),
+          target: String(p.targetHarness ?? ""),
+        },
+      };
+      this.handoffs.set(key, index);
     }
   }
-  return rows;
+  private mergeTool(event: ConversationEvent, patch: Record<string, unknown>, waiting?: boolean) {
+    if (typeof patch.toolCallId !== "string") return;
+    const key = `${event.nativeSessionId}:${event.turnId}:${patch.toolCallId}`;
+    const index = this.tools.get(key) ?? this.rows.length;
+    const previous = this.rows[index];
+    const tool = { ...previous?.tool, ...patch };
+    const meta = object(patch._meta);
+    const delta = object(meta.terminal_output_delta);
+    if (typeof delta.data === "string" || typeof delta.output === "string")
+      tool.terminalOutput =
+        String(previous?.tool?.terminalOutput ?? "") + String(delta.data ?? delta.output);
+    this.rows[index] = {
+      id: `tool:${key}`,
+      role: String(tool.title ?? patch.toolCallId),
+      text: String(tool.status ?? "pending"),
+      kind: "activity",
+      turn: event.turnId,
+      session: event.nativeSessionId,
+      tool,
+      waiting: waiting ?? previous?.waiting ?? false,
+    };
+    this.tools.set(key, index);
+  }
+}
+export function messages(events: ConversationEvent[]): Message[] {
+  // Compatibility helper for fixtures which omit diagnostic sequence numbers.
+  const transcript = new DesktopTranscript();
+  transcript.append(events);
+  return transcript.rows;
 }

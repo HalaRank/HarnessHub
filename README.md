@@ -138,6 +138,6 @@ Worker 继承 Daemon 启动时的原生进程环境，并使用 Conversation 工
 
 Conversation 导出通过 `hhu agent export <id> chat|debug [新文件]` 或 `/v1/conversations/:id/export?format=...` 使用。`chat` 提供用户消息、Agent 内容、工具、公开思考/计划和 Handoff 的 Markdown；`debug` 另含原始 ACP、序号、Session、Turn、审批和用途。已知结构化凭据字段脱敏，不注入 Daemon Token 或 Profile 环境值；原生文本/源码仍可能含秘密，导出和备份需私密保存。`doctor` 默认不握手；`hhu doctor --acp <conversationId> <harnessId>` / `hhu agent session ...` 才显式执行握手。
 
-## Windows Desktop（Phase 1）
+## Windows Desktop（Phase 2）
 
-新增 Electron + React 原生窗口，Agent/Daemon/SQLite 继续在 WSL2 中运行，保留 Linux TUI。当前为真实项目树与只读会话预览；Windows 安装、启动和验证见 [Desktop 指南](docs/DESKTOP.md)，阶段范围与证据见 [验收记录](docs/acceptance/desktop-phase-1.md)。
+新增 Electron + React 原生窗口，Agent/Daemon/SQLite 继续在 WSL2 中运行，保留 Linux TUI。已接入正式聊天、流式 Markdown、工具卡、原生审批/取消、草稿 CAS、ACP 模型/Slash Commands 和会话管理。Windows 安装、启动和验证见 [Desktop 指南](docs/DESKTOP.md)，阶段范围、真实 Harness 限制与测试结果见 [Phase 2 验收记录](docs/acceptance/desktop-phase-2.md)。

@@ -1,6 +1,6 @@
 # Desktop 架构决策 D1：Windows 客户端 + WSL2 执行环境
 
-状态：用户明确新增的产品方向；仅 Desktop Phase 1。原 Linux/WSL TUI 六阶段设计及验收记录保留，不能用本决策追认历史未验证项。
+状态：用户明确新增的产品方向；Phase 1 为下文历史基线，Desktop Phase 2 扩展见文末。原 Linux/WSL TUI 六阶段设计及验收记录保留，不能用本决策追认历史未验证项。
 
 ## 范围变更
 
@@ -72,3 +72,18 @@ electron-builder 将 dependency-free staging 放到仓库外，避免自动向�
 - [WSL networking](https://learn.microsoft.com/en-us/windows/wsl/networking)：Windows localhost 访问 WSL 网络服务及网络模式限制。
 
 真实验证结果、已知限制及 Windows 操作步骤见 `acceptance/desktop-phase-1.md`、`DESKTOP.md`；本文件不等同验收通过。
+
+
+## Desktop Phase 2：正式聊天（2026-11-09）
+
+本阶段经用户授权。继续共用 WSL Daemon、SQLite、ACP Runtime；没有 Windows Agent 执行器、新业务路由、数据库迁移或自动审批。
+
+Main 增加严格 schema 的固定 Action：草稿读取/CAS 保存、保留 requestId 的 Turn 提交、请求查询、原生审批/取消、Harness 选择、显式 Session 准备、ACP settings、Handoff 原有 action、Conversation CRUD、固定事件分页、复制文本和草稿保存后的窗口关闭。仍核验 webContents + mainFrame + 精确文档 URL；不暴露任意 REST/URL/文件/命令/Token。删除只映射已有 confirmed=true Conversation 删除路径。
+
+提交由 Main 先 CAS 持久化 pendingSubmission，再 POST turns；Runtime 计算 requestHash、去重并原子消费匹配草稿。未知结果保留本地和/或 SQLite requestId，仅查询不重发。Renderer 的独立纯草稿队列不依赖 TUI 生命周期；冲突保留本地文本，用户复制或显式重新载入服务器版本。正常关闭先 flush；失败留窗提示，关闭本身不取消 Agent。
+
+Main 按连续 seq、每页 200 条读取，40ms 合并失效通知，IPC events 仅包含新批次；Main 最多保留 200 条检查尾部，完整源仍在 SQLite。Renderer 缺口走固定 history Action 补拉，按增量投影合并文本/工具，工具键为 NativeSession + Turn + toolCallId（防原生 ID 跨 Turn 重用）。消息按 100 条分页挂载，手动阅读固定当前页，不强制跟随；用户展开状态独立于工具更新。Renderer 仍保留已读源事件和投影，超大历史总内存尚未完全有界。
+
+Markdown 使用锁定 react-markdown + remark-gfm，不启用原始 HTML；lowlight 只转换 React span/text。图片不加载，链接仅展示可复制地址，禁外部导航保持不变。工具参数/输出/Diff 保留原生内容，诊断分类复用 shared/event-projection。
+
+Harness 选择不启动 Agent；显式“连接 Agent 获取选项”只准备原生 session；跨 Harness 首条消息仍交给原有 Handoff。仅当前 READY NativeSession 的 ACP commands/config/modes 可操作，未发布能力准确说明。Phase 3 完整 Changes/Diff/Handoff 工作面板与 Phase 4 安装发布未实施。

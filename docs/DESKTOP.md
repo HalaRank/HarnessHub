@@ -1,6 +1,6 @@
-# HarnessHub Windows Desktop Phase 1
+# HarnessHub Windows Desktop
 
-支持 Windows x64 + WSL2。Desktop 是原生 Electron 窗口；Agent、Harness 安装和 SQLite 都在 WSL 中。当前只读会话预览；发送、审批、会话管理、Diff 与正式 Handoff UI 留给 Phase 2。
+支持 Windows x64 + WSL2。Desktop 是原生 Electron 窗口；Agent、Harness 安装和 SQLite 都在 WSL 中。Desktop Phase 2 已接入正式聊天、草稿、原生审批/取消、模型/命令和会话管理；完整 Changes/Diff 与 Handoff 工作面板留给 Phase 3。
 
 ## 在 WSL 中准备一次
 
@@ -52,9 +52,9 @@ bun run desktop:package
 
 - 左栏鼠标选择 Project/Conversation；项目可折叠、搜索、查看归档；侧栏边缘可拖动或聚焦后用左右键调整。
 - 顶部显示连接状态，支持重新连接。右上按钮打开 Details / Debug；Changes 入口尚未实现。
-- 中间消息保持原文，Markdown 目前以文本显示。底部输入框明确禁用；不要把 UI 骨架当作已完成聊天。
+- 中间安全渲染原生 Markdown 与工具卡；底部输入框可发送消息，Enter 发送、Shift+Enter 换行。
 - 菜单 View 支持放大、缩小、重置；默认右栏收起，窄窗打开右栏时为浮层。
-- 等待审批的会话可在 TUI 中按真实 Agent 选项处理。Desktop 不会批准或重发任务。
+- 等待审批时在 Desktop 或 TUI 主动选择真实 Agent 选项；后台只接受一次决定，没有自动审批或未知请求自动重发。
 - 关闭 App 只断开 UI，Daemon 与 Worker 继续运行。关闭整个 WSL/重启 Windows 则不保证后台存活。
 
 | 状态 | 处理 |
@@ -85,3 +85,16 @@ bun scripts/verify-desktop-windows.ts
 最后一条创建临时 WSL HOME/XDG 与 Windows userData，使用 Mock ACP，不访问默认项目库，不终止用户已有 Daemon。保存 screenshot/evidence，最后正常关闭其测试 Daemon。
 
 手动验收请使用同一 WSL Daemon 同时打开 Desktop 和 TUI：创建/归档/重命名测试会话，检查 Desktop 列表变化；TUI 发送无害消息，检查 Desktop 历史；在 TUI 保持运行任务时关闭再打开 Desktop，检查任务与历史；安全停止并重启空闲测试 Daemon，确认重新发现端口/Token 后补拉无重复；检查 100%/125%/150% DPI、中文、拖动侧栏、窄屏、缩放及 Markdown 原文。具体已测/未测边界见验收记录。
+
+
+## Desktop Phase 2 聊天
+
+连接 WSL 后，点击项目或“独立会话”旁的 `＋` 新建；独立会话显式填写现有 Linux 绝对目录。Details → 会话管理支持重命名、归档/恢复和确认删除；删除不删除源码、分支、Worktree。已注册自定义 ACP Profile 与四个内置 Harness 共用同一下拉列表；注册 Profile 仍使用既有 WSL TUI/CLI 能力。
+
+输入 Enter 发送、Shift+Enter 换行，Ctrl+C/V/A/Z/Y 使用 Windows 编辑行为。输入法组合确认不发送。草稿实时 CAS 保存；切换/正常关闭等待保存，冲突保留本地文字，可复制后显式载入服务器草稿。断网/提交结果未知时先点“查询请求状态”，不能重复发送未确认请求。UNCERTAIN 需检查历史与工作区，不能把它当作安全取消。
+
+需要提前查看模型和 Slash Commands 时点击“连接 Agent 获取选项”；不调用模型。只有 ACP 实际发布的选项和命令可用，`/` 候选支持方向键、鼠标、Tab/Enter 补全，补全后再次发送才执行。选择其他 Harness 只保存目标，首条消息才触发交接；失败提供报告/降级材料和原有显式操作。
+
+工具成功默认折叠，运行/失败/审批默认展开，手动选择优先；展开可看完整原生参数、输出和工具 Diff 并复制。链接作为文本展示，远程图片和 HTML 不执行。历史每页挂载 100 条，使用“查看较早/较新消息”和“回到最新消息”；滚动阅读时暂停自动跟随。
+
+专项验证：`bun run desktop:test`；Windows + WSL Mock/真实 TUI：`bun scripts/verify-desktop-windows.ts`；明确执行真实 Codex/Grok：`HHU_DESKTOP_REAL=1 bun scripts/verify-desktop-windows.ts`。真实验证使用临时应用数据库与项目，继承原生 Harness 的 HOME/PATH，不读取/修改原生配置。遇真实审批不自动选择，记录并取消测试任务。证据和未验证项见 [Phase 2 验收](acceptance/desktop-phase-2.md)。

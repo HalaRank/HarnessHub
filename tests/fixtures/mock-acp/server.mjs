@@ -164,6 +164,25 @@ const app = new AgentApp()
       if (process.env.HHU_MOCK_TARGET_REJECT) throw new Error("target rejection");
       message = message.split("[New user message]\n")[1];
     }
+    if (message === "desktop-many-tools") {
+      for (let i = 0; i < 600; i++) {
+        await update(client, {
+          sessionUpdate: "tool_call",
+          toolCallId: `desktop-${i}`,
+          title: `Native tool ${i}`,
+          status: "in_progress",
+          rawInput: { index: i },
+        });
+        await update(client, {
+          sessionUpdate: "tool_call_update",
+          toolCallId: `desktop-${i}`,
+          status: "completed",
+          rawOutput: `Complete output ${i}`,
+        });
+      }
+      await text(client, "Desktop tools complete");
+      return { stopReason: "end_turn" };
+    }
     if (message === "long-history" || message === "timed") {
       const count = message === "long-history" ? 2505 : 35;
       for (let i = 0; i < count; i++) {

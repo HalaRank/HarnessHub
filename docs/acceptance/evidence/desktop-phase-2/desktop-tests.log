@@ -1,0 +1,66 @@
+$ bun scripts/desktop-test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+$ bun run --cwd apps/desktop build
+$ bun ../../scripts/desktop.ts build
+Built Windows Desktop assets: /home/clj/HarnessHub/HarnessHub/dist/desktop/app
+bun test v1.4.4 (38afee6c8)
+
+tests/bridge.test.ts:
+(pass) WSL discovery and bootstrap boundary > UTF-16LE/BOM/UTF-8 and localized state, names containing spaces [0.52ms]
+(pass) WSL discovery and bootstrap boundary > missing WSL and empty discovery give actionable errors [0.37ms]
+(pass) WSL discovery and bootstrap boundary > WSL1 and unknown names cannot execute bootstrap [0.57ms]
+(pass) WSL discovery and bootstrap boundary > known distro and untrusted-looking names are argv, not shell interpolation [3.26ms]
+(pass) WSL discovery and bootstrap boundary > missing installation, incompatible and broken startup do not expose stdout/stderr [0.74ms]
+(pass) WSL discovery and bootstrap boundary > dynamic ports, identity schema, protocol and version validated [1.04ms]
+(pass) WSL discovery and bootstrap boundary > fixed bootstrap finds Linux HOME with no interactive shell or Windows PATH [8.96ms]
+(pass) WSL discovery and bootstrap boundary > installed launcher restores PATH/XDG, quoted absolute executable/release from foreign cwd [3.28ms]
+(pass) Electron boundary > IPC exact allowlist rejects arbitrary HTTP, shell, file paths and extra fields [2.98ms]
+(pass) Electron boundary > only the exact window main frame and document can invoke IPC [0.08ms]
+(pass) Electron boundary > local settings persist only selected distro and reject malformed data [1.04ms]
+(pass) Electron boundary > renderer bundle excludes Node/native modules and preload exposes no token [2.45ms]
+
+tests/chat.test.tsx:
+(pass) Enter sends, Shift+Enter preserves newline, IME/229 and composition confirmation never send [0.13ms]
+(pass) independent drafts persist across editors and rapid conversation switches [0.56ms]
+(pass) two clients obey CAS; failed save and send preserve local text without silent overwrite [0.36ms]
+(pass) a competing reserved draft never replaces different unsaved local text [0.21ms]
+(pass) double send dispatches one turn and clears only an accepted draft [0.16ms]
+(pass) lost ACK keeps request ID locked; explicit lookup recovers without another prompt [0.30ms]
+(pass) reopening a durable unconfirmed request never automatically sends or releases it on 404 [0.09ms]
+(pass) 10k events append incrementally, merge native tools by session, preserve old rows and reject gaps [20.47ms]
+(pass) successful tools collapse, failed/waiting expand, manual preference wins [10.85ms]
+(pass) Markdown supports GFM/code highlights while HTML, event handlers and unsafe URLs stay inert [48.94ms]
+(pass) typed write actions reject arbitrary methods, paths, native configs, unconfirmed deletion [4.27ms]
+(pass) handoff records merge by ID and keep the expandable native report without internal prompt [2.38ms]
+
+tests/history.test.tsx:
+(pass) basic history preserves user/Agent text and concatenates chunks without diagnostics [0.55ms]
+(pass) native tool titles and status retained, protocol body stays out of chat [0.10ms]
+(pass) React renders safe layout with navigation, composer and empty states [2.78ms]
+
+ 27 pass
+ 0 fail
+ 124 expect() calls
+Ran 27 tests across 3 files. [302.00ms]
+✔ Bridge starts absent Daemon, concurrent/repeated starts reuse existing pid and token (1440.965422ms)
+✔ Bridge incompatible client/version refuses without signalling or replacing Daemon (204.048873ms)
+✔ Desktop and TUI clients share real SQLite/WS history and exact Linux workspace (598.51303ms)
+✔ Daemon restart rediscovers token/port/identity and catches up by seq without duplicate turns (1484.670988ms)
+✔ rapid selection cannot mix histories or persist stale preference (124.686772ms)
+✔ closing Desktop during active turn leaves Daemon/Worker alive; reopening restores selection (463.996604ms)
+✔ forwarded wrong identity/version is rejected without lifecycle writes or renderer token (15.570577ms)
+✔ WSL Bridge refuses a live incompatible Daemon without stop, spawn, or metadata replacement (453.449769ms)
+✔ Desktop Phase 2 typed actions: draft CAS, duplicate submit, native settings/slash, approvals, cancellation and management (1025.65665ms)
+✔ Desktop HTTP ACK loss retains one SQLite request and hash; reopening and lookup never replay (1479.317452ms)
+✔ large streaming history uses bounded Main memory and incremental IPC, paginated replay stays continuous (3137.474515ms)
+✔ Desktop Harness selection is inert; failed Handoff is visible; stale native command is refused (655.495312ms)
+Desktop integration evidence: /tmp/hhu-desktop-integration-KQQY7J
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11705.131757

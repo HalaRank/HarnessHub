@@ -1,0 +1,3895 @@
+[
+  {
+    "id": "473e5a75-05ae-4594-983d-c3041cf1ac26",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": null,
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 2,
+    "raw": null,
+    "kind": "user.message",
+    "payload": {
+      "text": "In this temporary test directory only, use native tools to print pwd and read sentinel.txt. Return its exact text and a small Markdown code block. Do not edit files, use network, or spawn subagents. Respect native permissions; do not work around an approval request.",
+      "requestId": "f7585632-f152-4862-a721-0d0aab0de8d5"
+    },
+    "origin": "client",
+    "purpose": "user",
+    "createdAt": 1794214229853
+  },
+  {
+    "id": "d0b01679-0d5e-428a-9670-668414d6b266",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 35,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "I'll"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-8",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 5
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "I'll"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235407
+  },
+  {
+    "id": "75fed201-7d9b-4017-b094-92a8bfe941a6",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 36,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " print"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-9",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 6
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " print"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235408
+  },
+  {
+    "id": "a2a3d0aa-d883-45d0-a3ad-569a051089a8",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 37,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " the"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-10",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 7
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " the"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235409
+  },
+  {
+    "id": "8f71e097-4c19-4f4a-9926-c7d461242876",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 38,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " working"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-11",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 8
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " working"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235410
+  },
+  {
+    "id": "c452d3e0-64b4-43cf-89fc-0ad7dc0d7486",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 39,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " directory"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-12",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 9
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " directory"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235410
+  },
+  {
+    "id": "64fc6464-f02f-4d63-82f9-11707aeb75b6",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 40,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " and"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-13",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 10
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " and"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235411
+  },
+  {
+    "id": "4d812cec-ba53-4e52-bb11-3b601fd0396e",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 41,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " read"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-14",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 11
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " read"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235412
+  },
+  {
+    "id": "afadbf78-59d6-496f-97b1-71b3d616233f",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 42,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " `"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-15",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 12
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " `"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235413
+  },
+  {
+    "id": "eb017e49-a91f-4ef5-ab9f-57af195b5fd8",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 43,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "sentinel"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-16",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 13
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "sentinel"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235414
+  },
+  {
+    "id": "0bc05c79-7042-4e73-aa08-fe7ee583daa0",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 44,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": ".txt"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-17",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 14
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": ".txt"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235415
+  },
+  {
+    "id": "d9abb686-b69c-420e-9e23-d151e3a01458",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 45,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "`"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-18",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 15
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "`"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235415
+  },
+  {
+    "id": "7db0eee6-2ce6-49b3-a1ff-883031f65b65",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 46,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " with"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-19",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 16
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " with"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235416
+  },
+  {
+    "id": "01156949-c191-459e-9d3c-e84d920523a6",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 47,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " native"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-20",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 17
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " native"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235417
+  },
+  {
+    "id": "86a58799-a7d6-4e73-8286-d3affc9fc338",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 48,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " tools"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-21",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 18
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " tools"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235418
+  },
+  {
+    "id": "37923b8d-18ec-4752-bff6-6a7824ce1e9d",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 49,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " only"
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-22",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 19
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " only"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235419
+  },
+  {
+    "id": "8fd4480c-1a26-41f8-983e-9a37c5009ac8",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 50,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "."
+          }
+        },
+        "_meta": {
+          "totalTokens": 1397,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-23",
+          "agentTimestampMs": 1794214235399,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 20
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "."
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235420
+  },
+  {
+    "id": "72fa12a9-7a9b-442d-8359-2e5f91df4eaf",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 57,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+          "title": "run_terminal_command",
+          "rawInput": {
+            "command": "pwd",
+            "description": "Print the current working directory"
+          },
+          "_meta": {
+            "x.ai/tool": {
+              "version": 1,
+              "name": "run_terminal_command",
+              "kind": "execute",
+              "namespace": "grok_build",
+              "label": "Run Command",
+              "read_only": false
+            }
+          }
+        },
+        "_meta": {
+          "totalTokens": 12904,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-25",
+          "agentTimestampMs": 1794214235495,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "ToolCall",
+          "updateParams": {
+            "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+            "title": "run_terminal_command",
+            "kind": "Other",
+            "status": "Pending"
+          }
+        }
+      }
+    },
+    "kind": "tool_call",
+    "payload": {
+      "sessionUpdate": "tool_call",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+      "title": "run_terminal_command",
+      "rawInput": {
+        "command": "pwd",
+        "description": "Print the current working directory"
+      },
+      "_meta": {
+        "x.ai/tool": {
+          "version": 1,
+          "name": "run_terminal_command",
+          "kind": "execute",
+          "namespace": "grok_build",
+          "label": "Run Command",
+          "read_only": false
+        }
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235523
+  },
+  {
+    "id": "eb2cd073-ce40-4109-9f29-5c37c1e85af5",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 59,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call_update",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+          "kind": "execute",
+          "title": "Execute `pwd`",
+          "content": [
+            {
+              "type": "content",
+              "content": {
+                "type": "text",
+                "text": "Print the current working directory"
+              }
+            }
+          ],
+          "locations": [],
+          "rawInput": {
+            "variant": "Bash",
+            "command": "pwd",
+            "description": "Print the current working directory",
+            "is_background": false
+          },
+          "_meta": {
+            "x.ai/tool": {
+              "version": 1,
+              "name": "run_terminal_command",
+              "kind": "execute",
+              "namespace": "grok_build",
+              "label": "Run Command",
+              "read_only": false,
+              "input": {
+                "command": "pwd",
+                "description": "Print the current working directory"
+              }
+            }
+          }
+        },
+        "_meta": {
+          "totalTokens": 12904,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-26",
+          "agentTimestampMs": 1794214235495,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "ToolCallUpdate",
+          "updateParams": {
+            "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+            "status": null
+          }
+        }
+      }
+    },
+    "kind": "tool_call_update",
+    "payload": {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+      "kind": "execute",
+      "title": "Execute `pwd`",
+      "content": [
+        {
+          "type": "content",
+          "content": {
+            "type": "text",
+            "text": "Print the current working directory"
+          }
+        }
+      ],
+      "locations": [],
+      "rawInput": {
+        "variant": "Bash",
+        "command": "pwd",
+        "description": "Print the current working directory",
+        "is_background": false
+      },
+      "_meta": {
+        "x.ai/tool": {
+          "version": 1,
+          "name": "run_terminal_command",
+          "kind": "execute",
+          "namespace": "grok_build",
+          "label": "Run Command",
+          "read_only": false,
+          "input": {
+            "command": "pwd",
+            "description": "Print the current working directory"
+          }
+        }
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235526
+  },
+  {
+    "id": "f2feec7a-cebb-4ec5-8cc8-5f6133de5d7b",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 61,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+          "title": "read_file",
+          "rawInput": {
+            "target_file": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+          },
+          "_meta": {
+            "x.ai/tool": {
+              "version": 1,
+              "name": "read_file",
+              "kind": "read",
+              "namespace": "grok_build",
+              "label": "Read",
+              "read_only": true
+            }
+          }
+        },
+        "_meta": {
+          "totalTokens": 12904,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-27",
+          "agentTimestampMs": 1794214235495,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "ToolCall",
+          "updateParams": {
+            "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+            "title": "read_file",
+            "kind": "Other",
+            "status": "Pending"
+          }
+        }
+      }
+    },
+    "kind": "tool_call",
+    "payload": {
+      "sessionUpdate": "tool_call",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+      "title": "read_file",
+      "rawInput": {
+        "target_file": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+      },
+      "_meta": {
+        "x.ai/tool": {
+          "version": 1,
+          "name": "read_file",
+          "kind": "read",
+          "namespace": "grok_build",
+          "label": "Read",
+          "read_only": true
+        }
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235531
+  },
+  {
+    "id": "6febe5f2-b2e5-4814-886a-e920fe18fc25",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 63,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call_update",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+          "kind": "read",
+          "title": "Read `/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt`",
+          "locations": [
+            {
+              "path": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+            }
+          ],
+          "rawInput": {
+            "variant": "ReadFile",
+            "target_file": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+          },
+          "_meta": {
+            "x.ai/tool": {
+              "version": 1,
+              "name": "read_file",
+              "kind": "read",
+              "namespace": "grok_build",
+              "label": "Read",
+              "read_only": true,
+              "input": {
+                "path": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+              }
+            }
+          }
+        },
+        "_meta": {
+          "totalTokens": 12904,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-28",
+          "agentTimestampMs": 1794214235495,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "ToolCallUpdate",
+          "updateParams": {
+            "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+            "status": null
+          }
+        }
+      }
+    },
+    "kind": "tool_call_update",
+    "payload": {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+      "kind": "read",
+      "title": "Read `/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt`",
+      "locations": [
+        {
+          "path": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+        }
+      ],
+      "rawInput": {
+        "variant": "ReadFile",
+        "target_file": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+      },
+      "_meta": {
+        "x.ai/tool": {
+          "version": 1,
+          "name": "read_file",
+          "kind": "read",
+          "namespace": "grok_build",
+          "label": "Read",
+          "read_only": true,
+          "input": {
+            "path": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt"
+          }
+        }
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235534
+  },
+  {
+    "id": "b5148dc0-07ad-4a11-bf2b-7bd20aa385c7",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 65,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call_update",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+          "status": "in_progress",
+          "content": [
+            {
+              "type": "content",
+              "content": {
+                "type": "text",
+                "text": ""
+              }
+            }
+          ],
+          "rawOutput": {
+            "type": "Bash",
+            "output": [],
+            "output_for_prompt": "",
+            "exit_code": 0,
+            "command": "pwd",
+            "truncated": false,
+            "signal": null,
+            "timed_out": false,
+            "description": null,
+            "current_dir": "/tmp/hhu-windows-smoke-c9SuZX/project",
+            "output_file": "",
+            "total_bytes": 0
+          }
+        }
+      }
+    },
+    "kind": "tool_call_update",
+    "payload": {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+      "status": "in_progress",
+      "content": [
+        {
+          "type": "content",
+          "content": {
+            "type": "text",
+            "text": ""
+          }
+        }
+      ],
+      "rawOutput": {
+        "type": "Bash",
+        "output": [],
+        "output_for_prompt": "",
+        "exit_code": 0,
+        "command": "pwd",
+        "truncated": false,
+        "signal": null,
+        "timed_out": false,
+        "description": null,
+        "current_dir": "/tmp/hhu-windows-smoke-c9SuZX/project",
+        "output_file": "",
+        "total_bytes": 0
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235642
+  },
+  {
+    "id": "a3d790b9-3f7d-4924-a49c-3c40b2f5537a",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 66,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call_update",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+          "status": "completed",
+          "content": [
+            {
+              "type": "content",
+              "content": {
+                "type": "text",
+                "text": "1→HARNESSHUB_DESKTOP_PHASE2_世界\n"
+              }
+            }
+          ],
+          "rawOutput": {
+            "type": "ReadFile",
+            "FileContent": {
+              "content": "1→HARNESSHUB_DESKTOP_PHASE2_世界\n",
+              "content_concise": "1→HARNESSHUB_DESKTOP_PHASE2_世界\n",
+              "absolute_path": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt",
+              "offset": null,
+              "raw_output": "HARNESSHUB_DESKTOP_PHASE2_世界\n",
+              "total_lines": 1
+            }
+          }
+        },
+        "_meta": {
+          "totalTokens": 12904,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-29",
+          "agentTimestampMs": 1794214235576,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "ToolCallUpdate",
+          "updateParams": {
+            "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+            "status": "Completed"
+          }
+        }
+      }
+    },
+    "kind": "tool_call_update",
+    "payload": {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-1",
+      "status": "completed",
+      "content": [
+        {
+          "type": "content",
+          "content": {
+            "type": "text",
+            "text": "1→HARNESSHUB_DESKTOP_PHASE2_世界\n"
+          }
+        }
+      ],
+      "rawOutput": {
+        "type": "ReadFile",
+        "FileContent": {
+          "content": "1→HARNESSHUB_DESKTOP_PHASE2_世界\n",
+          "content_concise": "1→HARNESSHUB_DESKTOP_PHASE2_世界\n",
+          "absolute_path": "/tmp/hhu-windows-smoke-c9SuZX/project/sentinel.txt",
+          "offset": null,
+          "raw_output": "HARNESSHUB_DESKTOP_PHASE2_世界\n",
+          "total_lines": 1
+        }
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235643
+  },
+  {
+    "id": "57ddc32b-0f09-42c9-bdda-173447ed8c14",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 67,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call_update",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+          "status": "in_progress",
+          "content": [
+            {
+              "type": "content",
+              "content": {
+                "type": "text",
+                "text": "/tmp/hhu-windows-smoke-c9SuZX/project\n"
+              }
+            }
+          ],
+          "rawOutput": {
+            "type": "Bash",
+            "output": [
+              47,
+              116,
+              109,
+              112,
+              47,
+              104,
+              104,
+              117,
+              45,
+              119,
+              105,
+              110,
+              100,
+              111,
+              119,
+              115,
+              45,
+              115,
+              109,
+              111,
+              107,
+              101,
+              45,
+              99,
+              57,
+              83,
+              117,
+              90,
+              88,
+              47,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              10
+            ],
+            "output_for_prompt": "/tmp/hhu-windows-smoke-c9SuZX/project\n",
+            "exit_code": 0,
+            "command": "pwd",
+            "truncated": false,
+            "signal": null,
+            "timed_out": false,
+            "description": null,
+            "current_dir": "/tmp/hhu-windows-smoke-c9SuZX/project",
+            "output_file": "",
+            "total_bytes": 38
+          }
+        }
+      }
+    },
+    "kind": "tool_call_update",
+    "payload": {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+      "status": "in_progress",
+      "content": [
+        {
+          "type": "content",
+          "content": {
+            "type": "text",
+            "text": "/tmp/hhu-windows-smoke-c9SuZX/project\n"
+          }
+        }
+      ],
+      "rawOutput": {
+        "type": "Bash",
+        "output": [
+          47,
+          116,
+          109,
+          112,
+          47,
+          104,
+          104,
+          117,
+          45,
+          119,
+          105,
+          110,
+          100,
+          111,
+          119,
+          115,
+          45,
+          115,
+          109,
+          111,
+          107,
+          101,
+          45,
+          99,
+          57,
+          83,
+          117,
+          90,
+          88,
+          47,
+          112,
+          114,
+          111,
+          106,
+          101,
+          99,
+          116,
+          10
+        ],
+        "output_for_prompt": "/tmp/hhu-windows-smoke-c9SuZX/project\n",
+        "exit_code": 0,
+        "command": "pwd",
+        "truncated": false,
+        "signal": null,
+        "timed_out": false,
+        "description": null,
+        "current_dir": "/tmp/hhu-windows-smoke-c9SuZX/project",
+        "output_file": "",
+        "total_bytes": 38
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235645
+  },
+  {
+    "id": "22fdf5e7-39c1-4e36-bb9b-ba66bab46aac",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 68,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "tool_call_update",
+          "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+          "status": "completed",
+          "content": [
+            {
+              "type": "content",
+              "content": {
+                "type": "text",
+                "text": "/tmp/hhu-windows-smoke-c9SuZX/project\n"
+              }
+            }
+          ],
+          "rawOutput": {
+            "type": "Bash",
+            "output": [
+              47,
+              116,
+              109,
+              112,
+              47,
+              104,
+              104,
+              117,
+              45,
+              119,
+              105,
+              110,
+              100,
+              111,
+              119,
+              115,
+              45,
+              115,
+              109,
+              111,
+              107,
+              101,
+              45,
+              99,
+              57,
+              83,
+              117,
+              90,
+              88,
+              47,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              10
+            ],
+            "output_for_prompt": "exit: 0\n/tmp/hhu-windows-smoke-c9SuZX/project\n",
+            "exit_code": 0,
+            "command": "pwd",
+            "truncated": false,
+            "signal": null,
+            "timed_out": false,
+            "description": "Print the current working directory",
+            "current_dir": "/tmp/hhu-windows-smoke-c9SuZX/project",
+            "output_file": "/home/clj/.grok/sessions/%2Ftmp%2Fhhu-windows-smoke-c9SuZX%2Fproject/01a1bf80-7954-7bc0-8e7d-ec68b35d1003/terminal/call-299e4f3a-b665-40f5-8c33-d951597c0d24-0.log",
+            "total_bytes": 38
+          }
+        },
+        "_meta": {
+          "totalTokens": 12913,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-30",
+          "agentTimestampMs": 1794214235588,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214235198,
+          "turnStartMs": 1794214230514,
+          "updateType": "ToolCallUpdate",
+          "updateParams": {
+            "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+            "status": "Completed"
+          }
+        }
+      }
+    },
+    "kind": "tool_call_update",
+    "payload": {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-299e4f3a-b665-40f5-8c33-d951597c0d24-0",
+      "status": "completed",
+      "content": [
+        {
+          "type": "content",
+          "content": {
+            "type": "text",
+            "text": "/tmp/hhu-windows-smoke-c9SuZX/project\n"
+          }
+        }
+      ],
+      "rawOutput": {
+        "type": "Bash",
+        "output": [
+          47,
+          116,
+          109,
+          112,
+          47,
+          104,
+          104,
+          117,
+          45,
+          119,
+          105,
+          110,
+          100,
+          111,
+          119,
+          115,
+          45,
+          115,
+          109,
+          111,
+          107,
+          101,
+          45,
+          99,
+          57,
+          83,
+          117,
+          90,
+          88,
+          47,
+          112,
+          114,
+          111,
+          106,
+          101,
+          99,
+          116,
+          10
+        ],
+        "output_for_prompt": "exit: 0\n/tmp/hhu-windows-smoke-c9SuZX/project\n",
+        "exit_code": 0,
+        "command": "pwd",
+        "truncated": false,
+        "signal": null,
+        "timed_out": false,
+        "description": "Print the current working directory",
+        "current_dir": "/tmp/hhu-windows-smoke-c9SuZX/project",
+        "output_file": "/home/clj/.grok/sessions/%2Ftmp%2Fhhu-windows-smoke-c9SuZX%2Fproject/01a1bf80-7954-7bc0-8e7d-ec68b35d1003/terminal/call-299e4f3a-b665-40f5-8c33-d951597c0d24-0.log",
+        "total_bytes": 38
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214235646
+  },
+  {
+    "id": "6185250e-386a-45e8-abe4-9a62456db5fd",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 73,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "**"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-37",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 5
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "**"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242457
+  },
+  {
+    "id": "6cd0efbe-5665-4045-8ba2-76b65bafb1d9",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 74,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "已"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-38",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 6
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "已"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242458
+  },
+  {
+    "id": "a26c2e8e-c0db-4d82-87ec-c5bfec42a35e",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 75,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "读取"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-39",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 7
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "读取"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242460
+  },
+  {
+    "id": "374e736f-2a1e-4e27-b1f9-146a236fc2e2",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 76,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "**"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-40",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 8
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "**"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242461
+  },
+  {
+    "id": "301d04d6-9b24-4989-88f1-7e8ff302bd85",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 77,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " `"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-41",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 9
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " `"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242463
+  },
+  {
+    "id": "9155be4c-e3c6-4586-86ad-27055f595cc6",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 78,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "sentinel"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-42",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 10
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "sentinel"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242464
+  },
+  {
+    "id": "d282d93b-10ed-4bb5-8c91-ac29249eb058",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 79,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": ".txt"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-43",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 11
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": ".txt"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242465
+  },
+  {
+    "id": "fbd7c3ba-e920-4998-837b-c6b512c39ee7",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 80,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "`"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-44",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 12
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "`"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242466
+  },
+  {
+    "id": "f4ece23c-9a1b-4714-b9c7-b3812938ee7d",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 81,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "。"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-45",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 13
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "。"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242467
+  },
+  {
+    "id": "a32c1bac-e928-4fcc-889d-dacdb47adaa6",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 82,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "`"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-46",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 14
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "`"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242468
+  },
+  {
+    "id": "d1c9a226-01ab-4810-9744-eea50862d5b3",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 83,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "pwd"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-47",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 15
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "pwd"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242469
+  },
+  {
+    "id": "98638891-c8e1-46f6-85a1-ac1090f392b5",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 84,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "`"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-48",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 16
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "`"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242470
+  },
+  {
+    "id": "71784180-2c7c-491b-9dd2-ec4d0a44eb5c",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 85,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " "
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-49",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 17
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " "
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242471
+  },
+  {
+    "id": "1734441e-fe02-4fc4-82ab-44306f3f9255",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 86,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "为"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-50",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 18
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "为"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242472
+  },
+  {
+    "id": "48f6c7b3-7c44-4b7d-b4c3-2829337a8908",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 87,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": " `/"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-51",
+          "agentTimestampMs": 1794214242448,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 19
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " `/"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242473
+  },
+  {
+    "id": "1d00b1b4-b6c6-4721-9eca-256ab8568872",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 88,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "tmp"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-52",
+          "agentTimestampMs": 1794214242478,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 20
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "tmp"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242481
+  },
+  {
+    "id": "16dcf977-9057-40ef-9a85-dd29993e6db3",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 89,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "/"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-53",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 21
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "/"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242485
+  },
+  {
+    "id": "30d34227-f420-4562-b222-750f940a8583",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 90,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "h"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-54",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 22
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "h"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242486
+  },
+  {
+    "id": "5ea7de37-8de1-43ba-8a3e-b2581ad4c0c4",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 91,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "hu"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-55",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 23
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "hu"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242488
+  },
+  {
+    "id": "7e646d8b-fd66-47e8-ac69-ae58acfa2f85",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 92,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "-"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-56",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 24
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "-"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242489
+  },
+  {
+    "id": "7f6def36-6a50-496a-a214-422ff54302e0",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 93,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "windows"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-57",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 25
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "windows"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242490
+  },
+  {
+    "id": "ce88ae24-5e61-4126-afa0-8bbe843d15f6",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 94,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "-"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-58",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 26
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "-"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242491
+  },
+  {
+    "id": "cf8c0496-614a-499c-b366-ad676cb3c17d",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 95,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "smoke"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-59",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 27
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "smoke"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242492
+  },
+  {
+    "id": "313627c1-6fa1-4dcb-a753-419e1a9714a0",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 96,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "-"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-60",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 28
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "-"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242493
+  },
+  {
+    "id": "c7b80ebe-73ef-4213-84fa-7d15fc46e1bf",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 97,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "c"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-61",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 29
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "c"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242494
+  },
+  {
+    "id": "2fbb76d7-d9b8-4d50-b09e-75efb7294480",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 98,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "9"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-62",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 30
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "9"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242495
+  },
+  {
+    "id": "81372972-6d26-4541-bb40-5843bfeededa",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 99,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "Su"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-63",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 31
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "Su"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242496
+  },
+  {
+    "id": "8836d41a-c030-4b7a-adca-fbecc7d211e2",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 100,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "ZX"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-64",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 32
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "ZX"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242497
+  },
+  {
+    "id": "1a2c7f01-0e4e-4ace-b113-095601176f65",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 101,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "/"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-65",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 33
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "/"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242498
+  },
+  {
+    "id": "fe0906a2-c855-4bc6-a6e6-51d6a465a3b6",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 102,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "project"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-66",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 34
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "project"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242500
+  },
+  {
+    "id": "3f299cb8-eede-4d38-844d-36915c79f938",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 103,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "`"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-67",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 35
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "`"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242502
+  },
+  {
+    "id": "165151dd-8a86-47e7-8528-e4a43c98282e",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 104,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "。"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-68",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 36
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "。"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242503
+  },
+  {
+    "id": "036855df-3215-4400-8965-9d0837d8c29c",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 105,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "\n\n"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-69",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 37
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n\n"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242504
+  },
+  {
+    "id": "ce43fcb0-500c-4a24-a23c-67d4cf29a767",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 106,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "文件"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-70",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 38
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "文件"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242505
+  },
+  {
+    "id": "5053cb3b-d835-4014-8766-0f4901d3aac1",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 107,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "原文"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-71",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 39
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "原文"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242506
+  },
+  {
+    "id": "de46859e-3b3a-4298-b05d-5b72ce108518",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 108,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "："
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-72",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 40
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "："
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242508
+  },
+  {
+    "id": "9fc6e736-abab-42b3-a038-1d534b912ca0",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 109,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "\n\n"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-73",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 41
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n\n"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242509
+  },
+  {
+    "id": "58a43f86-d390-41cb-9152-e9f911c2f995",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 110,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "```"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-74",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 42
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "```"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242511
+  },
+  {
+    "id": "508e572c-df95-4400-9866-1baba6d94460",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 111,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "\n"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-75",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 43
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242513
+  },
+  {
+    "id": "e0f839b6-b8b9-450c-b629-7200bd178118",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 112,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "H"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-76",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 44
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "H"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242514
+  },
+  {
+    "id": "2a2faca5-b986-43a3-9732-16856b7f7ffc",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 113,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "ARN"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-77",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 45
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "ARN"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242515
+  },
+  {
+    "id": "d6127580-6324-447b-a323-188b72944ad1",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 114,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "ES"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-78",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 46
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "ES"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242516
+  },
+  {
+    "id": "1e23ad7f-d302-4326-b270-6ac68a3486b0",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 115,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "SH"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-79",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 47
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "SH"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242517
+  },
+  {
+    "id": "370c613d-2186-4952-8e05-64e97fb1d2bb",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 116,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "UB"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-80",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 48
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "UB"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242518
+  },
+  {
+    "id": "f588c270-1e09-42b5-8940-11b522ea075d",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 117,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "_"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-81",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 49
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "_"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242519
+  },
+  {
+    "id": "208ae167-7fe6-45ea-8891-65b2f65c8761",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 118,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "DES"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-82",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 50
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "DES"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242520
+  },
+  {
+    "id": "5dc19fef-501f-4cf7-9ede-4c901d490e3f",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 119,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "K"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-83",
+          "agentTimestampMs": 1794214242479,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 51
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "K"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242521
+  },
+  {
+    "id": "c31966b6-011e-4575-93d2-47ada466d4b2",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 120,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "TOP"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-84",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 52
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "TOP"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242522
+  },
+  {
+    "id": "0d75f2b5-2d27-4fe7-9476-29f3fb2f8be5",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 121,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "_"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-85",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 53
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "_"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242523
+  },
+  {
+    "id": "0cc67611-e30d-4865-80e1-59193c0bd32c",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 122,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "PHASE"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-86",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 54
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "PHASE"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242524
+  },
+  {
+    "id": "a586ee67-9dde-4589-b830-6ef36c285161",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 123,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "2"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-87",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 55
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "2"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242525
+  },
+  {
+    "id": "a16b1ff4-b69f-4dee-9714-315453593ba7",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 124,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "_"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-88",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 56
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "_"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242526
+  },
+  {
+    "id": "b99d3183-2cca-4774-bfd9-366254a9689e",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 125,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "世界"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-89",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 57
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "世界"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242526
+  },
+  {
+    "id": "dc49fe71-e870-4509-9994-35633efae0d5",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 126,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "\n"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-90",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 58
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242527
+  },
+  {
+    "id": "c24d7aba-2dc9-415c-9484-00ee89b804fa",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 127,
+    "raw": {
+      "jsonrpc": "2.0",
+      "method": "session/update",
+      "params": {
+        "sessionId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003",
+        "update": {
+          "sessionUpdate": "agent_message_chunk",
+          "content": {
+            "type": "text",
+            "text": "```"
+          }
+        },
+        "_meta": {
+          "totalTokens": 12924,
+          "requestTrimmedTokens": 0,
+          "eventId": "01a1bf80-7954-7bc0-8e7d-ec68b35d1003-91",
+          "agentTimestampMs": 1794214242480,
+          "promptId": "fa46515c-77fe-45a8-b969-a3007913ed6e",
+          "streamStartMs": 1794214242165,
+          "turnStartMs": 1794214230514,
+          "updateType": "AgentMessageChunk",
+          "chunkId": 59
+        }
+      }
+    },
+    "kind": "agent_message_chunk",
+    "payload": {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "```"
+      }
+    },
+    "origin": "agent",
+    "purpose": "user",
+    "createdAt": 1794214242528
+  },
+  {
+    "id": "e588e765-48c6-4010-afe2-f1b15ab07057",
+    "conversationId": "f911c4bb-9d1d-42a0-958e-e022fa631391",
+    "nativeSessionId": "ac111cc9-d492-4582-b7c0-3a1adba100df",
+    "turnId": "6c0838d0-5142-4958-9411-9cba6ab53dce",
+    "seq": 135,
+    "raw": null,
+    "kind": "runtime.turn_finished",
+    "payload": {
+      "state": "COMPLETED",
+      "stopReason": "end_turn"
+    },
+    "origin": "runtime",
+    "purpose": "user",
+    "createdAt": 1794214242690
+  }
+]

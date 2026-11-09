@@ -1,6 +1,6 @@
 // Explicit Windows integration harness, never bundled in the production app.
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Client } from "@harnesshub/shared/client";
 import { app, type BrowserWindow } from "electron";
@@ -14,6 +14,7 @@ const config = JSON.parse(readFileSync(join(app.getAppPath(), "smoke-config.json
   otherId: string;
   workspace: string;
   output: string;
+  realHarnesses?: string[];
 };
 mkdirSync(join(config.output, "electron-user-data"), { recursive: true });
 app.setPath("userData", join(config.output, "electron-user-data"));
@@ -39,17 +40,20 @@ const evidence: Record<string, unknown> = {
 };
 const checks = evidence.checks as string[];
 let win: BrowserWindow | undefined;
-const deadline = setTimeout(() => {
-  writeFileSync(
-    join(config.output, "evidence.json"),
-    JSON.stringify(
-      { ...evidence, passed: false, error: "Windows smoke deadline exceeded" },
-      null,
-      2,
-    ),
-  );
-  app.exit(1);
-}, 90000);
+const deadline = setTimeout(
+  () => {
+    writeFileSync(
+      join(config.output, "evidence.json"),
+      JSON.stringify(
+        { ...evidence, passed: false, error: "Windows smoke deadline exceeded" },
+        null,
+        2,
+      ),
+    );
+    app.exit(1);
+  },
+  config.realHarnesses?.length ? 480000 : 120000,
+);
 const waitFor = async (check: () => unknown | Promise<unknown>) => {
   const end = Date.now() + 20000;
   while (Date.now() < end) {
@@ -59,12 +63,44 @@ const waitFor = async (check: () => unknown | Promise<unknown>) => {
   throw new Error("Windows smoke state timeout");
 };
 const click = async (window: BrowserWindow, selector: string) => {
+  await waitFor(() =>
+    window.webContents.executeJavaScript(
+      `(() => { const e = document.querySelector(${JSON.stringify(selector)}); return e && !e.disabled && e.getBoundingClientRect().height > 0; })()`,
+    ),
+  );
+  await window.webContents.executeJavaScript(
+    `document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'nearest'})`,
+  );
   const point = await window.webContents.executeJavaScript(
     `(() => { const element = document.querySelector(${JSON.stringify(selector)}); if (!element) throw new Error('Element missing'); const rect = element.getBoundingClientRect(); return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) }; })()`,
   );
   window.webContents.sendInputEvent({ type: "mouseDown", button: "left", clickCount: 1, ...point });
   window.webContents.sendInputEvent({ type: "mouseUp", button: "left", clickCount: 1, ...point });
 };
+
+const fill = async (window: BrowserWindow, text: string) => {
+  await waitFor(() =>
+    window.webContents.executeJavaScript(
+      "!!document.querySelector('textarea') && !document.querySelector('textarea').readOnly && !document.querySelector('textarea').disabled",
+    ),
+  );
+  await click(window, 'textarea[aria-label="消息输入"]');
+  window.webContents.sendInputEvent({ type: "keyDown", keyCode: "A", modifiers: ["control"] });
+  window.webContents.sendInputEvent({ type: "keyUp", keyCode: "A", modifiers: ["control"] });
+  window.webContents.insertText(text);
+  await waitFor(() =>
+    window.webContents.executeJavaScript(
+      `document.querySelector('textarea').value === ${JSON.stringify(text)}`,
+    ),
+  );
+};
+const press = (window: BrowserWindow, keyCode: string, modifiers: ("shift" | "control")[] = []) => {
+  window.webContents.sendInputEvent({ type: "keyDown", keyCode, modifiers });
+  if (keyCode === "Enter")
+    window.webContents.sendInputEvent({ type: "char", keyCode: "\r", modifiers });
+  window.webContents.sendInputEvent({ type: "keyUp", keyCode, modifiers });
+};
+
 void app.whenReady().then(async () => {
   try {
     assert.equal(process.platform, "win32");
@@ -209,6 +245,115 @@ void app.whenReady().then(async () => {
       ),
     );
     checks.push("Empty conversation switching, sidebar hide/restore and mouse resize");
+
+    writeFileSync(join(config.output, "start-tui"), "start");
+    await waitFor(() => existsSync(join(config.output, "tui-ready")));
+    checks.push("Real WSL hhu TUI running concurrently in a PTY against the same Daemon");
+    await fill(first, "跨会话持久草稿");
+    await click(first, `.conversation-item:nth-child(${otherIndex + 1})`);
+    await waitFor(() => opened.connection.getState().conversationId === config.otherId);
+    await click(first, `.conversation-item:nth-child(${index + 1})`);
+    await waitFor(() =>
+      first.webContents.executeJavaScript(
+        "document.querySelector('textarea')?.value === '跨会话持久草稿'",
+      ),
+    );
+    checks.push("Native Windows editor and SQLite per-conversation draft restore");
+    await fill(first, "timed");
+    // Composition Enter is dispatched on the real Chromium textarea, with isComposing.
+    await first.webContents.executeJavaScript(
+      "document.querySelector('textarea').dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', code:'Enter', keyCode:229, isComposing:true, bubbles:true}))",
+    );
+    assert.equal(
+      (await client.request<{ text: string }>(`/v1/conversations/${config.conversationId}/draft`))
+        .text,
+      "timed",
+    );
+    await click(first, '[aria-label="发送"]');
+    await waitFor(
+      () =>
+        opened.connection
+          .getState()
+          .snapshot?.conversations.find((c) => c.id === config.conversationId)?.runtimeStatus ===
+        "RUNNING",
+    );
+    await first.webContents.executeJavaScript(
+      "document.querySelector('.history').scrollTop = 0; document.querySelector('.history').dispatchEvent(new Event('scroll'))",
+    );
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    assert.equal(
+      await first.webContents.executeJavaScript("document.querySelector('.history').scrollTop"),
+      0,
+    );
+    await waitFor(
+      () =>
+        opened.connection
+          .getState()
+          .snapshot?.conversations.find((c) => c.id === config.conversationId)?.runtimeStatus ===
+        "IDLE",
+    );
+    await waitFor(() =>
+      first.webContents.executeJavaScript(
+        "document.querySelector('.history').textContent.includes('native-34')",
+      ),
+    );
+    checks.push(
+      "IME confirmation does not send, real timed streaming, manual scrolling suspends follow",
+    );
+    await fill(first, "多行");
+    press(first, "End");
+    press(first, "Enter", ["shift"]);
+    await waitFor(() =>
+      first.webContents.executeJavaScript(
+        "document.querySelector('textarea').value.includes(String.fromCharCode(10))",
+      ),
+    );
+    await fill(first, "/");
+    await waitFor(() =>
+      first.webContents.executeJavaScript("!!document.querySelector('.slash-menu')"),
+    );
+    press(first, "Enter");
+    await waitFor(() =>
+      first.webContents.executeJavaScript(
+        "document.querySelector('textarea').value.startsWith('/silent ')",
+      ),
+    );
+    const beforeSlash = (
+      await client.request<{ events: { kind: string }[] }>(
+        `/v1/conversations/${config.conversationId}/events?limit=1000`,
+      )
+    ).events.filter((e) => e.kind === "user.message").length;
+    press(first, "Enter");
+    await waitFor(
+      async () =>
+        (
+          await client.request<{ events: { kind: string }[] }>(
+            `/v1/conversations/${config.conversationId}/events?limit=1000`,
+          )
+        ).events.filter((e) => e.kind === "user.message").length ===
+        beforeSlash + 1,
+    );
+    await waitFor(
+      () =>
+        opened.connection
+          .getState()
+          .snapshot?.conversations.find((c) => c.id === config.conversationId)?.runtimeStatus ===
+        "IDLE",
+    );
+    checks.push(
+      "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    );
+    await fill(first, "permission");
+    await click(first, '[aria-label="发送"]');
+    await waitFor(() =>
+      first.webContents.executeJavaScript("!!document.querySelector('.approval')"),
+    );
+    await click(first, '.approval button[title="native-reject"]');
+    await waitFor(() =>
+      first.webContents.executeJavaScript("!document.querySelector('.approval')"),
+    );
+    checks.push("Native approval UI displays actual options and explicit reject resolves once");
+    await fill(first, "关闭后保留草稿");
     await click(first, '[aria-label="切换工作面板"]');
     await waitFor(() =>
       first.webContents.executeJavaScript("!!document.querySelector('.work-panel')"),
@@ -240,9 +385,10 @@ void app.whenReady().then(async () => {
     const active = await client.request<{ id: string }>(
       `/v1/conversations/${config.conversationId}/turns`,
       "POST",
-      { requestId: crypto.randomUUID(), harnessId: "desktop-smoke", message: "slow" },
+      { requestId: crypto.randomUUID(), harnessId: "desktop-smoke", message: "wait" },
     );
     first.close();
+    await waitFor(() => first.isDestroyed());
     await client.health();
     assert.equal((await bridge.connect(config.distro)).instanceId, instance.instanceId);
     checks.push("Closing the real Windows window preserves Daemon and active Mock ACP Worker");
@@ -261,7 +407,235 @@ void app.whenReady().then(async () => {
         (await client.request<{ state: string }>(`/v1/turns/${active.id}`)).state,
       ),
     );
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "document.querySelector('textarea')?.value === '关闭后保留草稿'",
+      ),
+    );
+    checks.push("Closing/reopening Electron persists SQLite drafts while active Agent survives");
+    // Real management dialog: deletion confirmation preserves the source directory.
+    await click(reopened.window, '.project-heading button[aria-label="新建会话"]');
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript("!!document.querySelector('dialog[open]')"),
+    );
+    await click(reopened.window, 'dialog button[type="submit"]');
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "!document.querySelector('dialog') && document.querySelector('h1').textContent === 'New conversation'",
+      ),
+    );
+    await click(reopened.window, '[aria-label="切换工作面板"]');
+    await click(reopened.window, ".panel-content details > summary");
+    await click(reopened.window, ".management-actions button:first-child");
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript("!!document.querySelector('dialog[open]')"),
+    );
+    await click(reopened.window, 'input[aria-label="会话名称"]');
+    press(reopened.window, "A", ["control"]);
+    reopened.window.webContents.insertText("Managed Desktop conversation");
+    await click(reopened.window, 'dialog button[type="submit"]');
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "document.querySelector('h1').textContent === 'Managed Desktop conversation'",
+      ),
+    );
+    await click(reopened.window, ".management-actions button:nth-child(2)");
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "document.querySelector('.management-actions').textContent.includes('恢复归档')",
+      ),
+    );
+    await click(reopened.window, ".management-actions button:nth-child(2)");
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "!document.querySelector('.management-actions').textContent.includes('恢复归档')",
+      ),
+    );
+    await click(reopened.window, ".management-actions button:last-child");
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript("!!document.querySelector('dialog[open]')"),
+    );
+    await click(reopened.window, 'dialog button[type="submit"]');
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "!document.querySelector('dialog') && !!document.querySelector('.welcome')",
+      ),
+    );
+    await click(reopened.window, '[aria-label="关闭工作面板"]');
+    checks.push(
+      "Windows create/rename/archive/restore/delete dialogs and explicit delete confirmation",
+    );
+    const large = (await reopened.connection.action({
+      type: "conversation.standalone",
+      workspacePath: config.workspace,
+      title: "Long tool history",
+    })) as { id: string };
+    await reopened.connection.select(large.id);
+    await reopened.connection.action({
+      type: "harness.select",
+      conversationId: large.id,
+      harnessId: "desktop-smoke",
+    });
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "document.querySelector('h1').textContent === 'Long tool history'",
+      ),
+    );
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "document.querySelector('select[aria-label=\"Harness\"]')?.value === 'desktop-smoke'",
+      ),
+    );
+    await fill(reopened.window, "desktop-many-tools");
+    await click(reopened.window, '[aria-label="发送"]');
+    await waitFor(
+      () =>
+        reopened.connection.getState().eventCursor !== undefined &&
+        (reopened.connection.getState().eventCursor ?? 0) > 1200 &&
+        reopened.connection.getState().snapshot?.conversations.find((c) => c.id === large.id)
+          ?.runtimeStatus === "IDLE",
+    );
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "document.querySelector('.history').textContent.includes('Desktop tools complete')",
+      ),
+    );
+    assert.ok(
+      await reopened.window.webContents.executeJavaScript(
+        "document.querySelectorAll('.message').length <= 100",
+      ),
+    );
+    await reopened.window.webContents.executeJavaScript(
+      "document.querySelector('.history').scrollTop = 0",
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await click(reopened.window, ".transcript > button");
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "!document.querySelector('.history').textContent.includes('Desktop tools complete')",
+      ),
+    );
+    assert.ok(
+      await reopened.window.webContents.executeJavaScript(
+        "document.querySelectorAll('.message').length <= 100",
+      ),
+    );
+    checks.push(
+      "600 native tools / 1200 updates: bounded DOM mounts, history paging, full SQLite events retained",
+    );
+    reopened.window.show();
+    reopened.window.focus();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    writeFileSync(
+      join(config.output, "desktop-tools.png"),
+      (await reopened.window.webContents.capturePage()).toPNG(),
+    );
+    if (config.realHarnesses?.length) {
+      const results: Record<string, unknown>[] = [];
+      evidence.realHarnesses = results;
+      for (const harnessId of config.realHarnesses) {
+        const result: Record<string, unknown> = { harnessId, startedAt: new Date().toISOString() };
+        results.push(result);
+        try {
+          const created = await reopened.window.webContents.executeJavaScript(
+            `window.harnessHub.request({type:'conversation.standalone',workspacePath:${JSON.stringify(config.workspace)},title:${JSON.stringify("Real ")}+${JSON.stringify(harnessId)}})`,
+          );
+          assert.equal(created.ok, true);
+          const id = created.data.id;
+          result.conversationId = id;
+          await reopened.window.webContents.executeJavaScript(
+            `window.harnessHub.request({type:'select',conversationId:${JSON.stringify(id)}})`,
+          );
+          await reopened.window.webContents.executeJavaScript(
+            `window.harnessHub.request({type:'harness.select',conversationId:${JSON.stringify(id)},harnessId:${JSON.stringify(harnessId)}})`,
+          );
+          await waitFor(() =>
+            reopened.window.webContents.executeJavaScript(
+              `document.querySelector('select[aria-label="Harness"]')?.value === ${JSON.stringify(harnessId)} && !document.querySelector('textarea').disabled`,
+            ),
+          );
+          await fill(
+            reopened.window,
+            "In this temporary test directory only, use native tools to print pwd and read sentinel.txt. Return its exact text and a small Markdown code block. Do not edit files, use network, or spawn subagents. Respect native permissions; do not work around an approval request.",
+          );
+          await click(reopened.window, '[aria-label="发送"]');
+          let turn:
+            | {
+                id: string;
+                state: string;
+                endedAt: number | null;
+                requestId: string;
+                stopReason: string | null;
+              }
+            | undefined;
+          const end = Date.now() + 145000;
+          while (Date.now() < end) {
+            const page = await client.request<{
+              events: { kind: string; turnId: string; payload: unknown }[];
+            }>(`/v1/conversations/${id}/events?limit=1000`);
+            const user = page.events.find((e) => e.kind === "user.message");
+            if (user) turn = await client.request(`/v1/turns/${user.turnId}`);
+            const approvals = await client.request<unknown[]>(`/v1/conversations/${id}/approvals`);
+            if (turn?.endedAt || approvals.length) {
+              result.manualApprovalRequired = approvals.length > 0;
+              break;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          }
+          result.turn = turn;
+          result.timedOut = !turn?.endedAt && !result.manualApprovalRequired;
+          if (turn && !turn.endedAt && turn.state !== "UNCERTAIN") {
+            result.cancel = await reopened.window.webContents.executeJavaScript(
+              `window.harnessHub.request({type:'turn.cancel',conversationId:${JSON.stringify(id)},turnId:${JSON.stringify(turn.id)}})`,
+            );
+          }
+          const page = await client.request<{ events: { kind: string; payload: unknown }[] }>(
+            `/v1/conversations/${id}/events?limit=1000`,
+          );
+          result.messageChunks = page.events.filter((e) => e.kind === "agent_message_chunk").length;
+          result.toolCalls = page.events.filter((e) => e.kind === "tool_call").length;
+          result.failures = page.events.filter(
+            (e) =>
+              /error|failed|worker_lost/.test(e.kind) ||
+              (e.kind === "agent_message_chunk" &&
+                /invalid_prompt|unexpected status|Bad Gateway/.test(JSON.stringify(e.payload))),
+          );
+          result.passed =
+            turn?.state === "COMPLETED" &&
+            Number(result.messageChunks) > 0 &&
+            Number(result.toolCalls) > 0 &&
+            (result.failures as unknown[]).length === 0;
+          writeFileSync(
+            join(config.output, `real-${harnessId}-events.json`),
+            JSON.stringify(page, null, 2),
+          );
+          await waitFor(() =>
+            reopened.window.webContents.executeJavaScript(
+              `document.querySelector('h1').textContent === ${JSON.stringify("Real ")}+${JSON.stringify(harnessId)}`,
+            ),
+          );
+          result.renderer = await reopened.window.webContents.executeJavaScript(
+            "({title:document.querySelector('h1').textContent,tools:document.querySelectorAll('.tool-card').length,body:document.querySelector('.history').textContent})",
+          );
+          reopened.window.show();
+          reopened.window.focus();
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          writeFileSync(
+            join(config.output, `real-${harnessId}.png`),
+            (await reopened.window.webContents.capturePage()).toPNG(),
+          );
+        } catch (error) {
+          result.error = error instanceof Error ? error.message : String(error);
+          result.passed = false;
+        }
+        writeFileSync(
+          join(config.output, "real-harness-evidence.json"),
+          JSON.stringify(results, null, 2),
+        );
+      }
+    }
     win.close();
+    await waitFor(() => reopened.window.isDestroyed());
     await client.health();
     evidence.passed = true;
   } catch (error) {
@@ -271,11 +645,12 @@ void app.whenReady().then(async () => {
         (await win.webContents.capturePage()).toPNG(),
       );
       evidence.dom = await win.webContents.executeJavaScript(
-        "({ sidebar: document.querySelector('.sidebar')?.getBoundingClientRect().width, selected: document.querySelector('.selected')?.textContent, pointerTrace: window.pointerTrace, divider: document.querySelector('.resize-handle')?.getBoundingClientRect().toJSON() })",
+        "({ sidebar: document.querySelector('.sidebar')?.getBoundingClientRect().width, selected: document.querySelector('.selected')?.textContent, text: document.querySelector('textarea')?.value, body: document.body.innerText.slice(-1800), pointerTrace: window.pointerTrace, divider: document.querySelector('.resize-handle')?.getBoundingClientRect().toJSON() })",
       );
     }
     evidence.passed = false;
     evidence.error = error instanceof Error ? error.message : "Windows smoke failed";
+    evidence.stack = error instanceof Error ? error.stack : undefined;
   } finally {
     win?.destroy();
     clearTimeout(deadline);
