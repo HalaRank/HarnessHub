@@ -1179,6 +1179,44 @@ test("confirmed deletion cancels an active Conversation from the TUI, while clos
   }
 }, 20000);
 
+test("Delete edits the draft while typing and deletion confirmation can be cancelled", async () => {
+  const { c } = await setup("Delete shortcut guards");
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 35 });
+  try {
+    await frame(screen, "Esc interrupt");
+    await focusMessage(screen);
+    const editor = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
+    await screen.mockInput.typeText("abc");
+    editor.cursorOffset = 1;
+    screen.mockInput.pressKey("DELETE");
+    await screen.renderOnce();
+    expect(editor.plainText).toBe("ac");
+    expect(screen.captureCharFrame()).not.toContain("Confirm Conversation deletion");
+    await navigate(screen);
+    // Allow the terminal parser to distinguish standalone Esc from an Alt prefix.
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    screen.mockInput.pressKey("DELETE", { ctrl: true });
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).not.toContain("Confirm Conversation deletion");
+    for (const cancel of ["escape", "return"]) {
+      screen.mockInput.pressKey("DELETE");
+      await frame(screen, "Confirm Conversation deletion");
+      screen.mockInput.pressKey("DELETE", { ctrl: true });
+      await screen.renderOnce();
+      expect((await api<Conversation>(`/v1/conversations/${c.id}`)).id).toBe(c.id);
+      if (cancel === "escape") {
+        screen.mockInput.pressEscape();
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      } else screen.mockInput.pressEnter();
+      await screen.renderOnce();
+      expect(screen.captureCharFrame()).not.toContain("Confirm Conversation deletion");
+      expect((await api<Conversation>(`/v1/conversations/${c.id}`)).id).toBe(c.id);
+    }
+  } finally {
+    await screen.dispose();
+  }
+}, 20000);
+
 test("two Delete presses confirm Conversation and Project deletion", async () => {
   for (const kind of ["Conversation", "Project"] as const) {
     const { p, c, root } = await setup(`Double Delete ${kind}`);
@@ -1189,7 +1227,8 @@ test("two Delete presses confirm Conversation and Project deletion", async () =>
         screen.mockInput.pressArrow("up");
         await frame(screen, "/new creates a conversation");
       }
-      await invoke(screen, `Delete ${kind}`);
+      await navigate(screen);
+      screen.mockInput.pressKey("DELETE");
       await frame(screen, `Confirm ${kind} deletion`);
       await frame(screen, "Delete to delete");
       expect((await api<{ id: string }>(`/v1/projects/${p.id}`)).id).toBe(p.id);

@@ -354,6 +354,12 @@ export function App(props: {
       return;
     }
     if (form() === "message") return; // Slash/textarea owns Esc and editing.
+    if (!changesView() && row() && matches(key, "delete")) {
+      key.preventDefault();
+      key.stopPropagation();
+      requestDelete(row()?.value);
+      return;
+    }
     if (
       !form() &&
       !changesView() &&

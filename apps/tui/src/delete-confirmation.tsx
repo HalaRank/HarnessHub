@@ -1,6 +1,7 @@
 import { useKeyboard } from "@opentui/solid";
 import { createSignal, type JSX } from "solid-js";
 import { mouseClick } from "./project-tree";
+import { matches } from "./shortcuts";
 import { Panel, ui } from "./ui";
 
 export function DeleteConfirmation(props: {
@@ -19,7 +20,7 @@ export function DeleteConfirmation(props: {
       key.preventDefault();
       key.stopPropagation();
       setConfirm((value) => !value);
-    } else if (key.name === "delete") {
+    } else if (matches(key, "delete")) {
       key.preventDefault();
       key.stopPropagation();
       props.onDelete();

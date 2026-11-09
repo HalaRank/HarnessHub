@@ -53,6 +53,7 @@ hhu --version
 | 新会话 / 查找会话 / Changes | `/new` / `/resume` / `/diff`                   |
 | 当前项目新会话              | 浏览项目或其会话时按 N                         |
 | 启动目录独立新会话          | Ctrl+N（不归属项目）                           |
+| 删除所选会话 / 项目         | 浏览时 Delete 打开确认，再按 Delete 删除       |
 | 原生模型及权限设置 / 审批   | `/model`、`/permissions` / `/approval`         |
 | 切换 Harness / Handoff 材料 | `/harness` / `/handoff`                        |
 | 排队消息管理                | `/queue`，支持暂停后继续、编辑和移除           |
