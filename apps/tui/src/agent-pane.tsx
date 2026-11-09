@@ -679,19 +679,52 @@ export function AgentPane(props: {
         }
       }}
     >
-      <text id="harness-identity" fg={ui.text} flexShrink={0} wrapMode="char">
-        <b>{`ACP · ${executionSession()?.harnessId ?? harness()}`}</b>
-      </text>
+      <box flexDirection="row" flexShrink={0} alignItems="flex-start" gap={1}>
+        <text
+          id="harness-identity"
+          fg={ui.text}
+          flexGrow={1}
+          flexShrink={1}
+          minWidth={0}
+          wrapMode="char"
+        >
+          <span style={{ fg: ui.muted }}>ACP · </span>
+          <b>{executionSession()?.harnessId ?? harness()}</b>
+        </text>
+        <text
+          id="harness-status"
+          fg={statusColor(props.conversation.runtimeStatus)}
+          height={1}
+          flexShrink={0}
+          wrapMode="none"
+        >
+          {`● ${props.conversation.runtimeStatus}`}
+        </text>
+      </box>
       <text id="harness-model" fg={ui.secondary} flexShrink={0} wrapMode="char">
-        {`Model (ACP) · ${executionSession() ? actualModel(executionSession()) : "not initialized"}`}
+        <span style={{ fg: ui.muted }}>Model (ACP) · </span>
+        {executionSession() ? actualModel(executionSession()) : "not initialized"}
       </text>
-      <text id="harness-status" fg={ui.secondary} height={1} flexShrink={0} wrapMode="none">
-        <span style={{ fg: statusColor(props.conversation.runtimeStatus) }}>
-          {props.conversation.runtimeStatus}
-        </span>
-        <span style={{ fg: ui.muted }}>{` · ${changes() ? "Changes" : "Chat"} · `}</span>
-        <span style={{ fg: statusColor(connection()) }}>{connection()}</span>
-      </text>
+      <box
+        id="conversation-toolbar"
+        flexDirection="row"
+        height={1}
+        flexShrink={0}
+        alignItems="center"
+        gap={1}
+      >
+        <text fg={ui.accent} flexShrink={0}>
+          <b>{changes() ? "Changes" : "Chat"}</b>
+        </text>
+        <box height={1} flexGrow={1} minWidth={0} border={["bottom"]} borderColor={ui.border} />
+        <text
+          id="conversation-connection"
+          fg={connection() === "Connected" ? ui.muted : statusColor(connection())}
+          flexShrink={0}
+        >
+          {connection()}
+        </text>
+      </box>
       <Show
         when={openHandoffRecord() || (activeSession() && activeSession()?.harnessId !== harness())}
       >

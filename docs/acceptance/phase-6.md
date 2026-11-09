@@ -220,3 +220,7 @@ Slash 菜单、顶部/底部、侧栏、项目目录、命令面板、设置、�
 ## 交接失败展示与活动会话删除
 
 2026-11-09 修复交接具体原因、旧报告保留及降级 JSON 的聊天展示。按用户新要求，确认删除 Conversation 会取消活动执行、关闭所属 Worker 并清理应用历史，覆盖 FAILED Handoff 与 UNCERTAIN。真实 Grok 删除、Codex 会话准备超时及回归结果见[专项验收记录](phase-6-handoff-and-active-deletion.md)。
+
+## 会话顶部信息层级
+
+2026-11-09 调整顶部标题、Workspace、Agent、模型、运行状态与连接栏，保留通常五行高度。布局、窄屏与 Linux PTY 验证见[专项验收记录](phase-6-conversation-header.md)。

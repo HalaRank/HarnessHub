@@ -3,7 +3,12 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { RGBA, type ScrollBoxRenderable, type TextareaRenderable } from "@opentui/core";
+import {
+  RGBA,
+  type ScrollBoxRenderable,
+  TextAttributes,
+  type TextareaRenderable,
+} from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
 import { HISTORY_WINDOW_SIZE, NativeEvents } from "../../apps/tui/src/native-events";
@@ -11,6 +16,7 @@ import { RawEvents } from "../../apps/tui/src/raw-events";
 import { Markdown, sourceParts, UnifiedDiff } from "../../apps/tui/src/rich-content";
 import { SourceViewer } from "../../apps/tui/src/source-viewer";
 import { chatVisible, newViewState, projectEvent, Transcript } from "../../apps/tui/src/transcript";
+import { ui } from "../../apps/tui/src/ui";
 import { connect } from "../../packages/shared/src/client";
 import type { Conversation, ConversationEvent } from "../../packages/shared/src/index";
 import {
@@ -20,6 +26,7 @@ import {
   navigate,
   openCommands,
   selectLastRow,
+  waitHeading,
 } from "./ui-actions";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-phase4-ui-"));
@@ -665,7 +672,7 @@ test("command palette searches projects and conversations, responsive sidebar hi
     await frame(screen, "Command palette");
     await screen.mockInput.typeText("Unique Palette Beta");
     screen.mockInput.pressEnter();
-    await frame(screen, "Conversation · Unique Palette Beta");
+    await waitHeading(screen, "Unique Palette Beta");
     await waitFor(
       async () =>
         (await api<{ lastConversationId: string }>("/v1/preferences")).lastConversationId === b.id,
@@ -724,13 +731,13 @@ test("two concurrently streaming Conversations switch without mixing output, los
     await focusMessage(screen);
     await screen.mockInput.typeText("Alpha isolated draft");
     await invoke(screen, "Conversation · Concurrent Alpha / Concurrent Beta");
-    await frame(screen, "Conversation · Concurrent Beta");
+    await waitHeading(screen, "Concurrent Beta");
     await frame(screen, "native-");
     await frame(screen, "Esc interrupt");
     await focusMessage(screen);
     await screen.mockInput.typeText("Beta isolated draft");
     await invoke(screen, "Conversation · Concurrent Alpha / Concurrent Alpha");
-    await frame(screen, "Conversation · Concurrent Alpha");
+    await waitHeading(screen, "Concurrent Alpha");
     await frame(screen, "Alpha isolated draft");
     await waitFor(async () =>
       (
@@ -1168,7 +1175,7 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
     await command(one, "Hide Archived");
     await command(one, "Conversation · Lifecycle UI");
     await command(two, "Conversation · Lifecycle UI");
-    await frame(two, "Conversation · Lifecycle UI");
+    await waitHeading(two, "Lifecycle UI");
     await command(one, "Delete Conversation");
     await frame(one, "Confirm Conversation deletion");
     one.mockInput.pressEscape();
@@ -1295,6 +1302,66 @@ test("two Delete presses confirm Conversation and Project deletion", async () =>
   }
 }, 20000);
 
+test("conversation header separates title, metadata, execution and connection across terminal widths", async () => {
+  const { c } = await setup("会话顶部信息层级与很长的标题展示检查".repeat(4));
+  await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "mock" });
+  await api("/v1/preferences", "PATCH", { showSidebar: false });
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 100, height: 30 });
+  try {
+    for (const width of [100, 80, 32]) {
+      screen.resize(width, 30);
+      await frame(screen, "Model (ACP) · mock-model");
+      await frame(screen, "Esc interrupt");
+      const node = (id: string) => {
+        const value = screen.renderer.root.findDescendantById(id);
+        if (!value) throw new Error(`Missing ${id}`);
+        return value;
+      };
+      const heading = node("workspace-heading");
+      const path = node("workspace-path");
+      const identity = node("harness-identity");
+      const status = node("harness-status");
+      const model = node("harness-model");
+      const toolbar = node("conversation-toolbar");
+      const history = node("native-history");
+      writeFileSync(join(temp, `conversation-header-${width}.txt`), screen.captureCharFrame());
+      expect(heading.height).toBe(1);
+      expect(path.height).toBe(1);
+      expect(identity.y).toBe(status.y);
+      expect(identity.x + identity.width).toBeLessThan(status.x);
+      expect(identity.y + identity.height).toBeLessThanOrEqual(model.y);
+      expect(model.y + model.height).toBeLessThanOrEqual(toolbar.y);
+      expect(toolbar.y + toolbar.height).toBeLessThanOrEqual(history.y);
+      expect(history.height).toBeGreaterThanOrEqual(18);
+      for (const value of [heading, path, identity, status, model, toolbar]) {
+        expect(value.x).toBeGreaterThanOrEqual(0);
+        expect(value.x + value.width).toBeLessThanOrEqual(width);
+      }
+      const spans = screen.captureSpans().lines;
+      const title =
+        spans[heading.y]?.spans.filter((span) => /[\u4e00-\u9fff]/u.test(span.text)) ?? [];
+      expect(title.length).toBeGreaterThan(0);
+      expect(title.every((span) => (span.attributes & TextAttributes.BOLD) !== 0)).toBe(true);
+      for (const [label, row] of [
+        ["ACP · ", identity.y],
+        ["Model (ACP) · ", model.y],
+        ["Connected", toolbar.y],
+      ] as const) {
+        const matches = spans[row]?.spans.filter((span) => span.text.includes(label)) ?? [];
+        expect(matches.length).toBeGreaterThan(0);
+        expect(matches.every((span) => span.fg.equals(RGBA.fromHex(ui.muted)))).toBe(true);
+        expect(matches.every((span) => (span.attributes & TextAttributes.BOLD) === 0)).toBe(true);
+      }
+    }
+    await invoke(screen, "Toggle Changes / Chat");
+    await frame(screen, "Changes");
+    expect(screen.renderer.root.findDescendantById("harness-model")).toBeDefined();
+    expect(screen.renderer.root.findDescendantById("conversation-toolbar")).toBeDefined();
+  } finally {
+    await screen.dispose();
+  }
+});
+
 test("compact layout gives transcript most rows; input grows and narrow sidebar collapses", async () => {
   await setup("Layout refinement");
   const screen = await testRender(() => <App onExit={() => {}} />, {
@@ -1308,16 +1375,19 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
       "native-history",
     ) as ScrollBoxRenderable;
     const input = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
-    // Agent and model now each have a persistent row above the runtime status.
+    // Execution status sits beside the Agent; model and toolbar keep their own rows.
     const identity = screen.renderer.root.findDescendantById("harness-identity");
     const model = screen.renderer.root.findDescendantById("harness-model");
     const status = screen.renderer.root.findDescendantById("harness-status");
+    const toolbar = screen.renderer.root.findDescendantById("conversation-toolbar");
     expect(identity?.height).toBe(1);
     expect(model?.height).toBe(1);
     expect(status?.height).toBe(1);
     expect(identity && model && identity.y + identity.height <= model.y).toBe(true);
-    expect(model && status && model.y + model.height <= status.y).toBe(true);
-    expect(status && status.y + status.height <= history.y).toBe(true);
+    expect(identity?.y).toBe(status?.y);
+    expect(identity && status && identity.x + identity.width < status.x).toBe(true);
+    expect(model && toolbar && model.y + model.height <= toolbar.y).toBe(true);
+    expect(toolbar && toolbar.y + toolbar.height <= history.y).toBe(true);
     expect(history.height).toBeGreaterThanOrEqual(18);
     expect(input.height).toBe(1);
     await focusMessage(screen);

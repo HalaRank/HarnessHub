@@ -109,7 +109,7 @@ test("Ctrl+N works without projects and restores an ungrouped conversation at th
   });
   try {
     await waitFor(screen, () => screen.captureCharFrame().includes(`Workspace · ${launchCwd}`));
-    expect(screen.captureCharFrame()).toContain("Conversation · New conversation");
+    expect(screen.captureCharFrame()).toContain("New conversation");
     expect((await api<Conversation>(`/v1/conversations/${created?.id}`)).workspacePath).toBe(
       launchCwd,
     );

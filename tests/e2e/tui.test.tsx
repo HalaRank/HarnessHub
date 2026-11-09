@@ -9,7 +9,7 @@ import { App } from "../../apps/tui/src/index";
 import { expandProjectPath } from "../../apps/tui/src/project-path";
 import { ProjectPathInput } from "../../apps/tui/src/project-path-input";
 import { connect } from "../../packages/shared/src/client";
-import { focusMessage, invoke } from "./ui-actions";
+import { focusMessage, invoke, waitHeading } from "./ui-actions";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-tui-"));
 const cli = resolve("dist/cli/hhu.js");
@@ -72,7 +72,7 @@ test("Solid view registers real workspace and empty conversation through authent
     screen.mockInput.pressEnter();
     await waitFor("/new creates a conversation");
     await invoke(screen, "New Conversation");
-    await waitFor("Conversation · New conversation");
+    await waitHeading(screen, "New conversation");
     await waitFor("Enter send");
     expect(screen.captureCharFrame()).not.toContain("New conversation title");
     screen.mockInput.pressEscape();
@@ -88,8 +88,10 @@ test("Solid view registers real workspace and empty conversation through authent
     expect(title.value).toBe("New conversation");
     title.value = "Real empty conversation";
     screen.mockInput.pressEnter();
-    await waitFor("Conversation · Real empty conversation");
-    await waitFor("IDLE · Chat · Connected");
+    await waitHeading(screen, "Real empty conversation");
+    await waitFor("● IDLE");
+    expect(screen.captureCharFrame()).toContain("Chat");
+    expect(screen.captureCharFrame()).toContain("Connected");
     expect(screen.captureCharFrame()).toContain("ACP · codex");
     expect(screen.captureCharFrame()).toContain("Model (ACP) · not initialized");
     expect(screen.captureCharFrame()).toContain("Start a conversation");
@@ -360,7 +362,7 @@ test("drafts stay isolated when switching Conversations and restore with recent 
     screen.mockInput.pressEscape();
     await new Promise((r) => setTimeout(r, 60));
     screen.mockInput.pressArrow("down");
-    await waitFrame(screen, "Conversation · Draft Beta");
+    await waitHeading(screen, "Draft Beta");
     await waitFrame(screen, "Esc interrupt");
     await focusMessage(screen);
     await waitFrame(screen, "Enter send");
@@ -368,7 +370,7 @@ test("drafts stay isolated when switching Conversations and restore with recent 
     screen.mockInput.pressEscape();
     await new Promise((r) => setTimeout(r, 60));
     screen.mockInput.pressArrow("up");
-    await waitFrame(screen, "Conversation · Draft Alpha");
+    await waitHeading(screen, "Draft Alpha");
     await waitFrame(screen, "Esc interrupt");
     await focusMessage(screen);
     await waitFrame(screen, "Alpha 草稿");

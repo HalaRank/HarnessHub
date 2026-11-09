@@ -851,15 +851,31 @@ export function App(props: {
               </box>
             }
           >
-            <text id="workspace-heading" height={1} flexShrink={0} fg={ui.text} wrapMode="none">
-              <b>
-                {row()?.value.conversation
-                  ? `Conversation · ${row()?.value.conversation?.title}${row()?.value.conversation?.archivedAt !== null ? " [archived]" : ""}`
-                  : row()?.value.project?.name}
-              </b>
+            <text
+              id="workspace-heading"
+              height={1}
+              flexShrink={0}
+              fg={ui.text}
+              wrapMode="none"
+              truncate
+            >
+              <Show when={row()?.value.conversation} fallback={<b>{row()?.value.project?.name}</b>}>
+                <b>{row()?.value.conversation?.title}</b>
+                <Show when={row()?.value.conversation?.archivedAt !== null}>
+                  <span style={{ fg: ui.warning }}> [archived]</span>
+                </Show>
+              </Show>
             </text>
-            <text height={1} flexShrink={0} fg={ui.muted} wrapMode="none">
-              {`Workspace · ${row()?.value.conversation?.workspacePath ?? row()?.value.project?.rootPath}`}
+            <text
+              id="workspace-path"
+              height={1}
+              flexShrink={0}
+              fg={ui.secondary}
+              wrapMode="none"
+              truncate
+            >
+              <span style={{ fg: ui.muted }}>Workspace · </span>
+              {row()?.value.conversation?.workspacePath ?? row()?.value.project?.rootPath}
             </text>
           </Show>
           <Show

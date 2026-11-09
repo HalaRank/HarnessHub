@@ -17,7 +17,7 @@ import { ProjectDirectory } from "../../apps/tui/src/project-directory";
 import { conversationKey, projectKey } from "../../apps/tui/src/project-tree";
 import { connect } from "../../packages/shared/src/client";
 import type { Conversation, Project } from "../../packages/shared/src/index";
-import { focusMessage, invoke, openCommands, selectLastRow } from "./ui-actions";
+import { focusMessage, invoke, openCommands, selectLastRow, waitHeading } from "./ui-actions";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-mouse-sidebar-"));
 const previous = { ...process.env };
@@ -118,7 +118,7 @@ async function command(screen: Screen, text: string) {
   await screen.renderOnce();
 }
 async function current(screen: Screen, conversation: Conversation) {
-  await frame(screen, `Conversation · ${conversation.title}`);
+  await waitHeading(screen, conversation.title);
   await frame(screen, "Model (ACP)");
   await waitFor(async () => {
     await screen.renderOnce();
@@ -283,7 +283,7 @@ test("large sidebar wheel is isolated from chat, selection and metadata refresh;
     await current(screen, a);
     const offset = tree.scrollTop;
     await api(`/v1/conversations/${a.id}`, "PATCH", { title: "Wheel-renamed" });
-    await frame(screen, "Conversation · Wheel-renamed");
+    await waitHeading(screen, "Wheel-renamed");
     expect(tree.scrollTop).toBe(offset);
     const last = conversations[59],
       prior = conversations[58];

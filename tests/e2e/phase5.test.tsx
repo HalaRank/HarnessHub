@@ -14,7 +14,7 @@ import type {
   Handoff,
   Turn,
 } from "../../packages/shared/src/index";
-import { clickControl, focusMessage, invoke, openCommands } from "./ui-actions";
+import { clickControl, focusMessage, invoke, openCommands, waitHeading } from "./ui-actions";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-phase5-ui-")),
   previous = { ...process.env },
@@ -312,7 +312,7 @@ test("TUI creates automatically named independent Worktree from palette; safe cl
     expect(created?.workspaceMode).toBe("worktree");
     expect(existsSync(created?.workspacePath ?? "")).toBe(true);
     expect(created?.title).toBe("New conversation");
-    await frame(screen, "Conversation · New conversation");
+    await waitHeading(screen, "New conversation");
     screen.mockInput.pressEscape();
     await screen.renderOnce();
     await api(`/v1/conversations/${created?.id}`, "DELETE", { confirmed: true });
