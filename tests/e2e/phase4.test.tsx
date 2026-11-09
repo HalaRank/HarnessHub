@@ -1162,7 +1162,7 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
     await one.renderOnce();
     await command(one, "Archive Conversation");
     await waitFor(async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt);
-    await frame(two, "/new creates a conversation");
+    await frame(two, "N creates a conversation");
     expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
     await command(one, "View Archived");
     await frame(one, "Archives visible");
@@ -1193,7 +1193,7 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
           (v) => v.id === c.id,
         ),
     );
-    await frame(two, "/new creates a conversation");
+    await frame(two, "N creates a conversation");
     expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
   } finally {
     await one.dispose();
@@ -1225,7 +1225,7 @@ test("confirmed deletion cancels an active Conversation from the TUI, while clos
           (v) => v.id === c.id,
         ),
     );
-    await frame(screen, "/new creates a conversation");
+    await frame(screen, "N creates a conversation");
   } finally {
     screen.renderer.destroy();
   }
@@ -1277,7 +1277,7 @@ test("two Delete presses confirm Conversation and Project deletion", async () =>
       await frame(screen, "Esc interrupt");
       if (kind === "Project") {
         screen.mockInput.pressArrow("up");
-        await frame(screen, "/new creates a conversation");
+        await frame(screen, "N creates a conversation");
       }
       await navigate(screen);
       screen.mockInput.pressKey("DELETE");
@@ -1447,7 +1447,7 @@ test("action menu archives without confirmation, archive view isolates history, 
       async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt,
       "archive from action menu",
     );
-    await frame(two, "/new creates a conversation");
+    await frame(two, "N creates a conversation");
     expect(two.captureCharFrame()).not.toContain("Previously archived");
     await command(one, "View Archived");
     await frame(one, "Previously archived");
@@ -1456,7 +1456,7 @@ test("action menu archives without confirmation, archive view isolates history, 
     await waitFor(
       async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt === null,
     );
-    await frame(one, "/new creates a conversation");
+    await frame(one, "N creates a conversation");
     expect(one.captureCharFrame()).not.toContain("Delete project UI [archived]");
     await frame(one, "Previously archived");
     await command(one, "Delete Project");

@@ -33,36 +33,37 @@ hhu daemon stop --cancel-active  # 明确请求原生取消；等待结束后才
 hhu --version
 ```
 
-无参数启动打开全局 Project → Conversation 树。浏览时按 `/`，或点击顶部 Commands，搜索项目、会话及操作。Add Project 注册已有目录，路径默认从 `~/` 开始，支持 Tab 补全。`/new` 创建共享目录会话，命令面板的 New Conversation in Git Worktree 创建独立 worktree 会话。首条消息自动生成标题，Rename Conversation 支持手动重命名。
+无参数启动打开全局 Project → Conversation 树。浏览时按 `/`，或点击顶部 Commands，搜索项目、会话及操作。Add Project 注册已有目录，路径默认从 `~/` 开始，支持 Tab 补全。命令面板的 New Conversation 创建共享目录会话，New Conversation in Git Worktree 创建独立 worktree 会话；聊天输入中的 `/new` 不执行 HHU 会话管理。首条消息自动生成标题，Rename Conversation 支持手动重命名。
 
 选中项目或项目下的会话、且未进入聊天输入/历史或弹窗时，按 `N`（小写 `n` 亦可）在该项目根目录创建新会话；即使选中的是 Worktree 会话，也不会继承其 Worktree。按 `Ctrl+N` 在**本次启动 `hhu` 的目录**创建不属于任何项目的独立会话，不注册项目、不使用 Daemon 的工作目录。独立会话直接显示在侧栏顶层，历史和草稿照常持久化；聊天输入中 `N` 保持输入文字，`Ctrl+N` 仍可新建，弹窗打开时不触发创建。
 
 默认键位按 Codex CLI 收敛。
 
-| 操作                        | 键位或入口                                     |
-| --------------------------- | ---------------------------------------------- |
-| 发送消息 / 运行中追加指令   | Enter                                          |
-| 运行中排队到下一轮          | Tab                                            |
-| 换行                        | Shift+Enter，备用 Ctrl+J                       |
-| 打断当前任务                | Esc，优先关闭命令候选或顶层弹窗                |
-| 浏览已发送消息 / 搜索历史   | ↑↓ / Ctrl+R                                    |
-| 复制最近完成的回复          | Ctrl+O，有选区时复制选区                       |
-| 进入 / 离开聊天历史         | Ctrl+T，历史中 ↑↓ 选择、Enter 展开、End 到末尾 |
-| 切换 Harness                | Ctrl+H，循环选择；首次发送消息才交接           |
-| 命令和帮助                  | 输入 `/` 或在空输入框按 `?`                    |
-| 新会话 / 查找会话 / Changes | `/new` / `/resume` / `/diff`                   |
-| 当前项目新会话              | 浏览项目或其会话时按 N                         |
-| 启动目录独立新会话          | Ctrl+N（不归属项目）                           |
-| 删除所选会话 / 项目         | 浏览时 Delete 打开确认，再按 Delete 删除       |
-| 原生模型及权限设置 / 审批   | `/model`、`/permissions` / `/approval`         |
-| 切换 Harness / Handoff 材料 | `/harness` / `/handoff`                        |
-| 排队消息管理                | `/queue`，支持暂停后继续、编辑和移除           |
-| 侧栏 / 键位设置             | `/sidebar` / `/keymap`                         |
-| 退出 TUI                    | `/quit`、`/exit`，或空输入无选区时 Ctrl+C      |
+| 操作                        | 键位或入口                                                 |
+| --------------------------- | ---------------------------------------------------------- |
+| 发送消息 / 运行中追加指令   | Enter                                                      |
+| 运行中排队到下一轮          | Tab                                                        |
+| 换行                        | Shift+Enter，备用 Ctrl+J                                   |
+| 打断当前任务                | Esc，优先关闭命令候选或顶层弹窗                            |
+| 浏览已发送消息 / 搜索历史   | ↑↓ / Ctrl+R                                                |
+| 复制最近完成的回复          | Ctrl+O，有选区时复制选区                                   |
+| 进入 / 离开聊天历史         | Ctrl+T，历史中 ↑↓ 选择、Enter 展开、End 到末尾             |
+| 切换 Harness                | Ctrl+H，循环选择；首次发送消息才交接                       |
+| Harness 原生命令            | 聊天输入 `/`，仅列出当前会话通过 ACP 发布的命令            |
+| HHU 管理和帮助              | 点击 Commands，或在空输入框按 `?`                          |
+| 新会话 / 查找会话 / Changes | Commands 面板：New Conversation / 搜索 / Toggle Changes    |
+| 当前项目新会话              | 浏览项目或其会话时按 N                                     |
+| 启动目录独立新会话          | Ctrl+N（不归属项目）                                       |
+| 删除所选会话 / 项目         | 浏览时 Delete 打开确认，再按 Delete 删除                   |
+| 原生模型及权限设置 / 审批   | Commands：HarnessHub ACP settings / Choose Native Approval |
+| 切换 Harness / Handoff 材料 | Commands：Select Next Harness / Handoff Failure            |
+| 排队消息管理                | Commands：Message Queue，支持暂停后继续、编辑和移除        |
+| 侧栏 / 键位设置             | Commands 面板                                              |
+| 退出 TUI                    | Commands：Quit TUI，或空输入无选区时 Ctrl+C                |
 
-运行中 Enter 仅在 Agent 实际声明 `_meta.steering.supported` 时使用原生 `_session/steering`，并要求空闲竞态回到宿主控制。Agent 未声明该能力时，输入框明确显示排队降级。Tab 按 FIFO 等待当前 Turn 正常结束再发送。所有排队、发送及不确定状态保存在 SQLite 事件日志，TUI 退出后仍由 Daemon 管理。Esc 取消、Harness 切换及 Daemon 重启会暂停未投递消息，`/queue` 明确恢复。投递结果为 UNCERTAIN 时保留历史并阻止自动重发。
+运行中 Enter 仅在 Agent 实际声明 `_meta.steering.supported` 时使用原生 `_session/steering`，并要求空闲竞态回到宿主控制。Agent 未声明该能力时，输入框明确显示排队降级。Tab 按 FIFO 等待当前 Turn 正常结束再发送。所有排队、发送及不确定状态保存在 SQLite 事件日志，TUI 退出后仍由 Daemon 管理。Esc 取消、Harness 切换及 Daemon 重启会暂停未投递消息，通过 Commands → Message Queue 明确恢复。投递结果为 UNCERTAIN 时保留历史并阻止自动重发。
 
-已有原生 ACP 命令继续按 Agent 发布的名称、说明和参数提示补全。补全本身不发送，未发布的 slash 文本经用户确认后才作为普通消息发送。HarnessHub 本地命令与原生命令同名时优先使用原生命令。`/model`、`/permissions` 通过真实 ACP 选项工作。
+原生 ACP 命令按当前 Harness 会话发布的名称、说明和参数提示补全，不混入 HHU 命令。Tab/Enter 选择只补全，再按 Enter 原样发送给对应 Harness，由其实现原生行为；HHU 不解释 `/new`、`/model`、`/quit` 等名称，也不替换为本地管理操作。原生 CLI 命令不保证通过 ACP 暴露；未发布时不补造菜单，明确提示不可通过 ACP 原生执行。用户仍可确认将未发布的 slash 文本作为普通 Prompt 发送，但这不保证命令执行。HHU 管理入口独立保留在 Commands 面板、按钮和快捷键中。
 
 聊天历史使用滚轮连续上下查看，无需翻页；阅读旧消息时新输出不会拉回底部，Esc / End 返回最新消息。工具保持紧凑摘要，标题一行、正文最多末尾三行，手动展开状态优先。Ctrl+T 进入历史后用 ↑↓ 选择、Enter 展开，底部 More / less、Source、Raw 也可点击。Source 展示完整原始 Markdown、代码及工具输出，Enter 复制全文，PgUp/PgDn 滚动、Ctrl+←/→ 分页。鼠标拖选松开自动复制，双击选词、三击选行。Ctrl+C 优先复制有效选区，否则清空非空输入，再次在空输入时退出。
 

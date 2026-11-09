@@ -660,6 +660,7 @@ export function App(props: {
             run: () => dispatch("initialize"),
           },
           { id: "changes", name: "Toggle Changes / Chat", run: () => dispatch("changes") },
+          { id: "queue", name: "Message Queue", run: () => dispatch("queue") },
           { id: "approval", name: "Choose Native Approval", run: () => setForm("approval") },
           { id: "cancel", name: "Cancel Current Turn (ACP)", run: () => dispatch("cancel") },
           {
@@ -688,23 +689,6 @@ export function App(props: {
         ]
       : []),
   ]);
-  const localCommand = (name: string) => {
-    if (["help", "resume"].includes(name)) {
-      paletteReturn = "message";
-      setForm("palette");
-      return;
-    }
-    const aliases: Record<string, string> = {
-      diff: "changes",
-      model: "settings",
-      permissions: "settings",
-      keymap: "keys",
-      exit: "quit",
-    };
-    commands()
-      .find((command) => command.id === (aliases[name] ?? name))
-      ?.run();
-  };
   const submit = async (value: string) => {
     if (busy()) return;
     setBusy(true);
@@ -908,7 +892,10 @@ export function App(props: {
                   if (row()?.value.conversation?.id === conversationId) setForm(value);
                 }}
                 onDraftError={setError}
-                onCommand={localCommand}
+                onHelp={() => {
+                  paletteReturn = "message";
+                  setForm("palette");
+                }}
                 view={view(conversationId)}
                 shortcuts={keyOverrides()}
                 action={action()}

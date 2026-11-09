@@ -16,7 +16,6 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show }
 import { ChangesPane } from "./changes-pane";
 import { useClipboard } from "./clipboard";
 import { DraftSession } from "./draft-session";
-import { localCommands } from "./local-commands";
 import { NativeEvents } from "./native-events";
 import { RawEvents } from "./raw-events";
 import { binding, matches, navigationShortcuts, shortcuts } from "./shortcuts";
@@ -50,7 +49,7 @@ export function AgentPane(props: {
   action?: AgentAction;
   onChangesChange?: (value: boolean) => void;
   registerClearInput?: (clear: (() => boolean) | undefined) => void;
-  onCommand?: (name: string) => void;
+  onHelp?: () => void;
 }) {
   const transcript = new Transcript(),
     renderer = useRenderer();
@@ -123,13 +122,7 @@ export function AgentPane(props: {
       ? slashQuery(textarea.plainText, textarea.getTextRange(0, textarea.cursorOffset))
       : null;
   });
-  const availableCommands = () => [
-    ...(commands() ?? []),
-    ...localCommands.filter(
-      (command) => !(commands() ?? []).some((native) => native.name === command.name),
-    ),
-  ];
-  const options = createMemo(() => matchingCommands(availableCommands(), query() ?? ""));
+  const options = createMemo(() => matchingCommands(commands() ?? [], query() ?? ""));
   const steeringAvailable = () =>
     object(object(object(executionSession()?.capabilities).initialize)._meta).steering;
   const isRunning = () =>
@@ -388,6 +381,12 @@ export function AgentPane(props: {
     if (action.name === "harness") nextHarness();
     if (action.name === "cancel_switch") cancelSwitch();
     if (action.name === "handoff") openHandoff();
+    if (action.name === "queue")
+      void run(async () => {
+        await refreshInputs();
+        setQueueOpen(true);
+        props.setForm("details");
+      });
     if (action.name === "changes") setChanges((v) => !v);
     if (action.name === "initialize")
       void run(async () => {
@@ -404,7 +403,7 @@ export function AgentPane(props: {
     if (props.form === "message" && key.sequence === "?" && !textarea?.plainText) {
       key.preventDefault();
       key.stopPropagation();
-      props.onCommand?.("help");
+      props.onHelp?.();
       return;
     }
     if (key.name === "escape" && (queueOpen() || historySearch() !== null)) {
@@ -564,21 +563,6 @@ export function AgentPane(props: {
       if (!message.trim()) return;
       const token = message.split(/\s/, 1)[0] ?? "";
       const command = commands()?.find((c) => `/${c.name}` === token);
-      const local = !raw && !command && localCommands.find((c) => `/${c.name}` === token);
-      if (local) {
-        if (message.trim() !== token) throw new Error(`/${local.name} does not accept arguments`);
-        textarea?.setText("");
-        draft.update("");
-        await draft.flush();
-        if (local.name === "copy") {
-          if (lastResponse()) setError(await copyText(lastResponse()));
-        } else if (local.name === "queue") {
-          await refreshInputs();
-          setQueueOpen(true);
-          props.setForm("details");
-        } else props.onCommand?.(local.name);
-        return;
-      }
       if (!raw && message.startsWith("/") && !command) {
         setDebug(false);
         setRawConfirm(true);
@@ -843,7 +827,7 @@ export function AgentPane(props: {
         <box flexDirection="column" height={composerLines() + 2} flexShrink={0}>
           <Show when={slashOpen()}>
             <SlashCommands
-              title="Commands"
+              title="Native ACP commands"
               commands={options()}
               selected={slashSelected()}
               bottom={composerLines() + 2}
@@ -963,7 +947,7 @@ export function AgentPane(props: {
                   `${input.state} · ${input.input.message.replace(/\s+/g, " ").slice(0, 65)} · ${input.reason}`,
               )
               .join("\n")}
-            {"\n/queue to inspect messages"}
+            {"\nCommands → Message Queue to inspect messages"}
           </text>
         </box>
       </Show>
@@ -1071,8 +1055,9 @@ export function AgentPane(props: {
             {commandStatus()} This prefix is not an advertised command in the selected session.
           </text>
           <text fg={ui.secondary}>
-            Send the exact text as an ordinary Prompt? This may start a model Turn or pending
-            Handoff.
+            Native execution is not available through ACP for this prefix. Send the exact text as an
+            ordinary Prompt instead? This may start a model Turn or pending Handoff; it does not
+            guarantee native command execution.
           </text>
           <select
             {...listStyle}

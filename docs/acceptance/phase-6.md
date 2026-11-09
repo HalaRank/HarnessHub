@@ -1,5 +1,7 @@
 # Phase 6：稳定性、安全加固与最终 MVP 验收报告
 
+2026-11-09 原生 Slash 命令与 HHU 管理入口分离，真实 Codex ACP `/new` 限制及验证见[专项记录](phase-6-native-slash-commands.md)。
+
 2026-11-09 输入占位提示在进入编辑态时立即隐藏，验证与系统输入法待验步骤见[专项记录](phase-6-input-placeholder.md)。
 
 2026-11-04 的 Ctrl 默认键位及工具详情默认折叠修正见 [定向验收记录](phase-6-ctrl-shortcuts-and-tool-details.md)。

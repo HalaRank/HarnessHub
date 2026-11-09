@@ -70,7 +70,7 @@ test("Solid view registers real workspace and empty conversation through authent
     screen.mockInput.pressTab();
     await waitFor(`${temp.split("/").at(-1)}/`);
     screen.mockInput.pressEnter();
-    await waitFor("/new creates a conversation");
+    await waitFor("N creates a conversation");
     await invoke(screen, "New Conversation");
     await waitHeading(screen, "New conversation");
     await waitFor("Enter send");

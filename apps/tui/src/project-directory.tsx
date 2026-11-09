@@ -80,7 +80,7 @@ export function ProjectDirectory(props: { rootPath: string }) {
         <b>Project directory</b>
       </text>
       <text fg={ui.muted} height={1} flexShrink={0} wrapMode="none">
-        Click folders to expand / collapse · /new creates a conversation
+        Click folders to expand / collapse · N creates a conversation
       </text>
       <scrollbox flexGrow={1} minHeight={0} scrollX={false} focused={false}>
         <text selectable fg={ui.muted}>

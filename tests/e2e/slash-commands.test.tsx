@@ -26,6 +26,9 @@ const advertised = [
   { name: "review", description: "原生审查" },
   { name: "status", description: "Native status" },
   { name: "silent", description: "No output" },
+  { name: "new", description: "Native new session" },
+  { name: "model", description: "Native model command" },
+  { name: "quit", description: "Native quit command" },
   ...Array.from({ length: 30 }, (_, i) => ({ name: `item${i}`, description: `Native item ${i}` })),
 ];
 async function api<T>(path: string, method = "GET", body?: unknown): Promise<T> {
@@ -227,6 +230,97 @@ test("Esc closes suggestions first, then editor; unmatched Enter never creates a
     s.renderer.destroy();
   }
 });
+
+test("native new/model/quit are sent unchanged to ACP, never intercepted as HHU actions", async () => {
+  const c = await setup("native-collisions");
+  let exits = 0;
+  const s = await screenFor(c, () => exits++);
+  const originalSessions = await sessions(c);
+  const originalSession = originalSessions[0];
+  if (!originalSession) throw new Error("Missing initialized native session");
+  const conversationPath = `/v1/projects/${c.projectId}/conversations`;
+  const originalConversations = await api<Conversation[]>(conversationPath);
+  try {
+    for (const name of ["new", "model", "quit"]) {
+      await s.mockInput.typeText(`/${name}`);
+      await frame(s, `Native ${name}`);
+      const before = (await users(c)).length;
+      s.mockInput.pressEnter();
+      await until(() => !popup(s), "completion closes popup");
+      expect((await users(c)).length).toBe(before);
+      s.mockInput.pressEnter();
+      await until(async () => (await users(c)).length === before + 1);
+      await until(
+        async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).runtimeStatus === "IDLE",
+      );
+      await until(() => editor(s).focused && editor(s).plainText === "");
+      const payload = (await users(c)).at(-1)?.payload as {
+        text: string;
+        nativeCommand: { nativeSessionId: string; name: string };
+      };
+      expect(payload.text).toBe(`/${name}`);
+      expect(payload.nativeCommand).toEqual({ nativeSessionId: originalSession.id, name });
+    }
+    const wire = (await events(c)).filter(
+      (event) =>
+        event.origin === "client" &&
+        (event.raw as { method?: string })?.method === "session/prompt",
+    );
+    expect(
+      wire.map(
+        (event) =>
+          (
+            event.raw as {
+              params: { prompt: { type: string; text: string }[] };
+            }
+          ).params.prompt,
+      ),
+    ).toEqual(["new", "model", "quit"].map((name) => [{ type: "text", text: `/${name}` }]));
+    expect((await sessions(c)).map((session) => session.id)).toEqual(
+      originalSessions.map((session) => session.id),
+    );
+    expect(
+      (await api<Conversation[]>(conversationPath)).map((conversation) => conversation.id),
+    ).toEqual(originalConversations.map((conversation) => conversation.id));
+    expect(exits).toBe(0);
+  } finally {
+    s.renderer.destroy();
+  }
+}, 20000);
+
+test("unpublished native commands never fall back to HHU operations", async () => {
+  const c = await setup("no-local-fallback", "none");
+  let exits = 0;
+  const s = await screenFor(c, () => exits++);
+  const conversationPath = `/v1/projects/${c.projectId}/conversations`;
+  const originalConversations = await api<Conversation[]>(conversationPath);
+  const originalSessions = await sessions(c);
+  try {
+    await s.mockInput.typeText("/");
+    await frame(s, "Agent has not published any ACP commands.");
+    expect(popup(s)?.getChildren().length).toBeGreaterThan(0);
+    expect(s.renderer.root.findDescendantById("slash-0")).toBeFalsy();
+    for (const name of ["new", "model", "quit", "queue", "help"]) {
+      editor(s).setText("");
+      await s.mockInput.pasteBracketedText(`/${name}`);
+      s.mockInput.pressEnter();
+      await frame(s, "Unadvertised slash text");
+      expect((await users(c)).length).toBe(0);
+      s.mockInput.pressEscape();
+      await until(() => editor(s).focused);
+      expect(editor(s).plainText).toBe(`/${name}`);
+    }
+    expect((await sessions(c)).map((session) => session.id)).toEqual(
+      originalSessions.map((session) => session.id),
+    );
+    expect(
+      (await api<Conversation[]>(conversationPath)).map((conversation) => conversation.id),
+    ).toEqual(originalConversations.map((conversation) => conversation.id));
+    expect(exits).toBe(0);
+  } finally {
+    s.renderer.destroy();
+  }
+}, 20000);
 
 test("ordinary letters, Ctrl+D/Y, arrows, Shift+Enter and Ctrl+J retain editor semantics", async () => {
   const c = await setup("editing");

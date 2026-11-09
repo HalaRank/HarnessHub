@@ -107,7 +107,7 @@ test("Enter steers while running, Tab queues, Esc dismisses suggestions before i
     await until(async () => (await inputs(c)).some((input) => input.state === "QUEUED"));
     await until(() => editor(screen).focused && editor(screen).plainText === "");
     await screen.mockInput.typeText("/");
-    await frame(screen, "/help");
+    await frame(screen, "Agent has not published any ACP commands.");
     screen.mockInput.pressEscape();
     await screen.renderOnce();
     expect((await api<Conversation>(`/v1/conversations/${c.id}`)).runtimeStatus).toBe("RUNNING");
@@ -125,9 +125,7 @@ test("Enter steers while running, Tab queues, Esc dismisses suggestions before i
     ).toBe(1);
     expect(history.filter((event) => event.kind === "user.message").length).toBe(2);
     editor(screen).setText("");
-    await screen.mockInput.typeText("/queue");
-    screen.mockInput.pressEnter();
-    screen.mockInput.pressEnter();
+    await invoke(screen, "Message Queue");
     await frame(screen, "Message queue");
     screen.mockInput.pressEnter();
     await until(async () =>
@@ -155,7 +153,7 @@ test("Enter steers while running, Tab queues, Esc dismisses suggestions before i
   }
 });
 
-test("retired shortcuts leave native editing keys available and local slash commands make no model calls", async () => {
+test("retired shortcuts leave editing keys available and HHU settings stay in the command palette", async () => {
   const { screen, c } = await setup();
   try {
     await screen.mockInput.typeText("abcdef");
@@ -165,12 +163,10 @@ test("retired shortcuts leave native editing keys available and local slash comm
     screen.mockInput.pressKey("e", { ctrl: true });
     screen.mockInput.pressKey("w", { ctrl: true });
     expect(editor(screen).plainText).toBe("");
-    for (const key of ["p", "n", "x", "f"]) screen.mockInput.pressKey(key, { ctrl: true });
+    for (const key of ["p", "x", "f"]) screen.mockInput.pressKey(key, { ctrl: true });
     await screen.renderOnce();
     expect(screen.captureCharFrame()).not.toContain("Command palette");
-    await screen.mockInput.typeText("/model");
-    screen.mockInput.pressEnter();
-    screen.mockInput.pressEnter();
+    await invoke(screen, "HarnessHub ACP settings");
     await frame(screen, "HarnessHub ACP settings");
     screen.mockInput.pressEscape();
     expect((await events(c)).filter((event) => event.kind === "user.message").length).toBe(0);
@@ -201,9 +197,7 @@ test("prompt history uses Up/Down and Ctrl+R while Ctrl+T opens transcript navig
     screen.mockInput.pressEnter();
     await until(() => editor(screen).focused);
     expect(editor(screen).plainText).toBe("history-message");
-    editor(screen).setText("/diff");
-    screen.mockInput.pressEnter();
-    screen.mockInput.pressEnter();
+    await invoke(screen, "Toggle Changes / Chat");
     await frame(screen, "Changes");
     screen.mockInput.pressKey("t", { ctrl: true });
     await frame(screen, "Chat · History");

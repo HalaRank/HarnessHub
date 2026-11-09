@@ -29,6 +29,8 @@ HarnessHub 是一个统一管理多个 AI Coding Harness 的 Linux/WSL 终端应
 9. TUI 关闭不停止 Daemon / Worker。Daemon 重启后必须恢复 SQLite 历史，但原生会话仅在明确支持且安全时恢复；其他情况展示中断或不确定状态。
 10. 默认输入：`Enter` 发送，`Shift+Enter` 换行；必须在 Windows Terminal 和 VS Code WSL 终端实际测试，若无法辨识提供备用键位，但不得擅改默认产品定义。
 
+11. 聊天输入中的 `/` 只补全当前 Harness 原生会话通过 ACP 发布的命令，保留名称、描述和参数提示，提交时交给对应 Harness 执行。HHU 会话管理独立放在 Commands 面板、按钮和快捷键，不能用同名本地操作替换 `/new`、`/model`、`/quit` 等原生命令。ACP 未暴露时明确提示，不补造 CLI 命令列表、不声称普通 Prompt 等于原生执行。
+
 ## 3. 技术栈和进程架构
 
 | 子系统 | 技术 |
