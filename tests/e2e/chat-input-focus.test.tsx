@@ -9,6 +9,93 @@ import { AgentPane } from "../../apps/tui/src/agent-pane";
 import { DraftSession, flushDrafts } from "../../apps/tui/src/draft-session";
 import type { Conversation, Draft } from "../../packages/shared/src/index";
 
+test("message placeholder clears on focus before IME composition and returns only outside editing", async () => {
+  const previousState = process.env.XDG_STATE_HOME;
+  process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "hhu-placeholder-offline-"));
+  const conversation: Conversation = {
+    id: "offline-placeholder",
+    projectId: "project",
+    title: "Placeholder",
+    archivedAt: null,
+    workspaceMode: "shared",
+    workspacePath: "/tmp",
+    runtimeStatus: "IDLE",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+  let saved: Draft = {
+    conversationId: conversation.id,
+    text: "",
+    revision: 0,
+    pendingSubmission: null,
+  };
+  const request = spyOn(DraftSession.prototype, "request").mockImplementation(
+    async <Response,>(_path: string, method = "GET", body?: unknown): Promise<Response> => {
+      if (method === "PUT") saved = { ...saved, ...(body as Draft), revision: saved.revision + 1 };
+      return { ...saved } as Response;
+    },
+  );
+  const [form, setForm] = createSignal<Parameters<typeof AgentPane>[0]["form"]>(null);
+  const screen = await testRender(
+    () => (
+      <AgentPane
+        conversation={conversation}
+        form={form()}
+        setForm={setForm}
+        onDraftError={() => {}}
+      />
+    ),
+    { width: 100, height: 30, kittyKeyboard: true },
+  );
+  const placeholder = "Type a message, / for commands, ? for shortcuts";
+  try {
+    for (let count = 0; count < 5; count++) {
+      await screen.renderOnce();
+      await Bun.sleep(20);
+    }
+    const editor = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
+    expect(screen.captureCharFrame()).toContain(placeholder);
+    screen.mockInput.pressEnter();
+    await screen.renderOnce();
+    expect(editor.focused).toBe(true);
+    expect(editor.plainText).toBe("");
+    expect(screen.captureCharFrame()).not.toContain(placeholder);
+
+    await screen.mockInput.typeText("pu");
+    await screen.renderOnce();
+    expect(editor.plainText).toBe("pu");
+    expect(screen.captureCharFrame()).not.toContain(placeholder);
+    screen.mockInput.pressBackspace();
+    screen.mockInput.pressBackspace();
+    await screen.renderOnce();
+    expect(editor.plainText).toBe("");
+    expect(screen.captureCharFrame()).not.toContain(placeholder);
+
+    await screen.mockInput.pasteBracketedText("普通输入 👋\n第二行");
+    await screen.renderOnce();
+    expect(editor.plainText).toBe("普通输入 👋\n第二行");
+    screen.mockInput.pressEscape();
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).not.toContain(placeholder);
+    editor.setText("");
+    await screen.renderOnce();
+    expect(screen.captureCharFrame()).toContain(placeholder);
+
+    const composer = screen.renderer.root.findDescendantById("message-composer");
+    if (!composer) throw new Error("Missing composer");
+    await screen.mockMouse.click(composer.x, composer.y);
+    await screen.renderOnce();
+    expect(editor.focused).toBe(true);
+    expect(screen.captureCharFrame()).not.toContain(placeholder);
+  } finally {
+    await screen.dispose();
+    await flushDrafts();
+    request.mockRestore();
+    if (previousState === undefined) delete process.env.XDG_STATE_HOME;
+    else process.env.XDG_STATE_HOME = previousState;
+  }
+});
+
 test("chat whitespace and input borders focus the editor; native clicks, scroll and modals stay intact", async () => {
   const previousState = process.env.XDG_STATE_HOME;
   process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "hhu-chat-focus-offline-"));

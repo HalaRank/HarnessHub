@@ -855,7 +855,10 @@ export function AgentPane(props: {
                 if (props.form && props.form !== "message") event.preventDefault();
               }}
               initialValue={draft.text}
-              placeholder="Type a message, / for commands, ? for shortcuts"
+              // Terminal IME preedit can appear before committed text reaches the editor.
+              placeholder={
+                props.form === "message" ? null : "Type a message, / for commands, ? for shortcuts"
+              }
               onContentChange={() => {
                 const text = textarea?.plainText ?? draft.text;
                 draft.update(text);
