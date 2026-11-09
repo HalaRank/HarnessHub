@@ -34,6 +34,7 @@ export function NativeEvents(props: {
   events?: ConversationEvent[];
   model?: Transcript;
   disabled: boolean;
+  mouseDisabled?: boolean;
   running?: boolean;
   followRequest?: number;
   view?: ViewState;
@@ -303,9 +304,15 @@ export function NativeEvents(props: {
                   </Show>
                   <Show when={row.value().kind === "tool"}>
                     <ToolContent
+                      id={`tool-details-${row.id}`}
                       tool={row.value().tool ?? {}}
                       terminals={row.value().terminals}
                       expanded={toolExpanded(manual()[row.id])}
+                      disabled={!!source() || (props.mouseDisabled ?? props.disabled)}
+                      onToggle={() => {
+                        setSelected(model.rows.indexOf(row));
+                        toggle(row);
+                      }}
                     />
                   </Show>
                   <Show when={row.value().kind === "notice"}>

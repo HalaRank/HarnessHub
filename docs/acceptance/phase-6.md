@@ -207,6 +207,10 @@ Slash 菜单、顶部/底部、侧栏、项目目录、命令面板、设置、�
 
 修复第 181 条 Guardian Review 出现时前文从当前页消失的问题，聊天改为仅需滚轮连续浏览，移除页码；根因、真实历史只读重放及验证边界见 [专项验收记录](phase-6-continuous-history.md)。
 
+## 工具详情点击展开
+
+2026-11-09 为 `+ Show details`、`+ N lines` 和 `− Show less` 接入鼠标点击，输入聚焦时也可展开收起并保留草稿。自动化结果及物理终端待验步骤见[专项验收记录](phase-6-clickable-tool-details.md)。
+
 ## Agent / 模型常驻与 Harness 快捷键
 
 当前 Agent 与 ACP 模型独立常驻显示，`Ctrl+H` 在聊天输入、历史及 Changes 中循环切换 Harness，保留草稿和首次消息才交接的边界。自动化、Linux PTY 与待验事项见 [专项验收记录](phase-6-harness-model-status.md)。

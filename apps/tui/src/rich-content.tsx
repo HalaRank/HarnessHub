@@ -1,6 +1,7 @@
-import { SyntaxStyle } from "@opentui/core";
+import { type MouseEvent, SyntaxStyle } from "@opentui/core";
 import { useRenderer } from "@opentui/solid";
 import { createMemo, For, onCleanup, Show } from "solid-js";
+import { mouseClick } from "./project-tree";
 import { object, pretty, type TerminalContent } from "./transcript";
 
 export function useSyntax() {
@@ -86,10 +87,17 @@ export function nativeDiff(value: unknown) {
   return `--- ${String(p.path ?? "file")}\n+++ ${String(p.path ?? "file")}\n@@ -${before.length ? 1 : 0},${before.length} +${after.length ? 1 : 0},${after.length} @@\n${side(before, "-", old)}${side(after, "+", p.newText)}`;
 }
 export function ToolContent(props: {
+  id: string;
   tool: Record<string, unknown>;
   terminals?: Record<string, TerminalContent>;
   expanded?: boolean;
+  disabled: boolean;
+  onToggle: () => void;
 }) {
+  const click = mouseClick();
+  const onMouse = (event: MouseEvent) => {
+    if (!props.disabled) click(props.id, event, props.onToggle);
+  };
   const blocks = () => (Array.isArray(props.tool.content) ? props.tool.content : []);
   const preview = createMemo(() => {
     const text = [
@@ -128,7 +136,15 @@ export function ToolContent(props: {
                   </text>
                 )}
               </For>
-              <text fg="#8b949e" height={1} wrapMode="none" truncate>
+              <text
+                id={props.id}
+                fg="#8b949e"
+                height={1}
+                wrapMode="none"
+                truncate
+                selectable={false}
+                onMouse={onMouse}
+              >
                 {preview().omitted ? `+ ${preview().omitted} lines` : "+ Show details"}
               </text>
             </>
@@ -175,7 +191,15 @@ export function ToolContent(props: {
               );
             }}
           </For>
-          <text fg="#8b949e" height={1} wrapMode="none" truncate>
+          <text
+            id={props.id}
+            fg="#8b949e"
+            height={1}
+            wrapMode="none"
+            truncate
+            selectable={false}
+            onMouse={onMouse}
+          >
             − Show less · Full source: Ctrl+R / Ctrl+Y
           </text>
         </Show>

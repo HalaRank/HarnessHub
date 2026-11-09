@@ -328,6 +328,50 @@ test("tool details default to collapsed, explicit expansion survives status and 
   }
 });
 
+test("tool detail clicks work while composing and respect modal ownership without submitting a turn", async () => {
+  const { c } = await setup("Clickable tool details");
+  const turn = await api<{ id: string }>(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "mock",
+    message: "detail click history",
+  });
+  await waitFor(
+    async () => (await api<{ endedAt: number | null }>(`/v1/turns/${turn.id}`)).endedAt !== null,
+  );
+  const history = await api<{ events: ConversationEvent[] }>(`/v1/conversations/${c.id}/events`);
+  const model = new Transcript();
+  model.append(history.events);
+  const tool = model.rows.find((row) => row.value().kind === "tool");
+  if (!tool) throw new Error("Missing Mock ACP tool");
+  const id = `tool-details-${tool.id}`;
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 40 });
+  try {
+    await frame(screen, "Esc interrupt");
+    await focusMessage(screen);
+    await screen.mockInput.typeText("UNSENT_DRAFT");
+    const editor = screen.renderer.root.findDescendantById("message-draft") as TextareaRenderable;
+    expect(editor.focused).toBe(true);
+    await clickControl(screen, id);
+    await frame(screen, "Show less");
+    expect(editor.plainText).toBe("UNSENT_DRAFT");
+    expect(editor.focused).toBe(true);
+    await clickControl(screen, id);
+    await frame(screen, "+ Show details");
+    await openCommands(screen);
+    await frame(screen, "Command palette");
+    await clickControl(screen, id);
+    expect(screen.captureCharFrame()).toContain("Command palette");
+    expect(screen.captureCharFrame()).not.toContain("Show less");
+    screen.mockInput.pressEscape();
+    await frame(screen, "+ Show details");
+    expect(editor.plainText).toBe("UNSENT_DRAFT");
+    const after = await api<{ events: ConversationEvent[] }>(`/v1/conversations/${c.id}/events`);
+    expect(after.events.filter((entry) => entry.kind === "user.message").length).toBe(1);
+  } finally {
+    await screen.dispose();
+  }
+});
+
 test("source viewer copies exact original Markdown, code and native tool output using OSC52", async () => {
   const markdown = "# Raw\n\n```ts\n  original();\n\n```\n",
     output = "  tool output\n\n";

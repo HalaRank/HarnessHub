@@ -734,6 +734,7 @@ export function AgentPane(props: {
               props.conversation.runtimeStatus,
             )}
             disabled={!!props.form && props.form !== "transcript"}
+            mouseDisabled={!!props.form && !["message", "transcript"].includes(props.form)}
             {...(props.view ? { view: props.view } : {})}
             onModalChange={(open) => props.setForm(open ? "details" : null)}
           />

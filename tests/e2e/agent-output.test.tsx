@@ -389,3 +389,82 @@ test("tool summaries bound multiline commands and stdout without exposing protoc
     }
   }
 });
+
+test("tool detail links toggle the clicked tool, preserve selection and survive updates and remounts", async () => {
+  for (const width of [100, 32]) {
+    const model = new Transcript(),
+      view = newViewState();
+    const events = [
+      event(1, "tool_call", {
+        toolCallId: "command",
+        title: "python3 - <<'PY'",
+        rawInput: { command: "python3 - <<'PY'\nprint('COMMAND_BODY')\nPY" },
+        rawOutput: "COMMAND_RESULT",
+        status: "completed",
+      }),
+      event(2, "tool_call", {
+        toolCallId: "review",
+        title: "Guardian Review",
+        content: [
+          {
+            type: "content",
+            content: { type: "text", text: "REVIEW_FIRST\nsecond\nthird\nfourth\nfifth" },
+          },
+        ],
+        status: "in_progress",
+      }),
+    ];
+    model.append(events);
+    const [command, review] = model.rows;
+    if (!command || !review) throw new Error("Missing native tools");
+    const commandId = `tool-details-${command.id}`,
+      reviewId = `tool-details-${review.id}`;
+    let screen = await testRender(
+      () => <NativeEvents model={model} view={view} disabled={false} />,
+      {
+        width,
+        height: 30,
+      },
+    );
+    try {
+      await frame(screen, "+ Show details");
+      await frame(screen, "+ 2 lines");
+      const control = screen.renderer.root.findDescendantById(reviewId);
+      if (!control) throw new Error("Missing review detail link");
+      await screen.mockMouse.click(control.x, control.y, 2);
+      await screen.mockMouse.drag(control.x, control.y, control.x + 5, control.y);
+      await screen.renderOnce();
+      expect(screen.captureCharFrame()).not.toContain("REVIEW_FIRST");
+      await clickControl(screen, reviewId);
+      await frame(screen, "REVIEW_FIRST");
+      await frame(screen, "▶ Guardian Review");
+      expect(screen.captureCharFrame()).not.toContain("COMMAND_BODY");
+      screen.mockInput.pressEnter();
+      await frame(screen, "+ 2 lines");
+      expect(screen.captureCharFrame()).not.toContain("REVIEW_FIRST");
+      await clickControl(screen, commandId);
+      await frame(screen, "COMMAND_BODY");
+      await frame(screen, "COMMAND_RESULT");
+      await clickControl(screen, reviewId);
+      model.append([event(3, "tool_call_update", { toolCallId: "review", status: "completed" })]);
+      await frame(screen, "REVIEW_FIRST");
+      await screen.dispose();
+      expect(view.manual[command.id]).toBe(true);
+      expect(view.manual[review.id]).toBe(true);
+      expect(view.selected).toBe(1);
+      screen = await testRender(() => <NativeEvents model={model} view={view} disabled={false} />, {
+        width,
+        height: 30,
+      });
+      await frame(screen, "COMMAND_RESULT");
+      await frame(screen, "REVIEW_FIRST");
+      await clickControl(screen, commandId);
+      await frame(screen, "+ Show details");
+      expect(screen.captureCharFrame()).not.toContain("COMMAND_RESULT");
+      expect(screen.captureCharFrame()).toContain("REVIEW_FIRST");
+      expect(model.events.slice(0, 2)).toEqual(events);
+    } finally {
+      await screen.dispose();
+    }
+  }
+});
