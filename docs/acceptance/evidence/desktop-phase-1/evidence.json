@@ -1,0 +1,18 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Real mouse conversation switching, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+    "Project expand/collapse",
+    "Empty conversation switching",
+    "Sidebar hide/restore",
+    "Empty conversation switching, sidebar hide/restore and mouse resize",
+    "Project expand/collapse, details panel, resize/110% zoom without horizontal overflow",
+    "Closing the real Windows window preserves Daemon and active Mock ACP Worker",
+    "Reopened Electron restores WSL distro and SQLite conversation selection"
+  ],
+  "passed": true
+}

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { type Instance, PROTOCOL_VERSION, type Snapshot, VERSION } from "./index";
 import { paths } from "./paths";
 
-const instanceSchema = z.object({
+export const instanceSchema = z.object({
   pid: z.number().int().positive(),
   port: z.number().int().min(1).max(65535),
   token: z.string().regex(/^[a-f0-9]{64}$/),

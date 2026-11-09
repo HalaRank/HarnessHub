@@ -1,0 +1,4 @@
+# Desktop uses React. Do not load the root OpenTUI/Solid test transform.
+preload = []
+[test]
+preload = []

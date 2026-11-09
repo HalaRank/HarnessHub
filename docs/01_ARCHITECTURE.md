@@ -4,6 +4,8 @@
 > 平台：Linux x64 / WSL2，local-first，仅 TUI，无 Web UI。
 > 本文是工程目标与约束，不代表当前代码已经实现。实际 ACP 特性须通过版本锁定和兼容性测试确认。
 
+> 范围追加：用户明确授权 Windows Desktop 产品方向。原文“无 Windows 原生客户端”保留为原 MVP 历史决策；当前 Desktop Phase 1 适用 [D1：Windows + WSL2 Bridge](03_DESKTOP_ARCHITECTURE.md)，不取消 TUI 或其他安全不变量。
+
 ## 1. 产品目标及边界
 
 HarnessHub 是一个统一管理多个 AI Coding Harness 的 Linux/WSL 终端应用。统一项目、会话、执行状态和用户界面；复用原生 CLI/ACP Agent 的模型连接、权限决策、工具调用以及可观察输出；支持在同一应用 Conversation 中跨 Harness 接力。

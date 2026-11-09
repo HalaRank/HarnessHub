@@ -2,6 +2,8 @@
 
 > 产品名称 HarnessHub；CLI `hhu`。按照 `01_ARCHITECTURE.md` 作为架构真源，阶段制实现完整 MVP，不将尚未实现功能伪装为完成。每阶段产生代码、自动化测试、真实运行演示、验收记录。必须以 `AGENTS.md` 为执行约束。
 
+> 新增独立 Desktop 阶段线：原六阶段实施记录不改写。Desktop Phase 1 只交付 Windows Electron + React、WSL2 Bridge 和只读会话 UI，见 [架构决策](03_DESKTOP_ARCHITECTURE.md) 与 [阶段验收](acceptance/desktop-phase-1.md)。未经下一阶段授权不实现正式聊天/审批/完整管理 GUI。
+
 ## 0. 全局开发约定
 
 - 使用 TypeScript、Bun Workspaces，TUI Bun + OpenTUI/Solid，Daemon Node + Hono，数据库 better-sqlite3 + Drizzle，ACP SDK。

@@ -136,3 +136,7 @@ Worker 继承 Daemon 启动时的原生进程环境，并使用 Conversation 工
 迁移前生成同目录 0600 的 `harnesshub.db.backup-*`，再执行 Drizzle migrations；SQL 失败会事务回滚，保留旧库和备份，不自动覆盖。不支持的更高 schema 拒绝打开。不要在 Daemon 运行时替换数据库、构建产物或删除锁文件。强制停止使用 `POST /v1/conversations/:id/session/stop` 的 `{ "force": true, "confirmed": true }` 明确确认，结果保守标记 `UNCERTAIN`。确认删除 Conversation 也授权停止其受控 Worker。普通停止没有自动 SIGKILL 升级。恢复步骤见[操作指南](docs/OPERATIONS.md)。
 
 Conversation 导出通过 `hhu agent export <id> chat|debug [新文件]` 或 `/v1/conversations/:id/export?format=...` 使用。`chat` 提供用户消息、Agent 内容、工具、公开思考/计划和 Handoff 的 Markdown；`debug` 另含原始 ACP、序号、Session、Turn、审批和用途。已知结构化凭据字段脱敏，不注入 Daemon Token 或 Profile 环境值；原生文本/源码仍可能含秘密，导出和备份需私密保存。`doctor` 默认不握手；`hhu doctor --acp <conversationId> <harnessId>` / `hhu agent session ...` 才显式执行握手。
+
+## Windows Desktop（Phase 1）
+
+新增 Electron + React 原生窗口，Agent/Daemon/SQLite 继续在 WSL2 中运行，保留 Linux TUI。当前为真实项目树与只读会话预览；Windows 安装、启动和验证见 [Desktop 指南](docs/DESKTOP.md)，阶段范围与证据见 [验收记录](docs/acceptance/desktop-phase-1.md)。

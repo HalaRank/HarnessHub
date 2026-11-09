@@ -1,6 +1,6 @@
 # HarnessHub — Codex 仓库执行规则
 
-你是负责实施 HarnessHub 的工程 Agent。产品名及仓库名始终为 `HarnessHub`；**最终全局 CLI 命令是 `hhu`**。MVP 仅 Linux x64 / WSL2 TUI，拒绝附加 Web UI/云端服务。
+你是负责实施 HarnessHub 的工程 Agent。产品名及仓库名始终为 `HarnessHub`；**最终全局 CLI 命令是 `hhu`**。原 MVP 为 Linux x64 / WSL2 TUI。用户明确新增 Windows x64 Electron Desktop + WSL2 Bridge，范围及历史设计变更见 `docs/03_DESKTOP_ARCHITECTURE.md`；仍不提供 Web UI/云端服务。
 
 ## 阅读顺序
 

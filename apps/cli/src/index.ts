@@ -21,6 +21,11 @@ try {
 
 async function main(args: string[]) {
   const [command, action] = args;
+  if (command === "desktop-bridge") {
+    const { desktopBridge } = await import("./desktop-bridge");
+    await desktopBridge(args.slice(1));
+    return;
+  }
   if (command === "--version") {
     console.log(`HarnessHub ${VERSION}`);
     return;

@@ -1,0 +1,48 @@
+$ bun scripts/desktop-test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+$ bun run --cwd apps/desktop build
+$ bun ../../scripts/desktop.ts build
+Built Windows Desktop assets: /home/clj/HarnessHub/HarnessHub/dist/desktop/app
+bun test v1.4.4 (38afee6c8)
+
+tests/bridge.test.ts:
+(pass) WSL discovery and bootstrap boundary > UTF-16LE/BOM/UTF-8 and localized state, names containing spaces [0.55ms]
+(pass) WSL discovery and bootstrap boundary > missing WSL and empty discovery give actionable errors [0.38ms]
+(pass) WSL discovery and bootstrap boundary > WSL1 and unknown names cannot execute bootstrap [0.63ms]
+(pass) WSL discovery and bootstrap boundary > known distro and untrusted-looking names are argv, not shell interpolation [3.37ms]
+(pass) WSL discovery and bootstrap boundary > missing installation, incompatible and broken startup do not expose stdout/stderr [0.72ms]
+(pass) WSL discovery and bootstrap boundary > dynamic ports, identity schema, protocol and version validated [1.19ms]
+(pass) WSL discovery and bootstrap boundary > fixed bootstrap finds Linux HOME with no interactive shell or Windows PATH [5.90ms]
+(pass) WSL discovery and bootstrap boundary > installed launcher restores PATH/XDG, quoted absolute executable/release from foreign cwd [2.52ms]
+(pass) Electron boundary > IPC exact allowlist rejects arbitrary HTTP, shell, file paths and extra fields [1.57ms]
+(pass) Electron boundary > only the exact window main frame and document can invoke IPC [0.09ms]
+(pass) Electron boundary > local settings persist only selected distro and reject malformed data [1.00ms]
+(pass) Electron boundary > renderer bundle excludes Node/native modules and preload exposes no token [1.45ms]
+
+tests/history.test.tsx:
+(pass) basic history preserves user/Agent text and concatenates chunks without diagnostics [0.56ms]
+(pass) native tool titles and status retained, protocol body stays out of chat [0.09ms]
+(pass) React renders safe read-only layout with navigation, composer and empty states [12.84ms]
+
+ 15 pass
+ 0 fail
+ 61 expect() calls
+Ran 15 tests across 2 files. [115.00ms]
+✔ Bridge starts absent Daemon, concurrent/repeated starts reuse existing pid and token (1435.490207ms)
+✔ Bridge incompatible client/version refuses without signalling or replacing Daemon (211.703337ms)
+✔ Desktop and TUI clients share real SQLite/WS history and exact Linux workspace (617.547264ms)
+✔ Daemon restart rediscovers token/port/identity and catches up by seq without duplicate turns (1546.771406ms)
+✔ rapid selection cannot mix histories or persist stale preference (89.114763ms)
+✔ closing Desktop during active turn leaves Daemon/Worker alive; reopening restores selection (478.350544ms)
+✔ forwarded wrong identity/version is rejected without lifecycle writes or renderer token (24.642341ms)
+✔ WSL Bridge refuses a live incompatible Daemon without stop, spawn, or metadata replacement (417.422029ms)
+Desktop integration evidence: /tmp/hhu-desktop-integration-83vpcX
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5424.131383

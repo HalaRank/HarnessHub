@@ -14,12 +14,16 @@
   ],
   "scripts": {
     "build": "bun scripts/build.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p apps/daemon/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p apps/daemon/tsconfig.json && tsc --noEmit -p apps/desktop/tsconfig.json",
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "bun scripts/test.ts",
     "install:local": "bun scripts/install-local.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "desktop:build": "bun run --cwd apps/desktop build",
+    "desktop:dev": "bun run --cwd apps/desktop dev",
+    "desktop:package": "bun run --cwd apps/desktop package",
+    "desktop:test": "bun scripts/desktop-test.ts"
   },
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "0.99.1",

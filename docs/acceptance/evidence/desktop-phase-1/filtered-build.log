@@ -1,0 +1,2 @@
+$ bun ../../scripts/desktop.ts build
+Built Windows Desktop assets: /tmp/hhu-desktop-filtered-z6vvw8fu/dist/desktop/app

@@ -13,5 +13,6 @@
     "types": ["node", "bun"],
     "allowImportingTsExtensions": true
   },
-  "include": ["apps", "packages", "scripts", "tests/**/*.tsx", "drizzle.config.ts"]
+  "include": ["apps", "packages", "scripts", "tests/**/*.tsx", "drizzle.config.ts"],
+  "exclude": ["apps/desktop", "tests/desktop"]
 }

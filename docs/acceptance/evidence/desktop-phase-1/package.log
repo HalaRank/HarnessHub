@@ -1,0 +1,21 @@
+$ bun run --cwd apps/desktop package
+$ bun ../../scripts/desktop.ts package
+Built Windows Desktop assets: /home/clj/HarnessHub/HarnessHub/dist/desktop/app
+  • electron-builder  version=26.18.0 os=6.18.33.2-microsoft-standard-WSL2
+  • Specified application directory equals to project dir — superfluous or wrong configuration  appDirectory=/tmp/hhu-windows-package-oVevPJ
+  • packageManager not detected by file, falling back to environment detection  resolvedPackageManager=bun detected=/home/clj/HarnessHub/HarnessHub/apps/desktop
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=45.2.3 appOutDir=dist/desktop/windows/win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=/home/clj/HarnessHub/HarnessHub/dist/desktop/windows/win-unpacked
+  • searching for node modules  pm=bun searchDir=/tmp/hhu-windows-package-oVevPJ
+  • note: bun does not support any CLI for dependency tree extraction, utilizing file traversal collector instead
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=bun searchDir=/tmp/hhu-windows-package-oVevPJ
+  • searching for node modules  pm=traversal searchDir=/tmp/hhu-windows-package-oVevPJ
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=traversal searchDir=/tmp/hhu-windows-package-oVevPJ
+  • no node modules returned while searching directories  searchDirectories=["/tmp/hhu-windows-package-oVevPJ"]
+  • updating asar integrity executable resource  executablePath=dist/desktop/windows/win-unpacked/HarnessHub.exe
+  • file signing skipped via signExecutable configuration  file=dist/desktop/windows/win-unpacked/HarnessHub.exe
+Verified Windows archive: bundled main/preload/renderer only

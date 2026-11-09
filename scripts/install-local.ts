@@ -13,7 +13,9 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client, readInstance } from "../packages/shared/src/client";
-import { paths, securePaths } from "../packages/shared/src/paths";
+import { paths, privateDir, securePaths } from "../packages/shared/src/paths";
+
+import { bridgeLauncher } from "./desktop-bootstrap";
 
 process.umask(0o077);
 const instance = readInstance();
@@ -68,6 +70,15 @@ if (existsSync(target) && lstatSync(target).isSymbolicLink())
   throw new Error(`Refusing to overwrite a symlink launcher: ${target}`);
 if (existsSync(target) && !readFileSync(target, "utf8").includes("# HarnessHub local launcher"))
   throw new Error(`Refusing to overwrite an existing unrelated executable: ${target}`);
+const bridgeDir = join(homedir(), ".local/lib/harnesshub");
+privateDir(bridgeDir);
+const bridgeTarget = join(bridgeDir, "desktop-bridge");
+if (
+  existsSync(bridgeTarget) &&
+  (lstatSync(bridgeTarget).isSymbolicLink() ||
+    !readFileSync(bridgeTarget, "utf8").includes("# HarnessHub desktop bridge launcher"))
+)
+  throw new Error("Refusing to overwrite an unrelated desktop bridge launcher");
 const releases = resolve("dist/releases");
 mkdirSync(releases, { recursive: true, mode: 0o700 });
 const releaseId = randomUUID(),
@@ -92,6 +103,14 @@ writeFileSync(
   { mode: 0o755, flag: "wx" },
 );
 chmodSync(staged, 0o755);
+const bridgeStaged = `${bridgeTarget}.${process.pid}.tmp`;
+writeFileSync(
+  bridgeStaged,
+  bridgeLauncher(process.execPath, release, process.env.PATH ?? "/usr/bin:/bin", p),
+  { mode: 0o700, flag: "wx" },
+);
+chmodSync(bridgeStaged, 0o700);
+renameSync(bridgeStaged, bridgeTarget);
 renameSync(staged, target);
 console.log(
   `Installed ${target}\nKeep this source checkout and node_modules in place.\nEnsure ${bin} is on PATH. No shell configuration was changed.`,

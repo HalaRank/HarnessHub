@@ -6,7 +6,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./paths": "./src/paths.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./event-projection": "./src/event-projection.ts"
   },
-  "dependencies": {}
+  "dependencies": {
+    "ws": "8.21.0",
+    "zod": "4.6.7"
+  }
 }
