@@ -164,6 +164,25 @@ const app = new AgentApp()
       if (process.env.HHU_MOCK_TARGET_REJECT) throw new Error("target rejection");
       message = message.split("[New user message]\n")[1];
     }
+    if (message === "desktop-native-diff") {
+      await update(client, {
+        sessionUpdate: "tool_call",
+        toolCallId: "native-diff",
+        title: "Mock native Diff",
+        status: "completed",
+        locations: [{ path: `${process.cwd()}/sentinel.txt`, line: 1 }],
+        content: [
+          {
+            type: "diff",
+            path: `${process.cwd()}/sentinel.txt`,
+            oldText: "original\n",
+            newText: "native proposed text\n",
+          },
+        ],
+      });
+      await text(client, "Native Diff fixture; no files were written");
+      return { stopReason: "end_turn" };
+    }
     if (message === "desktop-many-tools") {
       for (let i = 0; i < 600; i++) {
         await update(client, {

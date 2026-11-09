@@ -54,6 +54,8 @@ function editorBackend() {
         });
         submissions++;
         const turn = { conversationId: key, requestId: request.input.requestId, state: "RUNNING" };
+        if (request.input.message.startsWith("/path"))
+          expect(request.input.nativeCommand).toBeUndefined();
         requests.set(request.input.requestId, turn);
         if (loseAck) throw new Error("ACK lost");
         return ok(turn);
@@ -165,6 +167,21 @@ test("lost ACK keeps request ID locked; explicit lookup recovers without another
   await editor.lookup();
   expect(editor.value.pendingSubmission).toBeNull();
   expect(editor.text).toBe("");
+  expect(editor.result).toContain(requestId ?? "missing");
+  expect(backend.count()).toBe(1);
+});
+test("confirmed unpublished slash text uses one plain Prompt and lost ACK never repeats it", async () => {
+  const backend = editorBackend();
+  const editor = new DesktopDraft(backend.api, id);
+  await editor.load();
+  editor.update("/path is ordinary text");
+  backend.loseAck();
+  await Promise.all([editor.submit("mock"), editor.submit("mock")]);
+  expect(backend.count()).toBe(1);
+  expect(editor.value.pendingSubmission?.nativeCommand).toBeUndefined();
+  const requestId = editor.value.pendingSubmission?.requestId;
+  await editor.submit("mock");
+  await editor.lookup();
   expect(editor.result).toContain(requestId ?? "missing");
   expect(backend.count()).toBe(1);
 });

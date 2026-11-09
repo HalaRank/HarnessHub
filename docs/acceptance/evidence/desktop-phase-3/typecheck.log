@@ -1,0 +1,1 @@
+$ tsc --noEmit && tsc --noEmit -p apps/daemon/tsconfig.json && tsc --noEmit -p apps/desktop/tsconfig.json

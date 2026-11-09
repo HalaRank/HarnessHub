@@ -92,3 +92,29 @@ function codeText(node: ReactNode): string {
     return codeText((node.props as { children?: ReactNode }).children);
   return "";
 }
+
+export const Syntax = memo(function Syntax({ text, path }: { text: string; path: string }) {
+  const ext = path.split(".").at(-1)?.toLowerCase() ?? "";
+  const languages: Record<string, string> = {
+    ts: "typescript",
+    tsx: "typescript",
+    js: "javascript",
+    jsx: "javascript",
+    py: "python",
+    rs: "rust",
+    sh: "bash",
+    css: "css",
+    json: "json",
+    go: "go",
+    html: "xml",
+    md: "markdown",
+    yml: "yaml",
+    yaml: "yaml",
+  };
+  const language = languages[ext];
+  const tree =
+    language && highlighter.registered(language) && text.length < 2000
+      ? highlighter.highlight(language, text)
+      : null;
+  return <>{tree ? tree.children.map(highlightNode) : text}</>;
+});

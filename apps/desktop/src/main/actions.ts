@@ -6,6 +6,18 @@ import type { DesktopRequest } from "../contracts";
 export async function performAction(client: Client, request: DesktopRequest): Promise<unknown> {
   const base = "conversationId" in request ? `/v1/conversations/${request.conversationId}` : "";
   switch (request.type) {
+    case "changes.list":
+      return client.request(`${base}/changes`);
+    case "changes.diff":
+      return client.request(`${base}/changes?path=${encodeURIComponent(request.path)}`);
+    case "workspace.open":
+      return client.request(`${base}/workspace/location`, "POST", request.location);
+    case "worktrees.list":
+      return client.request("/v1/worktrees");
+    case "worktrees.cleanup":
+      return client.request(`/v1/worktrees/${request.worktreeId}/cleanup`, "POST", {
+        confirmed: request.confirmed,
+      });
     case "history":
       return client.request(`${base}/events?after_seq=${request.after}&limit=200`);
     case "draft.load":
@@ -69,6 +81,7 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
     case "conversation.create":
       return client.request(`/v1/projects/${request.projectId}/conversations`, "POST", {
         title: request.title,
+        workspaceMode: request.workspaceMode,
       });
     case "conversation.standalone":
       return client.request("/v1/conversations", "POST", {

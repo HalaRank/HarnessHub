@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -61,7 +62,21 @@ try {
   const client = new Client(i);
   const workspace = join(temp, "project");
   mkdirSync(workspace);
-  writeFileSync(join(workspace, "sentinel.txt"), "HARNESSHUB_DESKTOP_PHASE2_世界\n", {
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: workspace, stdio: "pipe" });
+  git("init", "-b", "main");
+  writeFileSync(join(workspace, "deleted.txt"), "deleted fixture\n");
+  writeFileSync(join(workspace, "sentinel.txt"), "original\n");
+  git("add", ".");
+  git("-c", "user.name=HHU Test", "-c", "user.email=test@localhost", "commit", "-m", "fixture");
+  unlinkSync(join(workspace, "deleted.txt"));
+  writeFileSync(join(workspace, "added.txt"), "added fixture\n");
+  git("add", "added.txt");
+  writeFileSync(
+    join(workspace, "large.ts"),
+    Array.from({ length: 1200 }, (_, i) => `const line${i} = ${i};`).join("\n"),
+  );
+  writeFileSync(join(workspace, "untracked 世界 & #%.txt"), "untracked fixture\n");
+  writeFileSync(join(workspace, "sentinel.txt"), "HARNESSHUB_DESKTOP_PHASE3_世界\n", {
     mode: 0o600,
   });
   const project = await client.request<{ id: string }>("/v1/projects", "POST", {
@@ -89,6 +104,13 @@ try {
         { name: "silent", description: "Real ACP published mock command" },
       ]),
     },
+  });
+  await client.request("/v1/harness-profiles", "POST", {
+    id: "desktop-grok-mock",
+    name: "Grok (Mock ACP)",
+    command: node,
+    args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+    envOverrides: {},
   });
   const turn = await client.request<{ id: string }>(
     `/v1/conversations/${conversation.id}/turns`,

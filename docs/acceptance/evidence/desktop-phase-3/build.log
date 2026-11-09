@@ -1,0 +1,2 @@
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)

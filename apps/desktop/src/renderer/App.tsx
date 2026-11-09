@@ -1,11 +1,15 @@
 import type { Conversation, ConversationEvent, Project } from "@harnesshub/shared";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DesktopApi, DesktopRequest, DesktopState, Distribution } from "../contracts";
+import { Changes } from "./Changes";
 import { Composer } from "./Composer";
 import { ConversationDialog, type ConversationDialogValue } from "./ConversationDialog";
 import { call, DesktopDraft } from "./drafts";
+import { Handoffs } from "./Handoffs";
 import { DesktopTranscript } from "./history";
 import { MessageView } from "./Message";
+import { PathActions } from "./PathActions";
+import { Worktrees } from "./Worktrees";
 
 declare global {
   interface Window {
@@ -49,7 +53,8 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const [discovering, setDiscovering] = useState(true);
   const [sidebar, setSidebar] = useState(true);
   const [width, setWidth] = useState(260);
-  const [panel, setPanel] = useState<"details" | "debug" | null>(null);
+  const [panel, setPanel] = useState<"changes" | "diff" | "details" | "debug" | null>(null);
+  const [panelWidth, setPanelWidth] = useState(400);
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [archived, setArchived] = useState(false);
@@ -303,7 +308,12 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
     );
   };
   return (
-    <div className="app" style={{ "--sidebar-width": `${width}px` } as CSSProperties}>
+    <div
+      className="app"
+      style={
+        { "--sidebar-width": `${width}px`, "--panel-width": `${panelWidth}px` } as CSSProperties
+      }
+    >
       <header className="topbar">
         <button
           type="button"
@@ -452,6 +462,9 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                   <>
                     <span>{current.selectedHarnessId ?? "尚未选择 Harness"}</span>
                     <span>{runtimeLabels[current.runtimeStatus] || "空闲"}</span>
+                    <span>
+                      {current.workspaceMode === "shared" ? "Shared Workspace" : "Git Worktree"}
+                    </span>
                   </>
                 ) : (
                   <span>选择一个会话，查看已有消息</span>
@@ -521,7 +534,13 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                   </button>
                 )}
                 {visibleRows.map((row) => (
-                  <MessageView key={row.id} row={row} api={api} expanded={expanded.current} />
+                  <MessageView
+                    conversationId={current.id}
+                    key={row.id}
+                    row={row}
+                    api={api}
+                    expanded={expanded.current}
+                  />
                 ))}
                 {historyPage !== null && (
                   <div className="history-navigation">
@@ -562,6 +581,29 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
         </main>
         {panel && (
           <aside className="work-panel" aria-label="工作面板">
+            <hr
+              className="panel-resize"
+              aria-label="调整工作面板宽度"
+              aria-orientation="vertical"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
+                  e.preventDefault();
+                  setPanelWidth((w) =>
+                    Math.max(300, Math.min(700, w + (e.key === "ArrowLeft" ? 20 : -20))),
+                  );
+                }
+              }}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                if (e.currentTarget.hasPointerCapture(e.pointerId))
+                  setPanelWidth(Math.max(300, Math.min(700, window.innerWidth - e.clientX)));
+              }}
+              onPointerUp={(e) => e.currentTarget.releasePointerCapture(e.pointerId)}
+            />
             <header>
               <button
                 type="button"
@@ -570,8 +612,19 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               >
                 Details
               </button>
-              <button type="button" disabled title="Desktop Phase 3">
+              <button
+                type="button"
+                aria-pressed={panel === "changes"}
+                onClick={() => setPanel("changes")}
+              >
                 Changes
+              </button>
+              <button
+                type="button"
+                aria-pressed={panel === "diff"}
+                onClick={() => setPanel("diff")}
+              >
+                Diff
               </button>
               <button
                 type="button"
@@ -590,7 +643,20 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               </button>
             </header>
             <div className="panel-content">
-              {panel === "details" ? (
+              {panel === "changes" || panel === "diff" ? (
+                current ? (
+                  <Changes
+                    key={draftKey}
+                    api={api}
+                    conversation={current}
+                    connected={state.status === "connected"}
+                    tab={panel}
+                    selectTab={setPanel}
+                  />
+                ) : (
+                  <p>选择会话以查看 Workspace Changes。</p>
+                )
+              ) : panel === "details" ? (
                 <>
                   <h2>会话详情</h2>
                   <dl>
@@ -603,7 +669,19 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                     <dt>执行状态</dt>
                     <dd>{current?.runtimeStatus ?? "—"}</dd>
                   </dl>
-                  <p className="subtle">Changes / Diff 完整工作面板将在 Desktop Phase 3 接入。</p>
+                  {current && (
+                    <PathActions
+                      api={api}
+                      conversationId={current.id}
+                      path={current.workspacePath}
+                      location={{ kind: "workspace" }}
+                    />
+                  )}
+                  {current?.workspaceMode === "shared" && (
+                    <p className="subtle">
+                      共享目录允许并行 Agent 修改，注意文件冲突。Git 变更不推断归属。
+                    </p>
+                  )}
                   <details>
                     <summary>会话管理</summary>
                     <div className="management-actions">
@@ -637,6 +715,30 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                       )}
                     </div>
                   </details>
+                  {current && (
+                    <Handoffs
+                      key={draftKey}
+                      api={api}
+                      conversation={current}
+                      connected={state.status === "connected"}
+                      handoffs={
+                        state.interaction?.conversationId === current.id
+                          ? state.interaction.handoffs
+                          : []
+                      }
+                      sessions={
+                        state.interaction?.conversationId === current.id
+                          ? state.interaction.sessions
+                          : []
+                      }
+                    />
+                  )}
+                  <Worktrees
+                    key={state.distribution}
+                    api={api}
+                    conversations={state.snapshot?.conversations ?? []}
+                    connected={state.status === "connected"}
+                  />
                 </>
               ) : (
                 <>

@@ -1,0 +1,79 @@
+$ bun scripts/desktop-test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+$ bun run --cwd apps/desktop build
+$ bun ../../scripts/desktop.ts build
+Built Windows Desktop assets: /home/clj/HarnessHub/HarnessHub/dist/desktop/app
+bun test v1.4.4 (38afee6c8)
+
+tests/workspace.test.tsx:
+(pass) unpublished /path and ordinary slash-prefix text require explicit plain text confirmation [0.23ms]
+(pass) controlled navigation rejects arbitrary paths, force, missing confirmation and extra IPC fields [4.85ms]
+(pass) WSL UNC conversion preserves spaces, unicode and literal shell characters, rejects ambiguous Windows names [0.83ms]
+(pass) WSL realpath boundary rejects tool traversal and symlink escape, locates deleted files safely [2.45ms]
+(pass) Git status labels and source separation preserve native old/new text [21.78ms]
+(pass) large multi-hunk and single-hunk diffs have bounded highlighted DOM [55.48ms]
+(pass) handoff roundtrip reports and real states are traceable, UNCERTAIN has no replay action [34.18ms]
+(pass) native tool location provenance survives content-only and status-only updates [1.13ms]
+
+tests/bridge.test.ts:
+(pass) WSL discovery and bootstrap boundary > UTF-16LE/BOM/UTF-8 and localized state, names containing spaces [1.08ms]
+(pass) WSL discovery and bootstrap boundary > missing WSL and empty discovery give actionable errors [0.36ms]
+(pass) WSL discovery and bootstrap boundary > WSL1 and unknown names cannot execute bootstrap [0.41ms]
+(pass) WSL discovery and bootstrap boundary > known distro and untrusted-looking names are argv, not shell interpolation [1.00ms]
+(pass) WSL discovery and bootstrap boundary > missing installation, incompatible and broken startup do not expose stdout/stderr [0.42ms]
+(pass) WSL discovery and bootstrap boundary > dynamic ports, identity schema, protocol and version validated [0.89ms]
+(pass) WSL discovery and bootstrap boundary > fixed bootstrap finds Linux HOME with no interactive shell or Windows PATH [6.86ms]
+(pass) WSL discovery and bootstrap boundary > installed launcher restores PATH/XDG, quoted absolute executable/release from foreign cwd [2.50ms]
+(pass) Electron boundary > IPC exact allowlist rejects arbitrary HTTP, shell, file paths and extra fields [1.65ms]
+(pass) Electron boundary > only the exact window main frame and document can invoke IPC [0.09ms]
+(pass) Electron boundary > local settings persist only selected distro and reject malformed data [1.33ms]
+(pass) Electron boundary > renderer bundle excludes Node/native modules and preload exposes no token [2.61ms]
+
+tests/chat.test.tsx:
+(pass) Enter sends, Shift+Enter preserves newline, IME/229 and composition confirmation never send [0.14ms]
+(pass) independent drafts persist across editors and rapid conversation switches [0.66ms]
+(pass) two clients obey CAS; failed save and send preserve local text without silent overwrite [0.47ms]
+(pass) a competing reserved draft never replaces different unsaved local text [0.34ms]
+(pass) double send dispatches one turn and clears only an accepted draft [0.36ms]
+(pass) lost ACK keeps request ID locked; explicit lookup recovers without another prompt [0.38ms]
+(pass) confirmed unpublished slash text uses one plain Prompt and lost ACK never repeats it [0.32ms]
+(pass) reopening a durable unconfirmed request never automatically sends or releases it on 404 [0.18ms]
+(pass) 10k events append incrementally, merge native tools by session, preserve old rows and reject gaps [15.58ms]
+(pass) successful tools collapse, failed/waiting expand, manual preference wins [1.16ms]
+(pass) Markdown supports GFM/code highlights while HTML, event handlers and unsafe URLs stay inert [27.22ms]
+(pass) typed write actions reject arbitrary methods, paths, native configs, unconfirmed deletion [4.32ms]
+(pass) handoff records merge by ID and keep the expandable native report without internal prompt [2.39ms]
+
+tests/history.test.tsx:
+(pass) basic history preserves user/Agent text and concatenates chunks without diagnostics [0.43ms]
+(pass) native tool titles and status retained, protocol body stays out of chat [0.08ms]
+(pass) React renders safe layout with navigation, composer and empty states [2.25ms]
+
+ 36 pass
+ 0 fail
+ 205 expect() calls
+Ran 36 tests across 4 files. [400.00ms]
+✔ Bridge starts absent Daemon, concurrent/repeated starts reuse existing pid and token (1546.312915ms)
+✔ Bridge incompatible client/version refuses without signalling or replacing Daemon (211.825274ms)
+✔ Desktop and TUI clients share real SQLite/WS history and exact Linux workspace (674.207577ms)
+✔ Daemon restart rediscovers token/port/identity and catches up by seq without duplicate turns (1589.59767ms)
+✔ rapid selection cannot mix histories or persist stale preference (125.252667ms)
+✔ closing Desktop during active turn leaves Daemon/Worker alive; reopening restores selection (531.906929ms)
+✔ forwarded wrong identity/version is rejected without lifecycle writes or renderer token (14.934999ms)
+✔ WSL Bridge refuses a live incompatible Daemon without stop, spawn, or metadata replacement (488.272975ms)
+✔ Desktop Phase 2 typed actions: draft CAS, duplicate submit, native settings/slash, approvals, cancellation and management (1039.950124ms)
+✔ Desktop HTTP ACK loss retains one SQLite request and hash; reopening and lookup never replay (1505.559178ms)
+✔ large streaming history uses bounded Main memory and incremental IPC, paginated replay stays continuous (3162.575604ms)
+✔ Desktop Harness selection is inert; failed Handoff is visible; stale native command is refused (692.500781ms)
+✔ Desktop Changes/Diff match real Git, provenance navigation and RETAINED Worktree cleanup preserve user data (1087.140331ms)
+✔ Desktop normal roundtrip and failed retry/confirm/UNCERTAIN never replay target prompts (2133.981148ms)
+Desktop integration evidence: /tmp/hhu-desktop-integration-bm9i0F
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15290.34511

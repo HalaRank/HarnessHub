@@ -1,14 +1,18 @@
 import { object, pretty } from "@harnesshub/shared/event-projection";
 import { memo, useState } from "react";
 import type { DesktopApi } from "../contracts";
+import { NativeDiff } from "./Diff";
 import type { Message as MessageData } from "./history";
 import { Copy, Markdown } from "./Markdown";
+import { PathActions } from "./PathActions";
 
 export const MessageView = memo(function MessageView({
   row,
   api,
   expanded,
+  conversationId,
 }: {
+  conversationId?: string;
   row: MessageData;
   api: DesktopApi;
   expanded: Map<string, boolean>;
@@ -47,11 +51,30 @@ export const MessageView = memo(function MessageView({
                 </>
               )}
               {Array.isArray(row.tool.content) &&
-                row.tool.content.map((raw) => {
+                row.tool.content.map((raw, index) => {
                   const content = object(raw);
                   return (
                     <div key={pretty(raw)}>
-                      {content.type === "content" && object(content.content).type === "text" ? (
+                      {content.type === "diff" ? (
+                        <>
+                          <NativeDiff content={content} api={api} />
+                          {conversationId &&
+                            row.toolSources?.content &&
+                            typeof content.path === "string" && (
+                              <PathActions
+                                api={api}
+                                conversationId={conversationId}
+                                path={content.path}
+                                location={{
+                                  kind: "tool",
+                                  seq: row.toolSources.content,
+                                  collection: "content",
+                                  index,
+                                }}
+                              />
+                            )}
+                        </>
+                      ) : content.type === "content" && object(content.content).type === "text" ? (
                         <Markdown text={String(object(content.content).text)} api={api} />
                       ) : (
                         <>
@@ -62,6 +85,30 @@ export const MessageView = memo(function MessageView({
                         </>
                       )}
                     </div>
+                  );
+                })}
+              {conversationId &&
+                row.toolSources?.locations &&
+                Array.isArray(row.tool.locations) &&
+                row.tool.locations.map((raw, index) => {
+                  const location = object(raw);
+                  return (
+                    typeof location.path === "string" && (
+                      <div key={String(index)} className="file-path">
+                        {location.path}
+                        <PathActions
+                          api={api}
+                          conversationId={conversationId}
+                          path={location.path}
+                          location={{
+                            kind: "tool",
+                            seq: row.toolSources?.locations ?? 0,
+                            collection: "locations",
+                            index,
+                          }}
+                        />
+                      </div>
+                    )
                   );
                 })}
               {row.tool.terminalOutput != null && <pre>{String(row.tool.terminalOutput)}</pre>}

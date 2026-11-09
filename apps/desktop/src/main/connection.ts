@@ -23,6 +23,7 @@ export class DesktopConnection {
     historyLoading: false,
   };
   private refreshNow: (() => Promise<void>) | undefined;
+  private readonly gitReads = new Map<string, Promise<unknown>>();
   private readonly submissions = new Map<string, Promise<unknown>>();
   private client: Client | undefined;
   private socket: WebSocket | undefined;
@@ -348,6 +349,22 @@ export class DesktopConnection {
     const client = this.client;
     if (!client || this.state.status !== "connected" || this.disposed)
       throw new Error("Daemon 未连接；未重发任务。");
+    if (request.type === "changes.list" || request.type === "changes.diff") {
+      const epoch = this.epoch;
+      const key = `${epoch}:${JSON.stringify(request)}`;
+      const existing = this.gitReads.get(key);
+      if (existing) return existing;
+      if (this.gitReads.size >= 4) throw new Error("Git 查询繁忙，请稍后刷新。");
+      const read = performAction(client, request)
+        .then((result) => {
+          if (epoch !== this.epoch || this.disposed)
+            throw new Error("连接已变化，请刷新 Changes。");
+          return result;
+        })
+        .finally(() => this.gitReads.delete(key));
+      this.gitReads.set(key, read);
+      return read;
+    }
     if (request.type === "turn.submit") {
       const key = `${this.epoch}:${request.conversationId}`;
       if (this.submissions.has(key)) throw new Error("此会话正在提交，请等待或查询请求状态。");
@@ -362,12 +379,25 @@ export class DesktopConnection {
     }
     const epoch = this.epoch;
     const result = await performAction(client, request);
+    if (epoch !== this.epoch || this.disposed)
+      throw new Error("连接已变化；操作结果请查询，不会重发。");
     if (request.type.startsWith("conversation.") || request.type === "harness.select") {
       this.metadataRevision++;
       const snapshot = await client.request<Snapshot>("/v1/snapshot");
       if (epoch === this.epoch && !this.disposed) this.update({ snapshot });
     }
-    if (!["history", "draft.load", "draft.save", "request.lookup"].includes(request.type))
+    if (
+      ![
+        "history",
+        "draft.load",
+        "draft.save",
+        "request.lookup",
+        "changes.list",
+        "changes.diff",
+        "worktrees.list",
+        "workspace.open",
+      ].includes(request.type)
+    )
       await this.refreshNow?.();
     return result;
   }

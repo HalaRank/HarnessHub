@@ -87,3 +87,18 @@ Main 按连续 seq、每页 200 条读取，40ms 合并失效通知，IPC events
 Markdown 使用锁定 react-markdown + remark-gfm，不启用原始 HTML；lowlight 只转换 React span/text。图片不加载，链接仅展示可复制地址，禁外部导航保持不变。工具参数/输出/Diff 保留原生内容，诊断分类复用 shared/event-projection。
 
 Harness 选择不启动 Agent；显式“连接 Agent 获取选项”只准备原生 session；跨 Harness 首条消息仍交给原有 Handoff。仅当前 READY NativeSession 的 ACP commands/config/modes 可操作，未发布能力准确说明。Phase 3 完整 Changes/Diff/Handoff 工作面板与 Phase 4 安装发布未实施。
+
+## Desktop Phase 3：Coding Workspace（2026-11-09）
+
+经用户授权，增加 Changes/Diff、完整 Handoff 追溯、托管 Worktree 和 WSL 文件夹定位。仍使用同一 Daemon Git 查询、Handoff 状态机、Worktree Manager、SQLite 与 ACP Worker，无第二套业务运行时。
+
+- `changes.list/diff` 固定映射已有 `/v1/conversations/:id/changes[?path=…]`；只在面板打开时轮询，3 秒间隔，Main 合并相同未完成查询、最多 4 个 Git 查询在途。单文件按需读取；文件列表 100 项/页、Diff 30 块/页、块内 200 行/页，只有展开块进行代码高亮。Git 的既有 10 秒/2 MiB 查询上限不变；超限明确报错。Git 非原子读，显示观测时间，不声称文件属于某个 Agent。
+- 工具卡的 `content.type=diff` 保留 ACP 原生 oldText/newText，显示独立来源标识及完整原文复制；不将其解释为当前 Git 状态。工具合并额外保留 content/locations 各自最新事件 seq，用于从真实来源定位文件夹。
+- Handoff 数据来自已有 sessions/handoffs 查询与 WS 失效补拉；Details 展示源/目标 Harness、NativeSession、事件边界、报告、降级材料及原请求。只选择 Harness 不启动模型。仅 FAILED 提供重试/降级确认/取消；UNCERTAIN 没有重发入口。不改变服务端状态机或投递语义。
+- Conversation 创建传递既有 `workspaceMode`；托管列表和确认清理映射既有 `/v1/worktrees` 与 `/cleanup`。清理前说明目标 retained 目录和保留分支，已绑定会话不能清理；保留后端 RETAINED 策略，无 force、自动分支删除或文件删除。
+- 唯一新增 Daemon 路由为只读 `POST /v1/conversations/:id/workspace/location`。它接受 workspace/change/tool 的来源引用，查当前 Git 状态或该 Conversation 的原生事件后，验证 Linux 词法边界与 realpath。符号链接不能逃离 Conversation Workspace；删除文件定位最近存在的父目录。请求不能指定任意导航目标、命令或 URL。
+- Main `workspace.open` 仅将该返回目录转换为所选发行版 `\\wsl.localhost\<distro>\…`，再调用 Electron `shell.openPath`。UNC 仅用于打开文件夹，不写回 SQLite 或 ACP cwd。特殊字符按字面处理；Windows 无法无歧义表示的名称拒绝定位并保留 Linux 路径复制。Renderer/Preload 无通用 shell、文件读取或任意路径 API；Token 与原 IPC 来源验证边界不变。
+- 未发布的 `/xxx` 必须通过独立模态框明确确认作为普通 Prompt 发送，关闭确认框只取消意图。确认绑定当前文字/Harness、一次性消费；后续使用原 DesktopDraft 的 CAS、requestId 和未知结果查询机制，不携带 nativeCommand。Enter/IME/Shift+Enter 与已发布命令补全保留。
+- 右侧默认隐藏，Changes/Diff/Details/Debug 共用可拖动面板；窄屏浮层，关闭不卸载 Composer。仅本地视图状态，不保存完整 UI 快照。
+
+核对依据：[Electron shell.openPath](https://www.electronjs.org/docs/latest/api/shell#shellopenpathpath)、[Electron Clipboard](https://www.electronjs.org/docs/latest/api/clipboard)、[Microsoft WSL 文件系统](https://learn.microsoft.com/en-us/windows/wsl/filesystems)。实现依据锁定 Electron 45.2.3 的类型定义，剪贴板读写等待 Promise 完成。实际 Windows/Agent 结果见 `acceptance/desktop-phase-3.md`；不进入安装、签名、更新或发布阶段。

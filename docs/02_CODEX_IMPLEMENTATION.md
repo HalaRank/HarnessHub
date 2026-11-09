@@ -137,3 +137,8 @@
 ## Desktop Phase 2 实施记录
 
 2026-11-09 用户授权正式聊天、草稿 CAS/提交幂等、原生审批/取消/工具、ACP 设置/Slash Commands、Conversation 管理和增量流式性能。仍复用 WSL 后端，不进入 Desktop Phase 3/4。代码、测试、Windows 与真实 Harness 证据及限制见 [desktop-phase-2.md](acceptance/desktop-phase-2.md)。等待本阶段验收。
+
+
+## Desktop Phase 3：Coding Workspace Integration
+
+用户已授权本阶段。交付 Changes/Diff、原生工具 Diff、Context Handoff 报告与追溯、Shared/Worktree 创建及保留式清理、受控 WSL Explorer 定位，并修复未发布 Slash 文本的明确普通发送确认。复用既有 Daemon Git、Handoff 状态机、Worktree Manager 与 SQLite；仅增加只读来源路径解析。实际检查、Windows/真实 Harness 证据与限制见 [Desktop Phase 3 验收](acceptance/desktop-phase-3.md)。不自动进入 Desktop Phase 4。

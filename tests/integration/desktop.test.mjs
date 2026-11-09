@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -562,5 +570,288 @@ test("Desktop Harness selection is inert; failed Handoff is visible; stale nativ
   } finally {
     connection.dispose();
     await client.request(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+  }
+});
+
+test("Desktop Changes/Diff match real Git, provenance navigation and RETAINED Worktree cleanup preserve user data", async () => {
+  const connection = new DesktopConnection({ connect: bridge }, 100);
+  const root = join(temp, "coding workspace 世界 & $");
+  mkdirSync(root);
+  const git = (...args) => run("git", args, { cwd: root });
+  await git("init", "-b", "main");
+  writeFileSync(join(root, "sentinel.txt"), "original\n");
+  writeFileSync(join(root, "deleted.txt"), "delete fixture\n");
+  await git("add", ".");
+  await git(
+    "-c",
+    "user.name=HHU Test",
+    "-c",
+    "user.email=test@localhost",
+    "commit",
+    "-m",
+    "fixture",
+  );
+  const p = await client.request("/v1/projects", "POST", { rootPath: root });
+  await connection.connect("Ubuntu-test");
+  await waitFor(() => connection.getState().status === "connected");
+  try {
+    const shared = await connection.action({
+      type: "conversation.create",
+      projectId: p.id,
+      title: "Shared",
+      workspaceMode: "shared",
+    });
+    assert.equal(shared.workspacePath, root);
+    writeFileSync(join(root, "sentinel.txt"), "updated 世界\n");
+    unlinkSync(join(root, "deleted.txt"));
+    writeFileSync(join(root, "added.txt"), "added\n");
+    await git("add", "added.txt");
+    writeFileSync(join(root, "untracked & #%.ts"), "const x = 2;\n");
+    const changes = await connection.action({ type: "changes.list", conversationId: shared.id });
+    const actual = (await git("status", "--porcelain=v1", "-z", "--untracked-files=all")).stdout
+      .split("\0")
+      .filter(Boolean);
+    assert.deepEqual(
+      changes.files.map((f) => `${f.index}${f.worktree} ${f.path}`),
+      actual,
+    );
+    for (const [path, part, text] of [
+      ["sentinel.txt", "unstaged", "+updated 世界"],
+      ["deleted.txt", "unstaged", "-delete fixture"],
+      ["added.txt", "staged", "+added"],
+      ["untracked & #%.ts", "untracked", "+const x = 2;"],
+    ]) {
+      const diff = await connection.action({
+        type: "changes.diff",
+        conversationId: shared.id,
+        path,
+      });
+      assert.ok(diff[part].includes(text));
+      assert.equal(
+        (
+          await connection.action({
+            type: "workspace.open",
+            conversationId: shared.id,
+            location: { kind: "change", path },
+          })
+        ).linuxPath,
+        root,
+      );
+    }
+    await assert.rejects(
+      connection.action({
+        type: "workspace.open",
+        conversationId: shared.id,
+        location: { kind: "change", path: "../outside" },
+      }),
+    );
+    symlinkSync(temp, join(root, "escape"));
+    await assert.rejects(
+      connection.action({
+        type: "workspace.open",
+        conversationId: shared.id,
+        location: { kind: "change", path: "escape" },
+      }),
+    );
+    const turn = await connection.action({
+      type: "turn.submit",
+      conversationId: shared.id,
+      revision: 0,
+      input: { requestId: randomUUID(), harnessId: "desktop-mock", message: "desktop-native-diff" },
+    });
+    await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
+    const events = (await client.request(`/v1/conversations/${shared.id}/events?limit=1000`))
+      .events;
+    const native = events.find(
+      (e) => e.kind === "tool_call" && e.payload.toolCallId === "native-diff",
+    );
+    assert.ok(native.payload.content[0].newText.includes("native proposed"));
+    assert.equal(readFileSync(join(root, "sentinel.txt"), "utf8"), "updated 世界\n");
+    assert.equal(
+      (
+        await connection.action({
+          type: "workspace.open",
+          conversationId: shared.id,
+          location: { kind: "tool", seq: native.seq, collection: "content", index: 0 },
+        })
+      ).linuxPath,
+      root,
+    );
+    await assert.rejects(
+      connection.action({
+        type: "workspace.open",
+        conversationId: shared.id,
+        location: { kind: "tool", seq: 1, collection: "content", index: 0 },
+      }),
+    );
+    const work = await connection.action({
+      type: "conversation.create",
+      projectId: p.id,
+      title: "Isolated",
+      workspaceMode: "worktree",
+    });
+    assert.notEqual(work.workspacePath, root);
+    assert.equal(readFileSync(join(work.workspacePath, "sentinel.txt"), "utf8"), "original\n");
+    await connection.select(work.id);
+    assert.deepEqual(
+      (await connection.action({ type: "changes.list", conversationId: work.id })).files,
+      [],
+    );
+    const record = (await connection.action({ type: "worktrees.list" })).find(
+      (w) => w.id === work.worktreeId,
+    );
+    await assert.rejects(
+      connection.action({ type: "worktrees.cleanup", worktreeId: record.id, confirmed: true }),
+      (e) => e.status === 409,
+    );
+    await connection.action({
+      type: "conversation.delete",
+      conversationId: work.id,
+      confirmed: true,
+    });
+    assert.ok(existsSync(work.workspacePath));
+    await git("show-ref", "--verify", `refs/heads/${record.branch}`);
+    await assert.rejects(
+      client.request(`/v1/worktrees/${record.id}/cleanup`, "POST", { confirmed: false }),
+      (e) => e.status === 400,
+    );
+    const retained = await connection.action({
+      type: "worktrees.cleanup",
+      worktreeId: record.id,
+      confirmed: true,
+    });
+    assert.equal(retained.status, "RETAINED");
+    assert.equal(readFileSync(join(retained.path, "sentinel.txt"), "utf8"), "original\n");
+    await git("show-ref", "--verify", `refs/heads/${record.branch}`);
+    assert.deepEqual(
+      await connection.action({
+        type: "worktrees.cleanup",
+        worktreeId: record.id,
+        confirmed: true,
+      }),
+      retained,
+    );
+  } finally {
+    connection.dispose();
+  }
+});
+
+test("Desktop normal roundtrip and failed retry/confirm/UNCERTAIN never replay target prompts", async () => {
+  const connection = new DesktopConnection({ connect: bridge }, 100);
+  await connection.connect("Ubuntu-test");
+  await waitFor(() => connection.getState().status === "connected");
+  const profile = async (id, envOverrides = {}) =>
+    client.request("/v1/harness-profiles", "POST", {
+      id,
+      name: id,
+      command: process.execPath,
+      args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+      envOverrides,
+    });
+  await profile("desktop-grok-mock");
+  await profile("desktop-uncertain", { HHU_MOCK_TARGET_REJECT: "1" });
+  const c = await connection.action({
+    type: "conversation.create",
+    projectId: project.id,
+    title: "Roundtrip",
+  });
+  const submit = async (harnessId, message = "hello") => {
+    const draft = await connection.action({ type: "draft.load", conversationId: c.id });
+    return connection.action({
+      type: "turn.submit",
+      conversationId: c.id,
+      revision: draft.revision,
+      input: { requestId: randomUUID(), harnessId, message },
+    });
+  };
+  const settled = async (turn) =>
+    waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
+  try {
+    await connection.select(c.id);
+    await settled(await submit("desktop-mock"));
+    for (const target of ["desktop-grok-mock", "desktop-mock"]) {
+      await connection.action({ type: "harness.select", conversationId: c.id, harnessId: target });
+      await settled(await submit(target));
+    }
+    await waitFor(
+      () =>
+        connection.getState().interaction?.handoffs.length === 2 &&
+        connection.getState().interaction.handoffs.every((h) => h.status === "COMMITTED"),
+    );
+    const handoffs = connection.getState().interaction.handoffs;
+    assert.deepEqual(
+      handoffs.map((h) => h.status),
+      ["COMMITTED", "COMMITTED"],
+    );
+    assert.notEqual(handoffs[0].sourceNativeSessionId, handoffs[1].targetNativeSessionId);
+    assert.ok(handoffs.every((h) => h.reportText && h.sourceEventEnd >= h.sourceEventStart));
+    await settled(await submit("desktop-uncertain"));
+    await waitFor(() =>
+      connection.getState().interaction?.handoffs.some((h) => h.status === "UNCERTAIN"),
+    );
+    const uncertain = connection
+      .getState()
+      .interaction.handoffs.find((h) => h.status === "UNCERTAIN");
+    for (const action of ["retry", "confirm", "cancel"])
+      await assert.rejects(
+        connection.action({
+          type: "handoff.action",
+          conversationId: c.id,
+          input: { handoffId: uncertain.id, action },
+        }),
+        (e) => e.status === 409,
+      );
+    const events = (await client.request(`/v1/conversations/${c.id}/events?limit=1000`)).events;
+    assert.equal(events.filter((e) => e.kind === "user.message").length, 4);
+    const failed = await connection.action({
+      type: "conversation.create",
+      projectId: project.id,
+      title: "Failed fallback",
+    });
+    const send = async (harnessId) => {
+      const d = await connection.action({ type: "draft.load", conversationId: failed.id });
+      return connection.action({
+        type: "turn.submit",
+        conversationId: failed.id,
+        revision: d.revision,
+        input: { requestId: randomUUID(), harnessId, message: "hello" },
+      });
+    };
+    await connection.select(failed.id);
+    await settled(await send("desktop-failed-source"));
+    const targetTurn = await send("desktop-mock");
+    const getFailed = () =>
+      waitFor(async () =>
+        (await client.request(`/v1/conversations/${failed.id}/handoffs`)).find(
+          (h) => h.status === "FAILED",
+        ),
+      );
+    let h = await getFailed();
+    assert.ok(h.fallbackText);
+    assert.ok(h.fallbackSources);
+    await connection.action({
+      type: "handoff.action",
+      conversationId: failed.id,
+      input: { handoffId: h.id, action: "retry" },
+    });
+    h = await getFailed();
+    await connection.action({
+      type: "handoff.action",
+      conversationId: failed.id,
+      input: { handoffId: h.id, action: "confirm" },
+    });
+    await settled(targetTurn);
+    assert.equal(
+      (await client.request(`/v1/conversations/${failed.id}/handoffs`))[0].status,
+      "COMMITTED",
+    );
+    assert.equal(
+      (await client.request(`/v1/conversations/${failed.id}/events?limit=1000`)).events.filter(
+        (e) => e.kind === "user.message",
+      ).length,
+      2,
+    );
+  } finally {
+    connection.dispose();
   }
 });

@@ -11,6 +11,7 @@ import {
   handoffAction,
   settingInput,
   turnInput,
+  workspaceLocationInput,
 } from "@harnesshub/shared";
 import { z } from "zod";
 
@@ -63,6 +64,15 @@ export const desktopRequest = z.discriminatedUnion("type", [
     conversationId,
     after: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   }),
+  action({ type: z.literal("changes.list"), conversationId }),
+  action({ type: z.literal("changes.diff"), conversationId, path: z.string().min(1).max(4096) }),
+  action({ type: z.literal("worktrees.list") }),
+  action({
+    type: z.literal("worktrees.cleanup"),
+    worktreeId: z.string().uuid(),
+    confirmed: z.literal(true),
+  }),
+  action({ type: z.literal("workspace.open"), conversationId, location: workspaceLocationInput }),
   action({ type: z.literal("draft.load"), conversationId }),
   action({ type: z.literal("draft.save"), conversationId, draft: draftInput }),
   action({
@@ -93,6 +103,7 @@ export const desktopRequest = z.discriminatedUnion("type", [
   action({ type: z.literal("handoff.action"), conversationId, input: handoffAction }),
   action({
     type: z.literal("conversation.create"),
+    workspaceMode: z.enum(["shared", "worktree"]).optional(),
     projectId: z.string().uuid(),
     title: z.string().trim().min(1).max(200),
   }),

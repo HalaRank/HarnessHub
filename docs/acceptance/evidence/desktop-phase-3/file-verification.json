@@ -1,0 +1,16 @@
+[
+  {
+    "harness": "codex",
+    "path": "/tmp/hhu-windows-smoke-WKQOTF/project/phase3-codex.txt",
+    "exactContentVerified": true,
+    "sha256": "da30c65528988eb7cdd7ee22e8e65e42d11a4fc42feef77310888ac5a0f17312",
+    "bytes": 35
+  },
+  {
+    "harness": "grok",
+    "path": "/tmp/hhu-windows-smoke-WKQOTF/project/phase3-grok.txt",
+    "exactContentVerified": true,
+    "sha256": "36abcb6e77ccb82a66f2b34743e858a384214e82055821b650391817e1d9b48b",
+    "bytes": 34
+  }
+]

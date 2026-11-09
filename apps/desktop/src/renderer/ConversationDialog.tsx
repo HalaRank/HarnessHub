@@ -23,6 +23,8 @@ export function ConversationDialog({
   const [workspace, setWorkspace] = useState(
     value.kind === "create" ? (value.workspace ?? "") : "",
   );
+  const [workspaceMode, setWorkspaceMode] = useState<"shared" | "worktree">("shared");
+  const locked = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
@@ -30,7 +32,8 @@ export function ConversationDialog({
     dialog.current?.showModal();
   }, []);
   const submit = async () => {
-    if (busy) return;
+    if (locked.current) return;
+    locked.current = true;
     setBusy(true);
     setError("");
     const request: DesktopRequest =
@@ -39,7 +42,7 @@ export function ConversationDialog({
         : value.kind === "rename"
           ? { type: "conversation.patch", conversationId: value.conversation.id, patch: { title } }
           : value.projectId
-            ? { type: "conversation.create", projectId: value.projectId, title }
+            ? { type: "conversation.create", projectId: value.projectId, title, workspaceMode }
             : { type: "conversation.standalone", workspacePath: workspace, title };
     try {
       const result = await call<Conversation>(api, request);
@@ -48,6 +51,7 @@ export function ConversationDialog({
     } catch (e) {
       setError(String(e));
     } finally {
+      locked.current = false;
       setBusy(false);
     }
   };
@@ -87,6 +91,24 @@ export function ConversationDialog({
               maxLength={200}
               onChange={(e) => setTitle(e.target.value)}
             />
+          </label>
+        )}
+        {value.kind === "create" && value.projectId && (
+          <label>
+            工作区模式
+            <select
+              aria-label="工作区模式"
+              value={workspaceMode}
+              onChange={(e) => setWorkspaceMode(e.target.value as "shared" | "worktree")}
+            >
+              <option value="shared">Shared Workspace · 共享项目目录</option>
+              <option value="worktree">独立 Git Worktree · 从 HEAD 创建</option>
+            </select>
+            <small>
+              {workspaceMode === "shared"
+                ? "并行 Agent 可修改同一文件，请注意冲突。"
+                : "由 WSL 管理分支与目录；删除会话不会删除源码、Worktree 或分支。"}
+            </small>
           </label>
         )}
         {value.kind === "create" && !value.projectId && (

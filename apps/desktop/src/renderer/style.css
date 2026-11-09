@@ -411,7 +411,8 @@ h2 {
   margin: 9px 0;
 }
 .work-panel {
-  flex: 0 0 300px;
+  flex: 0 0 min(var(--panel-width), 45vw);
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -473,7 +474,7 @@ summary {
     width: 220px;
   }
   .work-panel {
-    flex-basis: 270px;
+    flex-basis: min(var(--panel-width), 40vw);
   }
   .history {
     padding: 16px 20px;
@@ -485,7 +486,7 @@ summary {
     right: 0;
     top: 0;
     bottom: 0;
-    width: min(340px, 48vw);
+    width: min(var(--panel-width), 88vw);
     box-shadow: -12px 0 36px #0004;
     z-index: 1;
   }
@@ -695,4 +696,125 @@ dialog footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.panel-resize {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  margin: 0;
+  border: 0;
+  cursor: col-resize;
+  z-index: 2;
+  touch-action: none;
+}
+.panel-resize:hover,
+.panel-resize:focus {
+  background: var(--line);
+}
+.panel-content {
+  min-height: 0;
+  flex: 1;
+  padding: 10px 14px;
+}
+.diff-heading,
+.diff-pages {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.file-path {
+  overflow-wrap: anywhere;
+  font-family: Consolas, monospace;
+}
+.change-file {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  align-items: baseline;
+  text-align: left;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.change-file > span:nth-child(2) {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.git-status {
+  font-size: 10px;
+  min-width: 54px;
+  color: var(--muted);
+}
+.git-status.Added,
+.git-status.Untracked {
+  color: #8fc9a1;
+}
+.git-status.Deleted {
+  color: #d89a9a;
+}
+.diff-view,
+.native-diff {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.diff-code {
+  overflow: auto;
+  max-height: 440px;
+  background: #17191c;
+  font:
+    12px / 1.6 Consolas,
+    monospace;
+}
+.diff-line {
+  display: flex;
+  white-space: pre;
+  min-width: max-content;
+}
+.diff-line.added {
+  background: #33554055;
+}
+.diff-line.deleted {
+  background: #653c3c55;
+}
+.line-number {
+  color: #858b96;
+  user-select: none;
+  width: 42px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 10px;
+}
+.diff-hunk {
+  width: 100%;
+  text-align: left;
+  color: #a8bcd8;
+  overflow-wrap: anywhere;
+  padding: 7px 0;
+}
+.handoff-record,
+.worktree-record {
+  border-left: 2px solid var(--line);
+  padding: 6px 0 12px 12px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.handoff-flow,
+.managed-worktrees {
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
+}
+.path-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.handoff-record dt {
+  margin-top: 5px;
+}
+dialog :where(pre) {
+  max-height: 40vh;
+  overflow: auto;
 }

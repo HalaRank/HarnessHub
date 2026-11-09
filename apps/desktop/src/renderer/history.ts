@@ -7,6 +7,7 @@ export type Message = {
   kind: "text" | "activity" | "notice";
   turn: string | null;
   session?: string | null;
+  toolSources?: { content?: number; locations?: number };
   tool?: Record<string, unknown>;
   waiting?: boolean;
   handoff?: { report: string; incomplete: boolean; source: string; target: string };
@@ -144,6 +145,11 @@ export class DesktopTranscript {
       turn: event.turnId,
       session: event.nativeSessionId,
       tool,
+      toolSources: {
+        ...previous?.toolSources,
+        ...(Array.isArray(patch.content) ? { content: event.seq } : {}),
+        ...(Array.isArray(patch.locations) ? { locations: event.seq } : {}),
+      },
       waiting: waiting ?? previous?.waiting ?? false,
     };
     this.tools.set(key, index);

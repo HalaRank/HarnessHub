@@ -1,4 +1,5 @@
-import { changes, patch, type Runtime } from "@harnesshub/core";
+import { resolve } from "node:path";
+import { changes, patch, type Runtime, workspaceFolder } from "@harnesshub/core";
 import {
   AppError,
   decisionInput,
@@ -8,7 +9,9 @@ import {
   sensitiveEnvKeys,
   settingInput,
   turnInput,
+  workspaceLocationInput,
 } from "@harnesshub/shared";
+import { object } from "@harnesshub/shared/event-projection";
 import type { Context, Hono } from "hono";
 import { z } from "zod";
 
@@ -39,6 +42,40 @@ export function runtimeRoutes(app: Hono, runtime: Runtime) {
   app.post("/v1/conversations/:id/handoff/action", async (c) => {
     const input = handoffAction.parse(await c.req.json());
     return c.json(runtime.handoffs.action(c.req.param("id"), input.handoffId, input.action));
+  });
+  app.post("/v1/conversations/:id/workspace/location", async (c) => {
+    const id = c.req.param("id");
+    const workspace = runtime.store.getConversation(id).workspacePath;
+    const input = workspaceLocationInput.parse(await c.req.json());
+    let path: string | undefined;
+    if (input.kind === "change") {
+      const state = await changes(workspace);
+      if (!state.repository || !state.files.some((f) => f.path === input.path))
+        throw new AppError(404, "Change no longer exists; refresh Changes");
+      if (input.path.split("/").some((p) => p === ".." || p === "."))
+        throw new AppError(400, "Unsafe Git path");
+      path = resolve(state.repository, input.path);
+    } else if (input.kind === "tool") {
+      const event = runtime.data.events(id, input.seq - 1, 1)[0];
+      if (
+        !event ||
+        event.seq !== input.seq ||
+        !["tool_call", "tool_call_update", "approval.requested"].includes(event.kind)
+      )
+        throw new AppError(404, "Native tool event not found");
+      const payload =
+        event.kind === "approval.requested"
+          ? object(object(object(event.payload).request).toolCall)
+          : object(event.payload);
+      const entries = payload[input.collection];
+      const entry = object(Array.isArray(entries) ? entries[input.index] : null);
+      if (input.collection === "content" && entry.type !== "diff")
+        throw new AppError(400, "Not a native Diff location");
+      if (typeof entry.path !== "string" || !entry.path.startsWith("/"))
+        throw new AppError(400, "Native tool did not provide an absolute Linux path");
+      path = entry.path;
+    }
+    return c.json(await workspaceFolder(workspace, path));
   });
   app.get("/v1/conversations/:id/changes", async (c) => {
     const workspace = runtime.store.getConversation(c.req.param("id")).workspacePath;

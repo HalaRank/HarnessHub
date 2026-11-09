@@ -1,0 +1,191 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Real mouse conversation switching, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+    "Project expand/collapse",
+    "Empty conversation switching",
+    "Sidebar hide/restore",
+    "Empty conversation switching, sidebar hide/restore and mouse resize",
+    "Real WSL hhu TUI running concurrently in a PTY against the same Daemon",
+    "Native Windows editor and SQLite per-conversation draft restore",
+    "IME confirmation does not send, real timed streaming, manual scrolling suspends follow",
+    "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    "Native approval UI displays actual options and explicit reject resolves once",
+    "Project expand/collapse, details panel, resize/110% zoom without horizontal overflow",
+    "Closing the real Windows window preserves Daemon and active Mock ACP Worker",
+    "Reopened Electron restores WSL distro and SQLite conversation selection",
+    "Closing/reopening Electron persists SQLite drafts while active Agent survives",
+    "Windows create/rename/archive/restore/delete dialogs and explicit delete confirmation",
+    "600 native tools / 1200 updates: bounded DOM mounts, history paging, full SQLite events retained",
+    "Unpublished /path: cancel preserves draft, explicit plain-text confirmation and rapid double click produce exactly one Prompt",
+    "Real Git statuses, file Diff, 1200-line paging/scroll/highlight/copy, separate native ACP Diff and controlled Explorer folder navigation",
+    "Windows cross-Harness roundtrip uses fresh target sessions, visible COMMITTED reports/source boundaries; selection alone starts no Handoff",
+    "Windows Worktree creation, workspace-specific Changes, delete preserves worktree; cleanup cancel is inert and explicit confirm retains directory/branch"
+  ],
+  "realHarnesses": [
+    {
+      "harnessId": "codex",
+      "startedAt": "2026-11-09T10:13:59.749Z",
+      "conversationId": "4375b8a2-547a-47d2-9257-615b41006644",
+      "manualApprovalRequired": false,
+      "turn": {
+        "id": "1ebc2af4-1258-4b83-9e95-99887e3ed0d3",
+        "conversationId": "4375b8a2-547a-47d2-9257-615b41006644",
+        "nativeSessionId": "47227778-65e1-46d1-917e-a7fd4c6aed46",
+        "requestId": "6363199c-a3ab-4a3d-be4e-fd5ff101884c",
+        "requestHash": "3149ba34da00da4068332410a128d6baa05101e15639359f9208972380b3190d",
+        "harnessId": "codex",
+        "origin": "user",
+        "state": "COMPLETED",
+        "stopReason": "end_turn",
+        "startEventSeq": 2,
+        "finishEventSeq": 134,
+        "createdAt": 1794219240361,
+        "endedAt": 1794219361899
+      },
+      "timedOut": false,
+      "messageChunks": 103,
+      "toolCalls": 3,
+      "failures": [],
+      "gitChanges": {
+        "workspace": "/tmp/hhu-windows-smoke-WKQOTF/project",
+        "repository": "/tmp/hhu-windows-smoke-WKQOTF/project",
+        "files": [
+          {
+            "index": "A",
+            "worktree": " ",
+            "path": "added.txt"
+          },
+          {
+            "index": " ",
+            "worktree": "D",
+            "path": "deleted.txt"
+          },
+          {
+            "index": " ",
+            "worktree": "M",
+            "path": "sentinel.txt"
+          },
+          {
+            "index": "?",
+            "worktree": "?",
+            "path": "large.ts"
+          },
+          {
+            "index": "?",
+            "worktree": "?",
+            "path": "phase3-codex.txt"
+          },
+          {
+            "index": "?",
+            "worktree": "?",
+            "path": "untracked 世界 & #%.txt"
+          }
+        ],
+        "observedAt": 1794219362099,
+        "notice": "Real Git state in this workspace; changes are not attributed to any Agent. Refresh for current state."
+      },
+      "gitDiff": {
+        "path": "phase3-codex.txt",
+        "staged": "",
+        "unstaged": "",
+        "untracked": "diff --git a/tmp/hhu-windows-smoke-WKQOTF/project/phase3-codex.txt b/tmp/hhu-windows-smoke-WKQOTF/project/phase3-codex.txt\nnew file mode 100644\nindex 0000000..bc4f01d\n--- /dev/null\n+++ b/tmp/hhu-windows-smoke-WKQOTF/project/phase3-codex.txt\n@@ -0,0 +1 @@\n+HARNESSHUB_PHASE3_codex_TOOL_WRITE\n",
+        "observedAt": 1794219362121
+      },
+      "changesVisible": true,
+      "passed": true,
+      "renderer": {
+        "title": "Real codex",
+        "tools": 3,
+        "body": "You复制In this temporary Git test directory only, use native tools to read sentinel.txt, then create a NEW file phase3-codex.txt containing exactly HARNESSHUB_PHASE3_codex_TOOL_WRITE followed by a newline. Do not change other files or directories, use network, or spawn subagents. Respect native permissions; do not work around an approval request. Report the file path and result.Agent复制Warning: Model metadata for gpt-6-astra not found. Defaulting to fallback metadata; this can degrade performance and cause issues.\nI’ll read sentinel.txt, then create only phase3-codex.txt.\nI’ll read sentinel.txt, then create only phase3-codex.txt.› cat sentinel.txt; if test -e phase3-codex.txt; then printf '\\nTarget already exists; will not overwrite.\\n'; exit 1; ficompleted› Editing filescompleted› printf 'HARNESSHUB_PHASE3_codex_TOOL_WRITE\\n' | cmp - phase3-codex.txtcompletedAgent复制Read sentinel.txt successfully.\nCreated /tmp/hhu-windows-smoke-WKQOTF/project/phase3-codex.txt and verified its exact contents: HARNESSHUB_PHASE3_codex_TOOL_WRITE followed by one newline.\nNo other files or directories changed. No network or subagents used."
+      }
+    },
+    {
+      "harnessId": "grok",
+      "startedAt": "2026-11-09T10:16:02.691Z",
+      "conversationId": "ee32ce96-0e66-4427-81a2-84fccb0c0393",
+      "manualApprovalRequired": false,
+      "turn": {
+        "id": "f1e66392-0aa4-44e8-9580-b016a258de6b",
+        "conversationId": "ee32ce96-0e66-4427-81a2-84fccb0c0393",
+        "nativeSessionId": "3df06553-997f-480b-8919-cb4d1f9659dd",
+        "requestId": "27a25889-2d81-424a-830a-25af0e970ae7",
+        "requestHash": "c6a9c570e7723feb717aafd77bbcba32d22c89af8c65bee98d7ee3b5edbac287",
+        "harnessId": "grok",
+        "origin": "user",
+        "state": "COMPLETED",
+        "stopReason": "end_turn",
+        "startEventSeq": 2,
+        "finishEventSeq": 244,
+        "createdAt": 1794219363317,
+        "endedAt": 1794219383755
+      },
+      "timedOut": false,
+      "messageChunks": 149,
+      "toolCalls": 5,
+      "failures": [],
+      "gitChanges": {
+        "workspace": "/tmp/hhu-windows-smoke-WKQOTF/project",
+        "repository": "/tmp/hhu-windows-smoke-WKQOTF/project",
+        "files": [
+          {
+            "index": "A",
+            "worktree": " ",
+            "path": "added.txt"
+          },
+          {
+            "index": " ",
+            "worktree": "D",
+            "path": "deleted.txt"
+          },
+          {
+            "index": " ",
+            "worktree": "M",
+            "path": "sentinel.txt"
+          },
+          {
+            "index": "?",
+            "worktree": "?",
+            "path": "large.ts"
+          },
+          {
+            "index": "?",
+            "worktree": "?",
+            "path": "phase3-codex.txt"
+          },
+          {
+            "index": "?",
+            "worktree": "?",
+            "path": "phase3-grok.txt"
+          },
+          {
+            "index": "?",
+            "worktree": "?",
+            "path": "untracked 世界 & #%.txt"
+          }
+        ],
+        "observedAt": 1794219383883,
+        "notice": "Real Git state in this workspace; changes are not attributed to any Agent. Refresh for current state."
+      },
+      "gitDiff": {
+        "path": "phase3-grok.txt",
+        "staged": "",
+        "unstaged": "",
+        "untracked": "diff --git a/tmp/hhu-windows-smoke-WKQOTF/project/phase3-grok.txt b/tmp/hhu-windows-smoke-WKQOTF/project/phase3-grok.txt\nnew file mode 100644\nindex 0000000..3ea66bd\n--- /dev/null\n+++ b/tmp/hhu-windows-smoke-WKQOTF/project/phase3-grok.txt\n@@ -0,0 +1 @@\n+HARNESSHUB_PHASE3_grok_TOOL_WRITE\n",
+        "observedAt": 1794219383913
+      },
+      "changesVisible": true,
+      "passed": true,
+      "renderer": {
+        "title": "Real grok",
+        "tools": 5,
+        "body": "You复制In this temporary Git test directory only, use native tools to read sentinel.txt, then create a NEW file phase3-grok.txt containing exactly HARNESSHUB_PHASE3_grok_TOOL_WRITE followed by a newline. Do not change other files or directories, use network, or spawn subagents. Respect native permissions; do not work around an approval request. Report the file path and result.Thinking · 公开思考I will read sentinel.txt and create phase3-grok.txt with the specified content.复制Agent复制I'll read sentinel.txt first, then create only phase3-grok.txt with the required contents.› List `/tmp/hhu-windows-smoke-WKQOTF/project`completed› .completedThinking · 公开思考Sentinel.txt has been read. Now creating phase3-grok.txt with the exact required content.复制› Read `/tmp/hhu-windows-smoke-WKQOTF/project/sentinel.txt`completedThinking · 公开思考Sentinel.txt was read. Now creating phase3-grok.txt.复制› Edit `/tmp/hhu-windows-smoke-WKQOTF/project/phase3-grok.txt`completedThinking · 公开思考The file was created. I am verifying the content is exact.复制› Read `/tmp/hhu-windows-smoke-WKQOTF/project/phase3-grok.txt`completedThinking · 公开思考phase3-grok.txt was created successfully with the exact content.复制Agent复制已创建 phase3-grok.txt，内容与要求一致。\n\n读取 sentinel.txt:1，内容为 HARNESSHUB_DESKTOP_PHASE3_世界。\n新文件路径：/tmp/hhu-windows-smoke-WKQOTF/project/phase3-grok.txt\n文件内容：HARNESSHUB_PHASE3_grok_TOOL_WRITE 加一个换行。\n未改动其他文件，未使用网络，未启动子代理。\n"
+      }
+    }
+  ],
+  "passed": true
+}

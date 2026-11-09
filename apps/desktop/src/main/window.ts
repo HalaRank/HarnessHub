@@ -1,9 +1,10 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { HttpError } from "@harnesshub/shared/client";
-import { app, BrowserWindow, clipboard, ipcMain, Menu, session } from "electron";
+import { app, BrowserWindow, clipboard, ipcMain, Menu, session, shell } from "electron";
 import { type DesktopReply, desktopRequest, IPC_REQUEST, IPC_STATE } from "../contracts";
 import { DesktopConnection } from "./connection";
+import { explorerFolder } from "./navigation";
 import { trustedSender, windowSecurity } from "./security";
 import { loadDistribution, saveDistribution } from "./settings";
 import { BridgeError, WslBridge } from "./wsl";
@@ -96,8 +97,20 @@ export async function openDesktopWindow(
       // Renderer sends this only after its draft queues settle. Destroy avoids a
       // second beforeunload cycle while Chromium is still cancelling the first close.
       if (request.type === "window.close") win.destroy();
-      else if (request.type === "clipboard.copy") clipboard.writeText(request.text);
-      else if (!["state", "discover", "connect", "reconnect", "select"].includes(request.type))
+      else if (request.type === "clipboard.copy") await clipboard.writeText(request.text);
+      else if (request.type === "workspace.open") {
+        const distribution = controller.getState().distribution;
+        const location = (await controller.action(request)) as { linuxPath: string };
+        if (
+          !distribution ||
+          controller.getState().distribution !== distribution ||
+          controller.getState().status !== "connected"
+        )
+          throw new Error("WSL 连接已变化，请重新定位。");
+        const folder = explorerFolder(distribution, location.linuxPath);
+        const error = await shell.openPath(folder);
+        if (error) throw new Error("Explorer 无法打开文件夹；请复制 Linux 路径。");
+      } else if (!["state", "discover", "connect", "reconnect", "select"].includes(request.type))
         data = await controller.action(request);
       return { ok: true, state: { ...controller.getState(), events: [] }, data };
     } catch (error) {

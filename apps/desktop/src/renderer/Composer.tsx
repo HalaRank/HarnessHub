@@ -7,6 +7,7 @@ import {
 import { object } from "@harnesshub/shared/event-projection";
 import { useEffect, useRef, useState } from "react";
 import type { DesktopApi, DesktopRequest, DesktopState } from "../contracts";
+import { Confirm } from "./Confirm";
 import { call, type DesktopDraft } from "./drafts";
 import { Copy } from "./Markdown";
 
@@ -18,6 +19,10 @@ export function inputAction(
   if (composing || event.isComposing || event.keyCode === 229) return "none";
   if (menu && !event.shiftKey && (event.key === "Enter" || event.key === "Tab")) return "complete";
   return event.key === "Enter" && !event.shiftKey ? "send" : "none";
+}
+export function slashIntent(text: string, commands: NativeCommand[] | undefined) {
+  const name = /^\/([^\s]+)/.exec(text)?.[1];
+  return { name, confirmText: !!name && !commands?.some((c) => c.name === name) };
 }
 export function Composer({
   api,
@@ -31,6 +36,8 @@ export function Composer({
   draft: DesktopDraft;
 }) {
   const [, render] = useState(0);
+  const [plain, setPlain] = useState<{ text: string; harness: string } | null>(null);
+  const actionLock = useRef(false);
   const [error, setError] = useState("");
   const [acting, setActing] = useState(false);
   const [menuDismissed, setMenuDismissed] = useState(false);
@@ -83,7 +90,8 @@ export function Composer({
     !!context?.approvals.length ||
     !!handoff;
   const act = async (request: DesktopRequest) => {
-    if (acting) return;
+    if (actionLock.current) return;
+    actionLock.current = true;
     setActing(true);
     setError("");
     try {
@@ -91,6 +99,7 @@ export function Composer({
     } catch (e) {
       setError(String(e));
     } finally {
+      actionLock.current = false;
       setActing(false);
     }
   };
@@ -102,9 +111,10 @@ export function Composer({
   };
   const send = () => {
     if (disabled || !draft.text.trim() || !harness) return;
-    const name = draft.text.startsWith("/") ? draft.text.split(/\s/, 1)[0]?.slice(1) : undefined;
-    if (name && !commands?.some((c) => c.name === name)) {
-      setError("当前 NativeSession 未发布此 ACP 命令。未发送；请查看候选列表。");
+    const { name, confirmText } = slashIntent(draft.text, commands);
+    if (confirmText) {
+      setMenuDismissed(true);
+      setPlain({ text: draft.text, harness });
       return;
     }
     void draft.submit(harness, name && session ? { nativeSessionId: session.id, name } : undefined);
@@ -118,6 +128,25 @@ export function Composer({
   )?.activeTurnId;
   return (
     <div className="composer-area">
+      {plain && (
+        <Confirm
+          title="作为普通文本发送？"
+          label="作为普通文本发送"
+          disabled={disabled || draft.text !== plain.text || harness !== plain.harness}
+          cancel={() => setPlain(null)}
+          confirm={() => {
+            if (disabled || draft.text !== plain.text || harness !== plain.harness) return;
+            setPlain(null);
+            void draft.submit(plain.harness);
+          }}
+        >
+          <p>
+            当前 NativeSession 未发布此 ACP 命令。确认后将原文作为普通 Prompt 交给
+            Agent，不作为已发布 ACP 命令调用。
+          </p>
+          <pre>{plain.text}</pre>
+        </Confirm>
+      )}
       {switching && (
         <div className="banner">
           PENDING_SWITCH · {source.harnessId} → {harness}。发送第一条消息时才开始交接。
@@ -132,7 +161,8 @@ export function Composer({
               <p>降级材料可能不完整，确认后才发送目标消息。</p>
               <details>
                 <summary>检查已有报告与降级材料</summary>
-                <pre>{handoff.reportText ?? handoff.fallbackText ?? "暂无报告"}</pre>
+                <pre>{handoff.reportText ?? "暂无完整报告"}</pre>
+                <pre>{handoff.fallbackText ?? "暂无降级材料"}</pre>
               </details>
               {(["retry", "confirm", "cancel"] as const).map((action) => (
                 <button
@@ -314,7 +344,7 @@ export function Composer({
                 keyCode: event.keyCode,
               },
               Date.now() - compositionEnd.current < 80,
-              menu,
+              menu && matches.length > 0,
             );
             if (action !== "none") event.preventDefault();
             if (action === "complete") {

@@ -6,6 +6,7 @@ import { Client } from "@harnesshub/shared/client";
 import { app, type BrowserWindow } from "electron";
 import { openDesktopWindow } from "../src/main/window";
 import { runWsl, WslBridge } from "../src/main/wsl";
+import { workspaceSmoke } from "./windows-workspace";
 
 const config = JSON.parse(readFileSync(join(app.getAppPath(), "smoke-config.json"), "utf8")) as {
   linuxHome: string;
@@ -65,17 +66,23 @@ const waitFor = async (check: () => unknown | Promise<unknown>) => {
 const click = async (window: BrowserWindow, selector: string) => {
   await waitFor(() =>
     window.webContents.executeJavaScript(
-      `(() => { const e = document.querySelector(${JSON.stringify(selector)}); return e && !e.disabled && e.getBoundingClientRect().height > 0; })()`,
+      `(() => { const e = document.querySelector(${JSON.stringify(selector)}); const modal = document.querySelector('dialog[open]'); return e && !e.disabled && e.getBoundingClientRect().height > 0 && (!modal || modal.contains(e)); })()`,
     ),
   );
   await window.webContents.executeJavaScript(
-    `document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'nearest'})`,
+    `document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center', behavior:'instant'})`,
   );
-  const point = await window.webContents.executeJavaScript(
-    `(() => { const element = document.querySelector(${JSON.stringify(selector)}); if (!element) throw new Error('Element missing'); const rect = element.getBoundingClientRect(); return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) }; })()`,
+  await window.webContents.executeJavaScript(
+    "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
   );
-  window.webContents.sendInputEvent({ type: "mouseDown", button: "left", clickCount: 1, ...point });
-  window.webContents.sendInputEvent({ type: "mouseUp", button: "left", clickCount: 1, ...point });
+  // Invoke the actual DOM control once. Physical pointer resize is tested separately;
+  // click coordinates can race Windows compositor/layout after async panel updates.
+  await window.webContents.executeJavaScript(
+    `(() => { const e = document.querySelector(${JSON.stringify(selector)}); e.focus(); e.click(); })()`,
+  );
+  await window.webContents.executeJavaScript(
+    "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+  );
 };
 
 const fill = async (window: BrowserWindow, text: string) => {
@@ -170,7 +177,7 @@ void app.whenReady().then(async () => {
       true,
     );
     checks.push(
-      "Real mouse conversation switching, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+      "Real Chromium conversation controls, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
     );
     await click(first, ".project-toggle");
     await waitFor(() =>
@@ -342,6 +349,19 @@ void app.whenReady().then(async () => {
     );
     checks.push(
       "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    );
+    await waitFor(async () => {
+      const page = await client.request<{ events: { kind: string; turnId: string }[] }>(
+        `/v1/conversations/${config.conversationId}/events?limit=1000`,
+      );
+      const last = page.events.filter((e) => e.kind === "user.message").at(-1);
+      return (
+        last &&
+        (await client.request<{ endedAt: number | null }>(`/v1/turns/${last.turnId}`)).endedAt
+      );
+    });
+    await waitFor(() =>
+      first.webContents.executeJavaScript("!document.querySelector('textarea').readOnly"),
     );
     await fill(first, "permission");
     await click(first, '[aria-label="发送"]');
@@ -530,6 +550,13 @@ void app.whenReady().then(async () => {
       join(config.output, "desktop-tools.png"),
       (await reopened.window.webContents.capturePage()).toPNG(),
     );
+    checks.push(
+      ...(await workspaceSmoke(reopened.window, reopened.connection, client, config.output, {
+        click,
+        fill,
+        waitFor,
+      })),
+    );
     if (config.realHarnesses?.length) {
       const results: Record<string, unknown>[] = [];
       evidence.realHarnesses = results;
@@ -556,7 +583,7 @@ void app.whenReady().then(async () => {
           );
           await fill(
             reopened.window,
-            "In this temporary test directory only, use native tools to print pwd and read sentinel.txt. Return its exact text and a small Markdown code block. Do not edit files, use network, or spawn subagents. Respect native permissions; do not work around an approval request.",
+            `In this temporary Git test directory only, use native tools to read sentinel.txt, then create a NEW file phase3-${harnessId}.txt containing exactly HARNESSHUB_PHASE3_${harnessId}_TOOL_WRITE followed by a newline. Do not change other files or directories, use network, or spawn subagents. Respect native permissions; do not work around an approval request. Report the file path and result.`,
           );
           await click(reopened.window, '[aria-label="发送"]');
           let turn:
@@ -600,7 +627,37 @@ void app.whenReady().then(async () => {
               (e.kind === "agent_message_chunk" &&
                 /invalid_prompt|unexpected status|Bad Gateway/.test(JSON.stringify(e.payload))),
           );
+          const changes = (await reopened.connection.action({
+            type: "changes.list",
+            conversationId: id,
+          })) as { files: { path: string }[]; workspace: string };
+          result.gitChanges = changes;
+          const changed = changes.files.some((f) => f.path === `phase3-${harnessId}.txt`);
+          if (changed) {
+            result.gitDiff = await reopened.connection.action({
+              type: "changes.diff",
+              conversationId: id,
+              path: `phase3-${harnessId}.txt`,
+            });
+            if (
+              !(await reopened.window.webContents.executeJavaScript(
+                "!!document.querySelector('.work-panel')",
+              ))
+            )
+              await click(reopened.window, '[aria-label="切换工作面板"]');
+            await reopened.window.webContents.executeJavaScript(
+              "Array.from(document.querySelectorAll('.work-panel > header button')).find(b => b.textContent === 'Changes').click()",
+            );
+            await waitFor(() =>
+              reopened.window.webContents.executeJavaScript(
+                `document.querySelector('.changes').textContent.includes(${JSON.stringify(`phase3-${harnessId}.txt`)})`,
+              ),
+            );
+            result.changesVisible = true;
+          }
           result.passed =
+            changed &&
+            result.changesVisible === true &&
             turn?.state === "COMPLETED" &&
             Number(result.messageChunks) > 0 &&
             Number(result.toolCalls) > 0 &&
