@@ -54,6 +54,13 @@ export class Runtime {
   readonly pending = new Map<string, Pending>();
   closing = false;
   readonly deleting = new Set<string>();
+  private readonly operations = new Map<Promise<unknown>, string>();
+  private track<T>(id: string, operation: Promise<T>): Promise<T> {
+    this.operations.set(operation, id);
+    const settled = () => this.operations.delete(operation);
+    void operation.then(settled, settled);
+    return operation;
+  }
   assertAvailable(id: string) {
     if (this.deleting.has(id)) throw new AppError(409, "Conversation deletion is in progress");
     this.store.assertWorkspaceAvailable(this.store.getConversation(id).workspacePath);
@@ -74,11 +81,44 @@ export class Runtime {
   }
   async deleteConversation(id: string) {
     if (this.closing) throw new AppError(503, "Runtime is stopping");
-    this.assertDeletable(id);
+    this.assertAvailable(id);
     this.deleting.add(id);
     try {
-      await this.closeSession(id, false);
-      return this.store.deleteConversation(id);
+      this.inputs.hold(id, "Conversation deletion requested");
+      for (const turn of this.data.active(id)) this.track(id, this.cancel(turn.id));
+      const busy = () =>
+        [...this.operations.values()].includes(id) ||
+        this.inputs.isProcessing(id) ||
+        [...this.handoffs.operations].some((h) => this.handoffs.data.get(h).conversationId === id);
+      // Give native cancellation a chance to finish before the confirmed deletion
+      // closes the owned Workers. Keep the DB until every async writer has settled.
+      const cancelDeadline = Date.now() + 1500;
+      while (busy() && Date.now() < cancelDeadline)
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      const workers = new Set([
+        ...[...this.live.values()].filter((live) => live.conversationId === id),
+        ...[...this.handoffs.sources.values()].filter((live) => live.conversationId === id),
+      ]);
+      for (const live of workers) {
+        // A native setting RPC is invalidated by closing its transport. Other
+        // close operations retain their lock until their bounded cleanup ends.
+        const deadline = Date.now() + 10000;
+        while (live.configuring && !live.settingsOperation && Date.now() < deadline)
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        if (live.settingsOperation) {
+          delete live.settingsOperation;
+          live.configuring = false;
+        }
+        this.expire(live, "CANCELLED");
+        await this.disposeLive(live, true);
+      }
+      const deadline = Date.now() + 25000;
+      while (busy() && Date.now() < deadline)
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      if (busy()) throw new AppError(409, "Conversation cleanup is still settling; retry deletion");
+      for (const [key, live] of this.handoffs.sources)
+        if (live.conversationId === id) this.handoffs.sources.delete(key);
+      return this.store.deleteConversation(id, true);
     } finally {
       this.deleting.delete(id);
     }
@@ -288,7 +328,19 @@ export class Runtime {
       throw new AppError(409, "Handoff operation in progress");
     return this.createLive(conversationId, harnessId, true);
   }
-  async createLive(
+  createLive(
+    conversationId: string,
+    harnessId: string,
+    activate: boolean,
+    handoffId?: string,
+  ): Promise<Live> {
+    this.assertAvailable(conversationId);
+    return this.track(
+      conversationId,
+      this.prepareLive(conversationId, harnessId, activate, handoffId),
+    );
+  }
+  private async prepareLive(
     conversationId: string,
     harnessId: string,
     activate: boolean,
@@ -307,7 +359,10 @@ export class Runtime {
       configuring: false,
     };
     if (activate) this.live.set(conversationId, live);
-    if (handoffId) this.handoffs.data.patch(handoffId, { targetNativeSessionId: live.id });
+    if (handoffId) {
+      this.handoffs.data.patch(handoffId, { targetNativeSessionId: live.id });
+      this.handoffs.sources.set(live.id, live);
+    }
     try {
       const worker = new Worker(this.profile(harnessId), cwd, {
         wire: (direction, message) => this.wire(live, direction, message),
@@ -360,6 +415,7 @@ export class Runtime {
         signal: live.worker?.child.signalCode ?? null,
       });
       if (exited && this.live.get(conversationId) === live) this.live.delete(conversationId);
+      if (exited) this.handoffs.sources.delete(live.id);
       if (!exited && !activate) this.handoffs.sources.set(live.id, live);
       throw error;
     }
@@ -497,7 +553,7 @@ export class Runtime {
       const h = this.handoffs.reserve(turn.id, input.message, sourceId);
       this.handoffs.data.patch(h.id, { sourceEventEnd: event.seq - 1 });
       void this.handoffs.generate(h.id);
-    } else void this.run(turn.id, input.message, !!input.nativeCommand);
+    } else void this.track(conversationId, this.run(turn.id, input.message, !!input.nativeCommand));
     return this.data.turn(turn.id);
   }
   async run(turnId: string, message: string, nativeCommand = false) {
@@ -785,7 +841,7 @@ export class Runtime {
       }
     };
     try {
-      return await worker.bounded(apply());
+      return await worker.bounded(this.track(conversationId, apply()));
     } catch (error) {
       if (error instanceof AcpTimeoutError && live.settingsOperation === operation) {
         operation.timedOut = true;
@@ -860,6 +916,8 @@ export class Runtime {
 
   async shutdown(cancelActive = false) {
     if (this.closing) throw new AppError(409, "Runtime is already stopping");
+    if (this.deleting.size)
+      throw new AppError(409, "Wait for Conversation deletion before stopping Daemon");
     if (this.store.workspaceOperations.size || this.store.projectOperations.size)
       throw new AppError(409, "Wait for pending Git operations before stopping Daemon");
     if (this.data.active().length && !cancelActive)

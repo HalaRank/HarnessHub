@@ -1149,6 +1149,36 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
   }
 }, 20000);
 
+test("confirmed deletion cancels an active Conversation from the TUI, while closing the dialog keeps it running", async () => {
+  const { c } = await setup("Delete active Conversation");
+  const turn = await api<{ id: string }>(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "mock",
+    message: "wait",
+  });
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 38 });
+  try {
+    await frame(screen, "started");
+    await invoke(screen, "Delete Conversation");
+    await frame(screen, "Delete cancels active work");
+    await clickControl(screen, "delete-cancel");
+    await frame(screen, "Esc interrupt");
+    expect((await api<{ endedAt: number | null }>(`/v1/turns/${turn.id}`)).endedAt).toBeNull();
+    await invoke(screen, "Delete Conversation");
+    await frame(screen, "Confirm Conversation deletion");
+    await clickControl(screen, "delete-confirm");
+    await waitFor(
+      async () =>
+        !(await api<{ conversations: Conversation[] }>("/v1/snapshot")).conversations.some(
+          (v) => v.id === c.id,
+        ),
+    );
+    await frame(screen, "/new creates a conversation");
+  } finally {
+    screen.renderer.destroy();
+  }
+}, 20000);
+
 test("two Delete presses confirm Conversation and Project deletion", async () => {
   for (const kind of ["Conversation", "Project"] as const) {
     const { p, c, root } = await setup(`Double Delete ${kind}`);

@@ -301,9 +301,14 @@ export class Store {
         "Active, pending approval or UNCERTAIN Conversation cannot be deleted",
       );
   }
-  deleteConversation(id: string) {
-    this.assertConversationDeletable(id);
-    this.assertWorkspaceMutable([id]);
+  deleteConversation(id: string, executionStopped = false) {
+    // Runtime uses the explicit deletion path only after its owned Workers and
+    // asynchronous event writers have stopped. Other callers retain the guard.
+    if (executionStopped) this.getConversation(id);
+    else {
+      this.assertConversationDeletable(id);
+      this.assertWorkspaceMutable([id]);
+    }
     return this.db.transaction(() => {
       this.db.delete(schema.conversations).where(eq(schema.conversations.id, id)).run();
       return this.record("conversation.deleted", id);

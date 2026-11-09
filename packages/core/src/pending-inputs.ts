@@ -30,6 +30,9 @@ export class PendingInputs {
   list(id: string) {
     return this.runtime.data.inputs(id);
   }
+  isProcessing(id: string) {
+    return this.processing.has(id);
+  }
   uncertain(id: string) {
     return this.list(id).some((input) => input.state === "UNCERTAIN");
   }
@@ -132,12 +135,19 @@ export class PendingInputs {
     return this.update(input, "CANCELLED", "Removed by user");
   }
   async drain(id: string) {
-    if (this.processing.has(id) || this.runtime.closing || this.uncertain(id)) return;
+    if (
+      this.processing.has(id) ||
+      this.runtime.closing ||
+      this.runtime.deleting.has(id) ||
+      this.uncertain(id)
+    )
+      return;
     this.processing.add(id);
     try {
       for (;;) {
         const input = this.list(id).find((item) => item.state === "QUEUED");
-        if (!input || this.runtime.closing || this.uncertain(id)) return;
+        if (!input || this.runtime.closing || this.runtime.deleting.has(id) || this.uncertain(id))
+          return;
         const runtime = this.runtime;
         const live = runtime.live.get(id);
         const active = runtime.data.active(id);

@@ -183,6 +183,7 @@ test("generation failure holds target, explicit cancel never sends; explicit ret
   const t = await submit(c, "b", "reserved once");
   const h = await hstate(c, "FAILED");
   assert.equal((await sessions(c)).length, 1);
+  assert.equal(h.error, "Source returned no complete structured report");
   assert.match(h.fallbackText, /Context may be incomplete/);
   assert.ok(h.fallbackSources.eventIds.length);
   assert.equal((await api(`/v1/turns/${t.id}`)).endedAt, null);
@@ -369,7 +370,35 @@ test("shared Conversations remain parallel with conflict warning and never mix n
   assert.notEqual((await sessions(c))[0].id, (await sessions(d))[0].id);
 });
 
-test("restart from failed report preserves reservation and requires explicit confirmation without replaying source", async () => {
+test("switch after source shutdown exposes its cause and requires explicit degraded confirmation", async () => {
+  const c = await conv();
+  await settled(await submit(c));
+  const before = (await events(c)).filter((e) => e.raw?.method === "session/prompt").length;
+  cli("daemon", "stop");
+  cli("daemon", "start");
+  client = new Client(instance());
+  const t = await submit(c, "b", "continue after shutdown");
+  const h = await hstate(c, "FAILED");
+  assert.match(h.error, /Source native session has ended or is unavailable/);
+  assert.match(h.error, /confirm degraded continuation/);
+  assert.equal(h.internalTurnId, null);
+  assert.equal(h.targetNativeSessionId, null);
+  assert.equal((await sessions(c)).length, 1);
+  assert.equal((await events(c)).filter((e) => e.raw?.method === "session/prompt").length, before);
+  await action(c, h, "retry");
+  const retried = await hstate(c, "FAILED");
+  assert.equal(retried.error, h.error);
+  assert.equal((await events(c)).filter((e) => e.raw?.method === "session/prompt").length, before);
+  await action(c, retried, "confirm");
+  assert.equal((await settled(t)).state, "COMPLETED");
+  assert.equal((await hstate(c, "COMMITTED")).degraded, true);
+  assert.equal(
+    (await events(c)).filter((e) => e.raw?.method === "session/prompt").length,
+    before + 1,
+  );
+});
+
+test("restart preserves saved report through unavailable-source retry and requires explicit confirmation without replaying source", async () => {
   const c = await conv();
   await settled(await submit(c, "bad-report"));
   const t = await submit(c, "b", "restart reserved");
@@ -378,7 +407,12 @@ test("restart from failed report preserves reservation and requires explicit con
   await action(c, h, "cancel");
   cli("daemon", "stop");
   const db = new Database(dbFile);
-  db.prepare("UPDATE handoffs SET status='READY' WHERE id=?").run(h.id);
+  const report = "## Current Objective\nSaved complete report before shutdown";
+  db.prepare("UPDATE handoffs SET status='READY', report_text=?, generated_at=? WHERE id=?").run(
+    report,
+    Date.now(),
+    h.id,
+  );
   db.prepare("UPDATE turns SET state='RUNNING', ended_at=NULL WHERE id=?").run(t.id);
   db.close();
   cli("daemon", "start");
@@ -393,7 +427,14 @@ test("restart from failed report preserves reservation and requires explicit con
   const count = (await events(c)).filter((e) => e.raw?.method === "session/prompt").length;
   assert.equal(count, 2);
   await conflict(submit(c));
-  await action(c, failed, "confirm");
+  await action(c, failed, "retry");
+  const retried = await hstate(c, "FAILED");
+  assert.match(retried.error, /Source native session has ended or is unavailable/);
+  assert.equal(retried.reportText, report);
+  assert.ok(retried.generatedAt);
+  assert.ok(retried.fallbackText.includes(report));
+  assert.equal((await events(c)).filter((e) => e.raw?.method === "session/prompt").length, count);
+  await action(c, retried, "confirm");
   assert.equal((await settled(t)).state, "COMPLETED");
   assert.equal((await events(c)).filter((e) => e.raw?.method === "session/prompt").length, 3);
   assert.equal(

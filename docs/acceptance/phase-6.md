@@ -210,3 +210,7 @@ Slash 菜单、顶部/底部、侧栏、项目目录、命令面板、设置、�
 ## Agent / 模型常驻与 Harness 快捷键
 
 当前 Agent 与 ACP 模型独立常驻显示，`Ctrl+H` 在聊天输入、历史及 Changes 中循环切换 Harness，保留草稿和首次消息才交接的边界。自动化、Linux PTY 与待验事项见 [专项验收记录](phase-6-harness-model-status.md)。
+
+## 交接失败展示与活动会话删除
+
+2026-11-09 修复交接具体原因、旧报告保留及降级 JSON 的聊天展示。按用户新要求，确认删除 Conversation 会取消活动执行、关闭所属 Worker 并清理应用历史，覆盖 FAILED Handoff 与 UNCERTAIN。真实 Grok 删除、Codex 会话准备超时及回归结果见[专项验收记录](phase-6-handoff-and-active-deletion.md)。

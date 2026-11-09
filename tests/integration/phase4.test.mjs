@@ -322,7 +322,7 @@ test("archive/restore survives restart; confirmed deletion removes app relations
   assert.ok(readdirSync(root).includes(".git"));
 });
 
-test("running, pending approval and UNCERTAIN conversations cannot be deleted or bypassed through project deletion", async () => {
+test("confirmed Conversation deletion stops active or UNCERTAIN work while project deletion keeps its preflight guard", async () => {
   for (const message of ["wait", "permission", "crash"]) {
     const c = await api(`/v1/projects/${p.id}/conversations`, "POST", { title: message });
     const path = `/v1/conversations/${c.id}`;
@@ -340,7 +340,6 @@ test("running, pending approval and UNCERTAIN conversations cannot be deleted or
               (e) => e.kind === "agent_message_chunk",
             ),
     );
-    await assert.rejects(api(path, "DELETE", { confirmed: true }), (e) => e.status === 409);
     await assert.rejects(
       api(`/v1/projects/${p.id}`, "DELETE", { confirmed: true }),
       (e) => e.status === 409,
@@ -349,12 +348,11 @@ test("running, pending approval and UNCERTAIN conversations cannot be deleted or
     await api(path, "PATCH", { archived: true });
     if (message !== "crash") {
       assert.equal((await api(`/v1/turns/${turn.id}`)).endedAt, null);
-      await api(`/v1/turns/${turn.id}/cancel`, "POST");
-      await until(async () => (await api(`/v1/turns/${turn.id}`)).endedAt !== null);
-      await api(path, "DELETE", { confirmed: true });
     } else {
       assert.equal((await api(path)).runtimeStatus, "UNCERTAIN");
     }
+    await api(path, "DELETE", { confirmed: true });
+    await assert.rejects(api(path), (e) => e.status === 404);
   }
 });
 

@@ -284,10 +284,20 @@ export function NativeEvents(props: {
                     <Markdown text={row.value().text} streaming={row.value().streaming} />
                   </Show>
                   <Show when={row.value().kind === "handoff"}>
+                    <Show when={row.value().handoff?.error}>
+                      <text fg="#ffcc80">{row.value().handoff?.error}</text>
+                    </Show>
+                    <Show when={row.value().handoff?.incomplete}>
+                      <text fg="#ffcc80">Context may be incomplete / 上下文可能不完整</text>
+                    </Show>
                     <text fg="#80cbc4">
-                      Enter expand/collapse · click Source for the complete report and events
+                      {row.value().text
+                        ? "Enter expand/collapse report · Source for full materials and events"
+                        : row.value().handoff?.fallbackAvailable
+                          ? "Saved context available in Source · /handoff to review and continue"
+                          : "Report pending · Source for events"}
                     </text>
-                    <Show when={manual()[row.id] ?? row.value().waiting}>
+                    <Show when={row.value().text && manual()[row.id]}>
                       <Markdown text={row.value().text.slice(0, 24000)} />
                     </Show>
                   </Show>

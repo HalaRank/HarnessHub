@@ -62,9 +62,11 @@ const app = new AgentApp()
       },
     };
   })
-  .onRequest("session/set_config_option", ({ params }) => ({
-    configOptions: configOptions.map((o) => ({ ...o, currentValue: params.value })),
-  }))
+  .onRequest("session/set_config_option", async ({ params }) => {
+    if (process.env.HHU_MOCK_CONFIG_DELAY)
+      await new Promise((r) => setTimeout(r, Number(process.env.HHU_MOCK_CONFIG_DELAY)));
+    return { configOptions: configOptions.map((o) => ({ ...o, currentValue: params.value })) };
+  })
   .onRequest("session/set_mode", () => ({}))
   .onRequest("session/close", async () => {
     if (process.env.HHU_MOCK_CLOSE_DELAY)

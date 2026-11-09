@@ -67,7 +67,7 @@ hhu --version
 
 Changes 用 ↑↓ 选择文件，点击 Refresh 刷新、Source / copy 查看完整 Diff。读取 Conversation 绑定 Workspace 的 Staged、Unstaged 和 Untracked，不推断 Agent 修改归属。单次 Git 输出超过 2 MiB 或查询超过 10 秒时明确报错。
 
-命令面板和侧栏 `⋯` 保留归档、恢复、重命名及确认删除操作。删除应用历史须确认，服务端拒绝活动、审批、UNCERTAIN 或投递未确定的会话。用户项目目录、Worktree 和 Git 分支保留。Manage Worktrees 继续要求核对路径、分支和 CLEAN 确认，按已有安全规则将目录移入保留目录。
+命令面板和侧栏 `⋯` 保留归档、恢复、重命名及确认删除操作。确认删除 Conversation 会取消任务和待审批请求、关闭所属 Worker，必要时终止不响应的受控进程，待异步写入收尾后删除历史与草稿。FAILED Handoff、UNCERTAIN 会话也可通过此入口删除。Project 删除仍预检全部子会话。用户项目目录、Worktree 和 Git 分支保留。Manage Worktrees 继续要求核对路径、分支和 CLEAN 确认，按已有安全规则将目录移入保留目录。
 
 同 Harness 连续消息复用原生会话。`/harness` 仅选择目标，首次向目标提交消息才生成源报告并创建目标原生会话。源执行、审批或取消未结束时等待。失败通过 `/handoff` 查看报告、重试、确认降级或取消，已发送但结果不明的请求保持 UNCERTAIN。
 
@@ -132,6 +132,6 @@ Worker 继承 Daemon 启动时的原生进程环境，并使用 Conversation 工
 
 数据库默认 `~/.local/share/harnesshub/harnesshub.db`，实例凭据与锁位于 `~/.local/state/harnesshub/`，日志在其 `logs/`。尊重绝对路径的 XDG_CONFIG_HOME / XDG_DATA_HOME / XDG_STATE_HOME；目录 0700，数据、凭据和日志 0600。日志不复制完整 Prompt、工具输出或 Worker stderr；原始 ACP 和结构化事件保存在私有 SQLite，结构化凭据字段定向脱敏。Daemon 和启动日志达到 1 MiB 时轮转，最多保留 5 个历史文件，旧文件不会无限增长。
 
-迁移前生成同目录 0600 的 `harnesshub.db.backup-*`，再执行 Drizzle migrations；SQL 失败会事务回滚，保留旧库和备份，不自动覆盖。不支持的更高 schema 拒绝打开。不要在 Daemon 运行时替换数据库、构建产物或删除锁文件；恢复步骤见[操作指南](docs/OPERATIONS.md)。强制停止只通过 `POST /v1/conversations/:id/session/stop` 的 `{ "force": true, "confirmed": true }` 明确确认；结果保守标记 `UNCERTAIN`。普通停止没有自动 SIGKILL 升级。
+迁移前生成同目录 0600 的 `harnesshub.db.backup-*`，再执行 Drizzle migrations；SQL 失败会事务回滚，保留旧库和备份，不自动覆盖。不支持的更高 schema 拒绝打开。不要在 Daemon 运行时替换数据库、构建产物或删除锁文件。强制停止使用 `POST /v1/conversations/:id/session/stop` 的 `{ "force": true, "confirmed": true }` 明确确认，结果保守标记 `UNCERTAIN`。确认删除 Conversation 也授权停止其受控 Worker。普通停止没有自动 SIGKILL 升级。恢复步骤见[操作指南](docs/OPERATIONS.md)。
 
 Conversation 导出通过 `hhu agent export <id> chat|debug [新文件]` 或 `/v1/conversations/:id/export?format=...` 使用。`chat` 提供用户消息、Agent 内容、工具、公开思考/计划和 Handoff 的 Markdown；`debug` 另含原始 ACP、序号、Session、Turn、审批和用途。已知结构化凭据字段脱敏，不注入 Daemon Token 或 Profile 环境值；原生文本/源码仍可能含秘密，导出和备份需私密保存。`doctor` 默认不握手；`hhu doctor --acp <conversationId> <harnessId>` / `hhu agent session ...` 才显式执行握手。

@@ -398,7 +398,7 @@ test("installer locks out an unresponsive instance even when instance metadata i
   }
 });
 
-test("failed source release retains the handle, blocks shutdown and never kills another Conversation", async () => {
+test("confirmed deletion terminates a retained Handoff source without stopping another Conversation", async () => {
   const gate = join(temp, "release-source");
   await api("/v1/harness-profiles", "POST", {
     id: "retained6",
@@ -435,13 +435,16 @@ test("failed source release retains the handle, blocks shutdown and never kills 
     const retained = (await api(`/v1/conversations/${c.id}/sessions`))[0];
     assert.equal(retained.endedAt, null);
     await assert.rejects(
-      api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true }),
+      api(`/v1/projects/${project.id}`, "DELETE", { confirmed: true }),
       (error) => error.status === 409,
     );
-    await assert.rejects(
-      client.request("/v1/daemon/stop", "POST", { cancelActive: false }, 12000),
-      (error) => error.status === 409,
+    await client.request(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true }, 60000);
+    await assert.rejects(api(`/v1/conversations/${c.id}`), (error) => error.status === 404);
+    assert.throws(
+      () => process.kill(sourcePid, 0),
+      (error) => error.code === "ESRCH",
     );
+    process.kill(otherPid, 0);
     assert.equal((await api("/v1/health")).pid, instance().pid);
   } finally {
     writeFileSync(gate, "cooperative exit now");

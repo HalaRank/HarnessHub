@@ -1049,7 +1049,9 @@ export function App(props: {
                 : `Permanently delete Project “${target().project?.name}” and all ${snapshot().conversations.filter((c) => c.projectId === target().project?.id).length} Conversations (including archived) and their history?`}
             </text>
             <text fg={ui.secondary}>
-              Active, pending approval or UNCERTAIN Conversations must be resolved first.
+              {target().conversation
+                ? "Delete cancels active work and pending approvals, stops this Conversation's Workers, then removes its history. Unresponsive owned Workers will be terminated."
+                : "Active, pending approval or UNCERTAIN Conversations must be resolved first."}
             </text>
           </DeleteConfirmation>
         )}

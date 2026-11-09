@@ -148,14 +148,7 @@ export class Handoffs {
     try {
       h = this.data.move(id, h.status, "GENERATING", {
         error: null,
-        reportText: null,
-        generatedAt: null,
-        degraded: false,
-        confirmedAt: null,
-        fallbackText: null,
-        fallbackSources: null,
       });
-      this.announce(h);
       const source = r.live.get(h.conversationId);
       if (
         !source ||
@@ -166,8 +159,18 @@ export class Handoffs {
       )
         throw new AppError(
           409,
-          "Source native session is unavailable; native context cannot be recovered",
+          "Source native session has ended or is unavailable. Review saved context and confirm degraded continuation, or cancel the switch.",
         );
+      this.data.patch(id, {
+        reportText: null,
+        generatedAt: null,
+        degraded: false,
+        confirmedAt: null,
+        fallbackText: null,
+        fallbackSources: null,
+      });
+      h = this.data.get(id);
+      this.announce(h);
       const internal = r.data.addTurn(
         h.conversationId,
         h.sourceHarness,
@@ -238,7 +241,7 @@ export class Handoffs {
         return;
       }
       await this.deliver(h);
-    } catch {
+    } catch (error) {
       if (internalId) {
         const internal = r.data.turn(internalId);
         if (!internal.endedAt) {
@@ -249,7 +252,9 @@ export class Handoffs {
       }
       this.fail(
         this.data.get(id),
-        "Report generation or target preparation failed; inspect source evidence",
+        error instanceof AppError
+          ? error.message
+          : "Source report generation failed; inspect Source for protocol evidence",
         sent,
       );
     } finally {
@@ -327,7 +332,7 @@ export class Handoffs {
           });
         }
       }
-    } catch {
+    } catch (error) {
       if (submitted) {
         if (target?.turnId) r.finish(target, "UNCERTAIN", "handoff_target_result_unknown");
         this.fail(
@@ -339,7 +344,9 @@ export class Handoffs {
         this.sources.delete(h.id);
         this.fail(
           this.data.get(h.id),
-          "Target session preparation failed; no target Prompt dispatched",
+          error instanceof AppError
+            ? `Target session preparation failed. ${error.message}`
+            : "Target session preparation failed; inspect Source for protocol evidence",
         );
       }
     }

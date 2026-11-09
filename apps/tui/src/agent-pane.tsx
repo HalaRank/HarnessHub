@@ -1112,53 +1112,61 @@ export function AgentPane(props: {
             }
           >
             {(h) => (
-              <select
-                {...listStyle}
-                focused={!busy()}
-                flexGrow={1}
-                showDescription
-                options={[
-                  {
-                    name: "View saved context",
-                    description: "Inspect the report and original source evidence",
-                    value: "view",
-                  },
-                  {
-                    name: "Confirm degraded context and send reserved target task",
-                    description: "Send the reserved message using the available context",
-                    value: "confirm",
-                  },
-                  {
-                    name: "Retry report / target preparation",
-                    description: "Reuse the reserved request and prepare its context again",
-                    value: "retry",
-                  },
-                  {
-                    name: "Cancel switch",
-                    description: "Keep the target message unsent",
-                    value: "cancel",
-                  },
-                ]}
-                onSelect={(_index, option) => {
-                  if (!option) return;
-                  if (option.value === "view") {
-                    setMaterials(h());
-                    return;
-                  }
-                  void run(async () => {
-                    await request(`/v1/conversations/${conversationId}/handoff/action`, "POST", {
-                      handoffId: h().id,
-                      action: option.value,
-                    });
-                    await refreshHandoffs();
-                    await refreshSessions();
-                    if (!disposed) {
-                      setHandoffMenu(false);
-                      props.setForm(null);
+              <>
+                <Show when={h().error}>
+                  <text fg={ui.warning}>{h().error}</text>
+                </Show>
+                <text fg={ui.secondary}>
+                  {`Source native session · ${sessions().find((s) => s.id === h().sourceNativeSessionId)?.status ?? "unavailable"}`}
+                </text>
+                <select
+                  {...listStyle}
+                  focused={!busy()}
+                  flexGrow={1}
+                  showDescription
+                  options={[
+                    {
+                      name: "View saved context",
+                      description: "Inspect the report and original source evidence",
+                      value: "view",
+                    },
+                    {
+                      name: "Confirm degraded context and send reserved target task",
+                      description: "Send the reserved message using the available context",
+                      value: "confirm",
+                    },
+                    {
+                      name: "Retry report / target preparation",
+                      description: "Reuse the reserved request and prepare its context again",
+                      value: "retry",
+                    },
+                    {
+                      name: "Cancel switch",
+                      description: "Keep the target message unsent",
+                      value: "cancel",
+                    },
+                  ]}
+                  onSelect={(_index, option) => {
+                    if (!option) return;
+                    if (option.value === "view") {
+                      setMaterials(h());
+                      return;
                     }
-                  });
-                }}
-              />
+                    void run(async () => {
+                      await request(`/v1/conversations/${conversationId}/handoff/action`, "POST", {
+                        handoffId: h().id,
+                        action: option.value,
+                      });
+                      await refreshHandoffs();
+                      await refreshSessions();
+                      if (!disposed) {
+                        setHandoffMenu(false);
+                        props.setForm(null);
+                      }
+                    });
+                  }}
+                />
+              </>
             )}
           </Show>
         </Panel>

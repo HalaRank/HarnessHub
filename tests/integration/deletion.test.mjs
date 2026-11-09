@@ -19,7 +19,7 @@ cli("daemon", "start");
 const client = new Client(
   JSON.parse(readFileSync(join(env.XDG_STATE_HOME, "harnesshub/instance.json"))),
 );
-const api = (path, method, body) => client.request(path, method, body, 10000);
+const api = (path, method, body) => client.request(path, method, body, 60000);
 const until = async (check) => {
   for (let i = 0; i < 300; i++) {
     const result = await check();
@@ -222,4 +222,162 @@ test("unconfirmed Worker exit retains project history and releases reservations 
   }
   await new Promise((r) => setTimeout(r, 150));
   await api(`/v1/projects/${p.id}`, "DELETE", { confirmed: true });
+});
+
+test("confirmed Conversation deletion cancels running work and approvals, terminates unresponsive owned Workers and removes UNCERTAIN history", async () => {
+  const gate = join(temp, "never-exit-without-force");
+  await profile("delete-force", { HHU_MOCK_EXIT_GATE: gate });
+  const p = await createProject("delete-active");
+  const keep = await conversation(p, "keep running");
+  const submit = (c, message, harnessId = "delete-mock") =>
+    api(`/v1/conversations/${c.id}/turns`, "POST", {
+      requestId: crypto.randomUUID(),
+      harnessId,
+      message,
+    });
+  const other = await submit(keep, "wait");
+  for (const message of ["wait", "permission", "ignore-cancel", "disconnect"]) {
+    const c = await conversation(p, message);
+    const turn = await submit(
+      c,
+      message,
+      message === "ignore-cancel" ? "delete-force" : "delete-mock",
+    );
+    await until(async () =>
+      message === "permission"
+        ? (await api(`/v1/conversations/${c.id}/approvals`)).length
+        : message === "disconnect"
+          ? (await api(`/v1/turns/${turn.id}`)).endedAt
+          : (await api(`/v1/conversations/${c.id}/events`)).events.some(
+              (e) => e.kind === "agent_message_chunk",
+            ),
+    );
+    const session = (await api(`/v1/conversations/${c.id}/sessions`))[0];
+    const pid = session.capabilities.session._meta.workerPid;
+    if (message === "wait") {
+      await api(`/v1/conversations/${c.id}/inputs`, "POST", {
+        requestId: crypto.randomUUID(),
+        harnessId: "delete-mock",
+        message: "queued input must stay unsent",
+        delivery: "queue",
+      });
+    }
+    await assert.rejects(
+      api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: false }),
+      (e) => e.status === 400,
+    );
+    await api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+    await assert.rejects(api(`/v1/conversations/${c.id}`), (e) => e.status === 404);
+    assert.throws(
+      () => process.kill(pid, 0),
+      (e) => e.code === "ESRCH",
+    );
+    assert.equal((await api(`/v1/turns/${other.id}`)).endedAt, null);
+    assert.equal(
+      readFileSync(join(p.rootPath, "sentinel.txt"), "utf8"),
+      "user files must survive\n",
+    );
+  }
+  await api(`/v1/conversations/${keep.id}`, "DELETE", { confirmed: true });
+});
+
+test("deleting an initializing Worker reserves the Conversation, settles async writers and never dispatches its Prompt", async () => {
+  await profile("delete-init", { HHU_MOCK_INIT_DELAY: "10000" });
+  const p = await createProject("delete-preparing");
+  const c = await conversation(p, "initializing");
+  await api(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: crypto.randomUUID(),
+    harnessId: "delete-init",
+    message: "must stay unsent",
+  });
+  await until(async () => (await api(`/v1/conversations/${c.id}/sessions`)).length);
+  const deleting = api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+  await until(async () => (await api(`/v1/conversations/${c.id}`)).runtimeStatus === "CANCELLING");
+  await assert.rejects(
+    api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true }),
+    (e) => e.status === 409,
+  );
+  await assert.rejects(
+    api("/v1/daemon/stop", "POST", { cancelActive: true }),
+    (e) => e.status === 409,
+  );
+  await assert.rejects(
+    api(`/v1/conversations/${c.id}/turns`, "POST", {
+      requestId: crypto.randomUUID(),
+      harnessId: "delete-mock",
+      message: "racing submit",
+    }),
+    (e) => e.status === 409,
+  );
+  await deleting;
+  await assert.rejects(api(`/v1/conversations/${c.id}`), (e) => e.status === 404);
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.ok(await api("/v1/snapshot"));
+});
+
+test("deleting during native configuration closes the pending RPC before removing its Conversation", async () => {
+  await profile("delete-settings", { HHU_MOCK_CONFIG_DELAY: "10000" });
+  const p = await createProject("delete-settings");
+  const c = await conversation(p, "configuring");
+  await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "delete-settings" });
+  const setting = api(`/v1/conversations/${c.id}/settings`, "POST", {
+    kind: "config",
+    configId: "model",
+    value: "other",
+  });
+  const rejected = assert.rejects(setting);
+  await until(
+    async () => (await api(`/v1/conversations/${c.id}/sessions`))[0].status === "CONFIGURING",
+  );
+  await api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+  await rejected;
+  await assert.rejects(api(`/v1/conversations/${c.id}`), (e) => e.status === 404);
+  assert.ok(await api("/v1/snapshot"));
+});
+
+test("deleting failed, generating, preparing-target and delivering Handoffs closes both owned sides and releases reservations", async () => {
+  for (const [name, sourceEnv, targetEnv, expected] of [
+    ["failed", { HHU_MOCK_REPORT_FAIL: "1" }, {}, "FAILED"],
+    ["generating", { HHU_MOCK_REPORT_DELAY: "10000" }, {}, "GENERATING"],
+    ["preparing-target", {}, { HHU_MOCK_INIT_DELAY: "10000" }, "READY"],
+    ["delivering", {}, {}, "DELIVERING"],
+  ]) {
+    await profile(`source-${name}`, sourceEnv);
+    await profile(`target-${name}`, targetEnv);
+    const p = await createProject(`delete-handoff-${name}`);
+    const c = await conversation(p, name);
+    const first = await api(`/v1/conversations/${c.id}/turns`, "POST", {
+      requestId: crypto.randomUUID(),
+      harnessId: `source-${name}`,
+      message: "source",
+    });
+    await until(async () => (await api(`/v1/turns/${first.id}`)).endedAt);
+    await api(`/v1/conversations/${c.id}/turns`, "POST", {
+      requestId: crypto.randomUUID(),
+      harnessId: `target-${name}`,
+      message: "ignore-cancel",
+    });
+    await until(async () => {
+      const h = (await api(`/v1/conversations/${c.id}/handoffs`))[0];
+      return h?.status === expected && (name !== "preparing-target" || h.targetNativeSessionId);
+    });
+    const db = new Database(join(env.XDG_DATA_HOME, "harnesshub/harnesshub.db"), {
+      readonly: true,
+    });
+    const pids = db
+      .prepare(
+        "SELECT normalized_payload_json FROM conversation_events WHERE conversation_id=? AND normalized_kind='runtime.worker_started'",
+      )
+      .all(c.id)
+      .map((e) => JSON.parse(e.normalized_payload_json).workerPid);
+    db.close();
+    await api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+    await assert.rejects(api(`/v1/conversations/${c.id}`), (e) => e.status === 404);
+    for (const pid of pids)
+      assert.throws(
+        () => process.kill(pid, 0),
+        (e) => e.code === "ESRCH",
+      );
+    assert.ok(await api("/v1/snapshot"));
+  }
 });

@@ -16,6 +16,7 @@ export type RowData = {
   waiting: boolean;
   streaming: boolean;
   terminals: Record<string, TerminalContent>;
+  handoff?: { error: string | null; incomplete: boolean; fallbackAvailable: boolean };
 };
 export type TranscriptRow = {
   id: string;
@@ -326,10 +327,27 @@ export class Transcript {
     )
       return;
     if (event.kind === "handoff.record") {
+      const legacySourceEnded =
+        p.error === "Report generation or target preparation failed; inspect source evidence" &&
+        !p.internalTurnId &&
+        !p.targetNativeSessionId &&
+        this.events.some(
+          (e) =>
+            e.kind === "runtime.context_ended" && e.nativeSessionId === p.sourceNativeSessionId,
+        );
       const value: RowData = {
         kind: "handoff",
         label: `Handoff · ${p.sourceHarness} → ${p.targetHarness} · ${p.status}${p.degraded ? " · Context may be incomplete" : ""}`,
-        text: `${p.reportText ?? p.fallbackText ?? "Report pending"}\n\nGenerated: ${p.generatedAt ? new Date(Number(p.generatedAt)).toISOString() : "pending"}\nSource events: #${p.sourceEventStart}–#${p.sourceEventEnd}\nSource NativeSession: ${p.sourceNativeSessionId}\nTarget NativeSession: ${p.targetNativeSessionId ?? "pending"}\nHandoff: ${p.id}\n${p.error ?? ""}`,
+        text: typeof p.reportText === "string" ? p.reportText : "",
+        handoff: {
+          error: legacySourceEnded
+            ? "Source native session has ended. Review saved context and confirm degraded continuation, or cancel the switch."
+            : typeof p.error === "string"
+              ? p.error
+              : null,
+          incomplete: p.degraded === true || p.status === "FAILED" || p.status === "UNCERTAIN",
+          fallbackAvailable: typeof p.fallbackText === "string" && !!p.fallbackText,
+        },
         tool: null,
         waiting: p.status === "FAILED",
         streaming: false,
@@ -435,6 +453,12 @@ export class Transcript {
     });
   }
   source(row: TranscriptRow) {
+    if (row.value().kind === "handoff") {
+      const latest = object(row.sources.at(-1)?.payload);
+      return [latest.reportText, latest.fallbackText]
+        .filter((text): text is string => typeof text === "string" && !!text)
+        .join("\n\n");
+    }
     if (row.value().kind === "text")
       return this.rows
         .filter((r) => r.group === row.group)

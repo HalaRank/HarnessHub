@@ -140,11 +140,70 @@ test("internal report events remain available in Debug without appearing as user
     expect(screen.captureCharFrame()).not.toContain("Exact user decision");
     screen.mockInput.pressEnter();
     await frame(screen, "Exact user decision");
-    await frame(screen, "source-native");
+    expect(screen.captureCharFrame()).not.toContain("source-native");
     await clickControl(screen, "transcript-source");
     await frame(screen, "Original Markdown");
   } finally {
     screen.renderer.destroy();
+  }
+}, 20000);
+
+test("failed Handoff keeps raw fallback out of collapsed and expanded chat while Source retains complete materials", async () => {
+  const model = new Transcript();
+  const fallbackText =
+    '[Context may be incomplete]\n{"seq":760,"id":"raw-event","payload":{"text":"RAW FALLBACK"}}';
+  const record = {
+    id: "failed-handoff",
+    sourceHarness: "codex",
+    targetHarness: "grok",
+    status: "FAILED",
+    error: "Report generation or target preparation failed; inspect source evidence",
+    reportText: null,
+    fallbackText,
+    sourceNativeSessionId: "source-native",
+  };
+  model.append([
+    { ...event(1, "runtime.context_ended", {}), nativeSessionId: "source-native" },
+    event(2, "handoff.record", record),
+  ]);
+  const row = model.rows.find((r) => r.value().kind === "handoff");
+  expect(row).toBeDefined();
+  if (!row) throw new Error("Missing Handoff row");
+  expect(model.source(row)).toBe(fallbackText);
+  expect(row.sources[0]?.payload).toEqual(record);
+  expect(row.value().handoff?.error).toContain("Source native session has ended");
+  for (const width of [140, 40]) {
+    const view = newViewState();
+    view.selected = model.rows.indexOf(row);
+    const screen = await testRender(
+      () => <NativeEvents model={model} view={view} disabled={false} />,
+      {
+        width,
+        height: 38,
+      },
+    );
+    try {
+      await frame(screen, "Source native session");
+      for (let i = 0; i < 2; i++) {
+        const text = screen.captureCharFrame();
+        expect(text).not.toContain("RAW FALLBACK");
+        expect(text).not.toContain('"seq"');
+        expect(text).not.toContain("source-native");
+        screen.mockInput.pressEnter();
+        await screen.renderOnce();
+      }
+      model.append([
+        event(3, "handoff.record", { ...record, reportText: "## Current Objective\nSaved report" }),
+      ]);
+      screen.mockInput.pressEnter();
+      await frame(screen, "Saved report");
+      expect(screen.captureCharFrame()).not.toContain("RAW FALLBACK");
+      await clickControl(screen, "transcript-source");
+      await frame(screen, "Original Markdown");
+      expect(model.source(row)).toContain(fallbackText);
+    } finally {
+      screen.renderer.destroy();
+    }
   }
 }, 20000);
 
@@ -210,6 +269,8 @@ test("failed Handoff TUI exposes saved materials and requires explicit degraded 
     await frame(screen, "Esc interrupt");
     await invoke(screen, "Handoff Failure");
     await frame(screen, "View saved context");
+    await frame(screen, "Source returned no complete structured report");
+    await frame(screen, "Source native session · READY");
     expect((await api<unknown[]>(`/v1/conversations/${c.id}/sessions`)).length).toBe(1);
     screen.mockInput.pressArrow("down");
     screen.mockInput.pressEnter();
