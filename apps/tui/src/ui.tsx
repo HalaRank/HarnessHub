@@ -1,14 +1,14 @@
 import type { BoxOptions } from "@opentui/core";
-import { For, type JSX, Show } from "solid-js";
+import { createMemo, createSignal, For, type JSX, Show } from "solid-js";
 
 // Terminal chrome shares a restrained palette. Native transcript styling is independent.
 export const ui = {
-  canvas: "#10151c",
-  panel: "#18212b",
-  input: "#1c2733",
+  canvas: "#14181d",
+  panel: "#1b222a",
+  input: "#202931",
   hover: "#233342",
   selection: "#294456",
-  border: "#3b4b5b",
+  border: "#394651",
   text: "#edf2f7",
   secondary: "#b8c4d0",
   muted: "#94a4b5",
@@ -54,17 +54,40 @@ export const inputStyle = {
 };
 
 export function KeyHints(props: { items: [string, string][] }) {
+  const [width, setWidth] = createSignal(0);
+  const visible = createMemo(() => {
+    let used = 0;
+    return props.items.filter(([key, label]) => {
+      if (!key) return false;
+      const size = Bun.stringWidth(`${key} ${label}`) + (used ? 3 : 0);
+      if (width() && used + size > width()) return false;
+      used += size;
+      return true;
+    });
+  });
   return (
-    <text selectable={false} height={1} flexShrink={0} wrapMode="none" fg={ui.muted}>
-      <For each={props.items.filter(([key]) => key.length > 0)}>
-        {([key, label], index) => (
-          <>
-            {index() ? "   " : ""}
-            <span style={{ fg: ui.secondary }}>{key}</span> {label}
-          </>
-        )}
-      </For>
-    </text>
+    <box
+      height={1}
+      width="100%"
+      flexShrink={0}
+      ref={(element) => {
+        element.onSizeChange = () => setWidth(element.width);
+      }}
+    >
+      <text selectable={false} height={1} wrapMode="none" fg={ui.muted}>
+        <For each={visible()}>
+          {([key, label], index) => (
+            <>
+              {index() ? "   " : ""}
+              <span style={{ fg: ui.secondary }}>
+                <b>{key}</b>
+              </span>{" "}
+              {label}
+            </>
+          )}
+        </For>
+      </text>
+    </box>
   );
 }
 
@@ -84,6 +107,7 @@ export function Panel(props: {
       {...(props.height ? { height: props.height } : {})}
       maxHeight="94%"
       border
+      borderStyle="rounded"
       borderColor={ui.border}
       backgroundColor={ui.panel}
       paddingX={1}

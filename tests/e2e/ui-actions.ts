@@ -50,6 +50,15 @@ export async function focusMessage(screen: Screen) {
     | undefined;
   if (editor?.focused) return;
   await invoke(screen, "Write Message");
+  for (let count = 0; count < 200; count++) {
+    await screen.renderOnce();
+    const current = screen.renderer.root.findDescendantById("message-draft") as
+      | TextareaRenderable
+      | undefined;
+    if (current?.focused) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("Message editor did not acquire focus");
 }
 export async function navigate(screen: Screen) {
   if (screen.renderer.currentFocusedEditor?.id === "message-draft") {

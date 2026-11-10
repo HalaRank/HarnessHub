@@ -1,0 +1,373 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="770" viewBox="0 0 1500 770">
+<title>HarnessHub — OpenTUI renderer capture with test fixtures</title>
+<rect x="0" y="0" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="0" width="110" height="22" fill="#1b222a"/>
+<text x="10" y="16" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="110" lengthAdjust="spacingAndGlyphs"> HarnessHub</text>
+<rect x="120" y="0" width="120" height="22" fill="#1b222a"/>
+<text x="120" y="16" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="120" lengthAdjust="spacingAndGlyphs"> · Connected</text>
+<rect x="240" y="0" width="660" height="22" fill="#1b222a"/>
+<rect x="900" y="0" width="470" height="22" fill="#1b222a"/>
+<text x="900" y="16" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="470" lengthAdjust="spacingAndGlyphs">Global · Running 0 · Approval 0 · Problems 0   </text>
+<rect x="1370" y="0" width="120" height="22" fill="#294456"/>
+<text x="1370" y="16" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="120" lengthAdjust="spacingAndGlyphs"> / Commands </text>
+<rect x="1490" y="0" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="22" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="22" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="22" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="38" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="22" width="10" height="22" fill="#14181d"/>
+<rect x="340" y="22" width="1150" height="22" fill="#1b222a"/>
+<rect x="1490" y="22" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="44" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="44" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="44" width="80" height="22" fill="#1b222a"/>
+<text x="20" y="60" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="80" lengthAdjust="spacingAndGlyphs">Projects</text>
+<rect x="100" y="44" width="30" height="22" fill="#1b222a"/>
+<text x="100" y="60" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs">  4</text>
+<rect x="130" y="44" width="190" height="22" fill="#1b222a"/>
+<rect x="320" y="44" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="60" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="44" width="10" height="22" fill="#14181d"/>
+<rect x="340" y="44" width="10" height="22" fill="#1b222a"/>
+<rect x="350" y="44" width="200" height="22" fill="#1b222a"/>
+<text x="350" y="60" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="200" lengthAdjust="spacingAndGlyphs">HarnessHub workspace</text>
+<rect x="550" y="44" width="940" height="22" fill="#1b222a"/>
+<rect x="1490" y="44" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="66" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="66" width="20" height="22" fill="#1b222a"/>
+<rect x="30" y="66" width="50" height="22" fill="#1b222a"/>
+<text x="30" y="82" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="50" lengthAdjust="spacingAndGlyphs">+ Add</text>
+<rect x="80" y="66" width="20" height="22" fill="#1b222a"/>
+<rect x="100" y="66" width="90" height="22" fill="#1b222a"/>
+<text x="100" y="82" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="90" lengthAdjust="spacingAndGlyphs">⋯ Actions</text>
+<rect x="190" y="66" width="130" height="22" fill="#1b222a"/>
+<rect x="320" y="66" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="82" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="66" width="10" height="22" fill="#14181d"/>
+<rect x="340" y="66" width="10" height="22" fill="#1b222a"/>
+<rect x="350" y="66" width="650" height="22" fill="#1b222a"/>
+<text x="350" y="82" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="650" lengthAdjust="spacingAndGlyphs">Workspace · /tmp/hhu-new-conversation-wkpg6q/HarnessHub workspace</text>
+<rect x="1000" y="66" width="490" height="22" fill="#1b222a"/>
+<rect x="1490" y="66" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="88" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="88" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="88" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="104" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="88" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="110" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="110" width="110" height="22" fill="#1b222a"/>
+<text x="10" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="110" lengthAdjust="spacingAndGlyphs"> Standalone</text>
+<rect x="120" y="110" width="200" height="22" fill="#1b222a"/>
+<rect x="320" y="110" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="110" width="10" height="22" fill="#14181d"/>
+<rect x="340" y="110" width="10" height="22" fill="#14181d"/>
+<text x="340" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="10" lengthAdjust="spacingAndGlyphs">1</text>
+<rect x="350" y="110" width="130" height="22" fill="#14181d"/>
+<text x="350" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="130" lengthAdjust="spacingAndGlyphs"> conversation</text>
+<rect x="480" y="110" width="150" height="22" fill="#14181d"/>
+<text x="480" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="150" lengthAdjust="spacingAndGlyphs">   ·   0 active</text>
+<rect x="630" y="110" width="870" height="22" fill="#14181d"/>
+<rect x="0" y="132" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="132" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="132" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="148" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="132" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="154" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="154" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="154" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="154" width="160" height="22" fill="#1b222a"/>
+<text x="60" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="160" lengthAdjust="spacingAndGlyphs">New conversation</text>
+<rect x="220" y="154" width="60" height="22" fill="#1b222a"/>
+<rect x="280" y="154" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="154" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="154" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="154" width="10" height="22" fill="#14181d"/>
+<rect x="340" y="154" width="10" height="22" fill="#294456"/>
+<rect x="350" y="154" width="180" height="22" fill="#294456"/>
+<text x="350" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#80cbc4" textLength="180" lengthAdjust="spacingAndGlyphs">+ New conversation</text>
+<rect x="530" y="154" width="30" height="22" fill="#294456"/>
+<text x="530" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs">  N</text>
+<rect x="560" y="154" width="10" height="22" fill="#294456"/>
+<rect x="570" y="154" width="10" height="22" fill="#14181d"/>
+<rect x="580" y="154" width="10" height="22" fill="#1b222a"/>
+<rect x="590" y="154" width="140" height="22" fill="#1b222a"/>
+<text x="590" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="140" lengthAdjust="spacingAndGlyphs">+ Git worktree</text>
+<rect x="730" y="154" width="10" height="22" fill="#1b222a"/>
+<rect x="740" y="154" width="760" height="22" fill="#14181d"/>
+<rect x="0" y="176" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="176" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="176" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="192" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="176" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="198" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="198" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="198" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="198" width="160" height="22" fill="#1b222a"/>
+<text x="60" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="160" lengthAdjust="spacingAndGlyphs">New conversation</text>
+<rect x="220" y="198" width="60" height="22" fill="#1b222a"/>
+<rect x="280" y="198" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="198" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="198" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="198" width="10" height="22" fill="#14181d"/>
+<rect x="340" y="198" width="20" height="22" fill="#14181d"/>
+<text x="340" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="20" lengthAdjust="spacingAndGlyphs">──</text>
+<rect x="360" y="198" width="150" height="22" fill="#14181d"/>
+<text x="360" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="150" lengthAdjust="spacingAndGlyphs"> Conversations </text>
+<rect x="510" y="198" width="460" height="22" fill="#14181d"/>
+<text x="510" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="460" lengthAdjust="spacingAndGlyphs">──────────────────────────────────────────────</text>
+<rect x="970" y="198" width="10" height="22" fill="#14181d"/>
+<rect x="980" y="198" width="20" height="22" fill="#14181d"/>
+<text x="980" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="20" lengthAdjust="spacingAndGlyphs">──</text>
+<rect x="1000" y="198" width="190" height="22" fill="#14181d"/>
+<text x="1000" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="190" lengthAdjust="spacingAndGlyphs"> Project directory </text>
+<rect x="1190" y="198" width="300" height="22" fill="#14181d"/>
+<text x="1190" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="300" lengthAdjust="spacingAndGlyphs">──────────────────────────────</text>
+<rect x="1490" y="198" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="220" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="220" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="220" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="236" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="220" width="20" height="22" fill="#14181d"/>
+<rect x="350" y="220" width="20" height="22" fill="#14181d"/>
+<text x="350" y="236" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="20" lengthAdjust="spacingAndGlyphs">● </text>
+<rect x="370" y="220" width="290" height="22" fill="#14181d"/>
+<text x="370" y="236" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#edf2f7" textLength="290" lengthAdjust="spacingAndGlyphs">HarnessHub workspace existing</text>
+<rect x="660" y="220" width="330" height="22" fill="#14181d"/>
+<rect x="990" y="220" width="340" height="22" fill="#14181d"/>
+<text x="990" y="236" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="340" lengthAdjust="spacingAndGlyphs">Click folders to expand / collapse</text>
+<rect x="1330" y="220" width="170" height="22" fill="#14181d"/>
+<rect x="0" y="242" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="242" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="242" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="242" width="160" height="22" fill="#1b222a"/>
+<text x="60" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="160" lengthAdjust="spacingAndGlyphs">New conversation</text>
+<rect x="220" y="242" width="60" height="22" fill="#1b222a"/>
+<rect x="280" y="242" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="242" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="242" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="242" width="20" height="22" fill="#14181d"/>
+<rect x="350" y="242" width="380" height="22" fill="#14181d"/>
+<text x="350" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="380" lengthAdjust="spacingAndGlyphs">  IDLE · Harness not selected · shared</text>
+<rect x="730" y="242" width="260" height="22" fill="#14181d"/>
+<rect x="990" y="242" width="20" height="22" fill="#14181d"/>
+<text x="990" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="20" lengthAdjust="spacingAndGlyphs">▸ </text>
+<rect x="1010" y="242" width="40" height="22" fill="#14181d"/>
+<text x="1010" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b2dfdb" textLength="40" lengthAdjust="spacingAndGlyphs">src/</text>
+<rect x="1050" y="242" width="450" height="22" fill="#14181d"/>
+<rect x="0" y="264" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="264" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="264" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="280" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="264" width="660" height="22" fill="#14181d"/>
+<rect x="990" y="264" width="20" height="22" fill="#14181d"/>
+<rect x="1010" y="264" width="90" height="22" fill="#14181d"/>
+<text x="1010" y="280" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="90" lengthAdjust="spacingAndGlyphs">README.md</text>
+<rect x="1100" y="264" width="400" height="22" fill="#14181d"/>
+<rect x="0" y="286" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="286" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="286" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="302" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="286" width="160" height="22" fill="#1b222a"/>
+<text x="60" y="302" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="160" lengthAdjust="spacingAndGlyphs">New conversation</text>
+<rect x="220" y="286" width="60" height="22" fill="#1b222a"/>
+<rect x="280" y="286" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="302" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="286" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="286" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="302" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="286" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="308" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="308" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="308" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="324" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="308" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="330" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="330" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="330" width="20" height="22" fill="#1b222a"/>
+<text x="20" y="346" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="20" lengthAdjust="spacingAndGlyphs">▾ </text>
+<rect x="40" y="330" width="160" height="22" fill="#1b222a"/>
+<text x="40" y="346" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b2dfdb" textLength="160" lengthAdjust="spacingAndGlyphs">selected-project</text>
+<rect x="200" y="330" width="120" height="22" fill="#1b222a"/>
+<rect x="320" y="330" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="346" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="330" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="352" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="352" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="352" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="368" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="352" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="374" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="374" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="374" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="390" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="374" width="220" height="22" fill="#1b222a"/>
+<text x="60" y="390" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="220" lengthAdjust="spacingAndGlyphs">selected-project exist</text>
+<rect x="280" y="374" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="390" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="374" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="374" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="390" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="374" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="396" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="396" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="396" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="412" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="396" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="418" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="418" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="418" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="434" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="418" width="160" height="22" fill="#1b222a"/>
+<text x="60" y="434" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="160" lengthAdjust="spacingAndGlyphs">New conversation</text>
+<rect x="220" y="418" width="60" height="22" fill="#1b222a"/>
+<rect x="280" y="418" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="434" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="418" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="418" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="434" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="418" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="440" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="440" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="440" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="456" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="440" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="462" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="462" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="462" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="478" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="462" width="160" height="22" fill="#1b222a"/>
+<text x="60" y="478" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="160" lengthAdjust="spacingAndGlyphs">New conversation</text>
+<rect x="220" y="462" width="60" height="22" fill="#1b222a"/>
+<rect x="280" y="462" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="478" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="462" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="462" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="478" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="462" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="484" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="484" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="484" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="500" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="484" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="506" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="506" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="506" width="20" height="22" fill="#1b222a"/>
+<text x="20" y="522" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="20" lengthAdjust="spacingAndGlyphs">▾ </text>
+<rect x="40" y="506" width="130" height="22" fill="#1b222a"/>
+<text x="40" y="522" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b2dfdb" textLength="130" lengthAdjust="spacingAndGlyphs">other-project</text>
+<rect x="170" y="506" width="150" height="22" fill="#1b222a"/>
+<rect x="320" y="506" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="522" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="506" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="528" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="528" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="528" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="544" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="528" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="550" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="550" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="550" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="566" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="550" width="220" height="22" fill="#1b222a"/>
+<text x="60" y="566" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="220" lengthAdjust="spacingAndGlyphs">other-project existing</text>
+<rect x="280" y="550" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="566" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="550" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="550" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="566" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="550" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="572" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="572" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="572" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="588" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="572" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="594" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="594" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="594" width="20" height="22" fill="#1b222a"/>
+<text x="20" y="610" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="20" lengthAdjust="spacingAndGlyphs">▾ </text>
+<rect x="40" y="594" width="130" height="22" fill="#1b222a"/>
+<text x="40" y="610" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b2dfdb" textLength="130" lengthAdjust="spacingAndGlyphs">focus-routing</text>
+<rect x="170" y="594" width="150" height="22" fill="#1b222a"/>
+<rect x="320" y="594" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="610" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="594" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="616" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="616" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="616" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="632" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="616" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="638" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="638" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="638" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="654" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="638" width="220" height="22" fill="#1b222a"/>
+<text x="60" y="654" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="220" lengthAdjust="spacingAndGlyphs">focus-routing existing</text>
+<rect x="280" y="638" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="654" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="638" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="638" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="654" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="638" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="660" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="660" width="10" height="22" fill="#294456"/>
+<text x="10" y="676" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="10" lengthAdjust="spacingAndGlyphs">▎</text>
+<rect x="20" y="660" width="300" height="22" fill="#294456"/>
+<rect x="320" y="660" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="676" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="660" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="682" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="682" width="30" height="22" fill="#294456"/>
+<text x="10" y="698" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="30" lengthAdjust="spacingAndGlyphs">▎▾ </text>
+<rect x="40" y="682" width="200" height="22" fill="#294456"/>
+<text x="40" y="698" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b2dfdb" textLength="200" lengthAdjust="spacingAndGlyphs">HarnessHub workspace</text>
+<rect x="240" y="682" width="80" height="22" fill="#294456"/>
+<rect x="320" y="682" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="698" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="682" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="704" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="704" width="310" height="22" fill="#1b222a"/>
+<rect x="320" y="704" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="720" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="704" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="726" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="726" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="726" width="40" height="22" fill="#1b222a"/>
+<text x="20" y="742" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="40" lengthAdjust="spacingAndGlyphs">  · </text>
+<rect x="60" y="726" width="220" height="22" fill="#1b222a"/>
+<text x="60" y="742" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="220" lengthAdjust="spacingAndGlyphs">HarnessHub workspace e</text>
+<rect x="280" y="726" width="30" height="22" fill="#1b222a"/>
+<text x="280" y="742" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs"> ⋯ </text>
+<rect x="310" y="726" width="10" height="22" fill="#1b222a"/>
+<rect x="320" y="726" width="10" height="22" fill="#1b222a"/>
+<text x="320" y="742" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="10" lengthAdjust="spacingAndGlyphs">│</text>
+<rect x="330" y="726" width="1170" height="22" fill="#14181d"/>
+<rect x="0" y="748" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="748" width="10" height="22" fill="#1b222a"/>
+<text x="10" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b8c4d0" textLength="10" lengthAdjust="spacingAndGlyphs">/</text>
+<rect x="20" y="748" width="120" height="22" fill="#1b222a"/>
+<text x="20" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="120" lengthAdjust="spacingAndGlyphs"> Commands   </text>
+<rect x="140" y="748" width="10" height="22" fill="#1b222a"/>
+<text x="140" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b8c4d0" textLength="10" lengthAdjust="spacingAndGlyphs">N</text>
+<rect x="150" y="748" width="200" height="22" fill="#1b222a"/>
+<text x="150" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="200" lengthAdjust="spacingAndGlyphs"> New conversation   </text>
+<rect x="350" y="748" width="60" height="22" fill="#1b222a"/>
+<text x="350" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b8c4d0" textLength="60" lengthAdjust="spacingAndGlyphs">Ctrl+N</text>
+<rect x="410" y="748" width="140" height="22" fill="#1b222a"/>
+<text x="410" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="140" lengthAdjust="spacingAndGlyphs"> Standalone   </text>
+<rect x="550" y="748" width="60" height="22" fill="#1b222a"/>
+<text x="550" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b8c4d0" textLength="60" lengthAdjust="spacingAndGlyphs">Ctrl+C</text>
+<rect x="610" y="748" width="50" height="22" fill="#1b222a"/>
+<text x="610" y="764" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="50" lengthAdjust="spacingAndGlyphs"> Quit</text>
+<rect x="660" y="748" width="830" height="22" fill="#1b222a"/>
+<rect x="1490" y="748" width="10" height="22" fill="#14181d"/>
+</svg>

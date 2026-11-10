@@ -140,7 +140,7 @@ test("sidebar spacing preserves names and keeps project headings more prominent"
       const heading = node(screen, projectKey(project.id));
       const first = node(screen, conversationKey(a.id));
       const second = node(screen, conversationKey(b.id));
-      expect(heading.height).toBe(3);
+      expect(heading.height).toBe(2);
       expect(first.height).toBe(2);
       expect(second.height).toBe(2);
       expect(first.y).toBe(heading.y + heading.height);

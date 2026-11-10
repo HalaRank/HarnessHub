@@ -680,14 +680,20 @@ test("command palette searches projects and conversations, responsive sidebar hi
     );
     screen.mockInput.pressKey("v", { ctrl: true });
     await screen.renderOnce();
-    expect(screen.captureCharFrame()).not.toContain("Projects → Conversations");
+    expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeFalsy();
     screen.mockInput.pressKey("v", { ctrl: true });
-    await frame(screen, "Projects → Conversations");
+    await waitFor(async () => {
+      await screen.renderOnce();
+      return !!screen.renderer.root.findDescendantById("workspace-sidebar");
+    });
     screen.resize(72, 28);
     await screen.renderOnce();
-    expect(screen.captureCharFrame()).not.toContain("Projects → Conversations");
+    expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeFalsy();
     screen.resize(150, 45);
-    await frame(screen, "Projects → Conversations");
+    await waitFor(async () => {
+      await screen.renderOnce();
+      return !!screen.renderer.root.findDescendantById("workspace-sidebar");
+    });
     await frame(screen, "Esc interrupt");
     await focusMessage(screen);
     await screen.mockInput.typeText("alternative");
@@ -1162,10 +1168,10 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
     await one.renderOnce();
     await command(one, "Archive Conversation");
     await waitFor(async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt);
-    await frame(two, "N creates a conversation");
+    await frame(two, "+ New conversation");
     expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
     await command(one, "View Archived");
-    await frame(one, "Archives visible");
+    await frame(one, "Archives");
     await command(one, "Conversation · Lifecycle UI");
     await frame(one, "[archived]");
     await frame(one, "Esc interrupt");
@@ -1193,7 +1199,7 @@ test("archive, restore, Raw Events and delete confirmation synchronize between t
           (v) => v.id === c.id,
         ),
     );
-    await frame(two, "N creates a conversation");
+    await frame(two, "+ New conversation");
     expect(two.captureCharFrame()).not.toContain("└ Lifecycle UI");
   } finally {
     await one.dispose();
@@ -1225,7 +1231,7 @@ test("confirmed deletion cancels an active Conversation from the TUI, while clos
           (v) => v.id === c.id,
         ),
     );
-    await frame(screen, "N creates a conversation");
+    await frame(screen, "+ New conversation");
   } finally {
     screen.renderer.destroy();
   }
@@ -1277,7 +1283,7 @@ test("two Delete presses confirm Conversation and Project deletion", async () =>
       await frame(screen, "Esc interrupt");
       if (kind === "Project") {
         screen.mockInput.pressArrow("up");
-        await frame(screen, "N creates a conversation");
+        await frame(screen, "+ New conversation");
       }
       await navigate(screen);
       screen.mockInput.pressKey("DELETE");
@@ -1413,11 +1419,14 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
     expect(input.height).toBe(3);
     screen.resize(70, 24);
     await screen.renderOnce();
-    expect(screen.captureCharFrame()).not.toContain("Projects → Conversations");
+    expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeFalsy();
     expect(input.plainText).toBe("one\ntwo\nthree");
     expect(history.y + history.height).toBeLessThanOrEqual(input.y);
     screen.resize(120, 30);
-    await frame(screen, "Projects → Conversations");
+    await waitFor(async () => {
+      await screen.renderOnce();
+      return !!screen.renderer.root.findDescendantById("workspace-sidebar");
+    });
   } finally {
     await screen.dispose();
   }
@@ -1447,7 +1456,7 @@ test("action menu archives without confirmation, archive view isolates history, 
       async () => !!(await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt,
       "archive from action menu",
     );
-    await frame(two, "N creates a conversation");
+    await frame(two, "+ New conversation");
     expect(two.captureCharFrame()).not.toContain("Previously archived");
     await command(one, "View Archived");
     await frame(one, "Previously archived");
@@ -1456,7 +1465,7 @@ test("action menu archives without confirmation, archive view isolates history, 
     await waitFor(
       async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).archivedAt === null,
     );
-    await frame(one, "N creates a conversation");
+    await frame(one, "+ New conversation");
     expect(one.captureCharFrame()).not.toContain("Delete project UI [archived]");
     await frame(one, "Previously archived");
     await command(one, "Delete Project");
@@ -1857,8 +1866,9 @@ test("new Conversation stays empty after worker/auth startup, shows hello and re
   let screen = await testRender(() => <App onExit={() => {}} />, { width: 150, height: 45 });
   try {
     await frame(screen, "Start a conversation");
+    await api(`/v1/conversations/${c.id}/harness`, "PUT", { harnessId: "projection-mock" });
     await api(`/v1/conversations/${c.id}/sessions`, "POST", { harnessId: "projection-mock" });
-    await frame(screen, "mock · mock-model");
+    await frame(screen, "projection-mock · mock-model");
     expect(screen.captureCharFrame()).toContain("Start a conversation");
     expect(screen.captureCharFrame()).toContain("0 items");
     await focusMessage(screen);

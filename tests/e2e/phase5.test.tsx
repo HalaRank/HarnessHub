@@ -316,7 +316,7 @@ test("TUI creates automatically named independent Worktree from palette; safe cl
     screen.mockInput.pressEscape();
     await screen.renderOnce();
     await api(`/v1/conversations/${created?.id}`, "DELETE", { confirmed: true });
-    await frame(screen, "N creates a conversation");
+    await frame(screen, "+ New conversation");
     expect(existsSync(created?.workspacePath ?? "")).toBe(true);
     await openCommands(screen);
     await frame(screen, "Command palette");

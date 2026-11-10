@@ -892,6 +892,7 @@ export function AgentPane(props: {
           <box
             id="message-composer"
             border
+            borderStyle="rounded"
             height={composerLines() + 2}
             flexShrink={0}
             borderColor={props.form === "message" ? ui.accent : ui.border}

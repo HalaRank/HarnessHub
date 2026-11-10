@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { TextareaRenderable, TextRenderable } from "@opentui/core";
@@ -217,5 +217,70 @@ test("conversation shortcuts do not create while a modal or chat history owns th
     expect(await conversations()).toHaveLength(before + 1);
   } finally {
     screen.renderer.destroy();
+  }
+});
+
+test("workspace overview opens conversations and creates in the selected project without starting an Agent", async () => {
+  const { project, conversation } = await setup("HarnessHub workspace");
+  mkdirSync(join(project.rootPath, "src"));
+  writeFileSync(join(project.rootPath, "README.md"), "# Workspace fixture\n");
+  const screen = await testRender(
+    () => <App initialProjectId={project.id} launchCwd={launchCwd} onExit={() => {}} />,
+    { width: 150, height: 35 },
+  );
+  try {
+    await waitFor(
+      screen,
+      () => !!screen.renderer.root.findDescendantById("project-new-conversation"),
+    );
+    for (const [width, height] of [
+      [150, 35],
+      [100, 30],
+      [70, 24],
+      [35, 12],
+      [150, 35],
+    ] as const) {
+      screen.resize(width, height);
+      for (let i = 0; i < 5; i++) await screen.renderOnce();
+      const button = screen.renderer.root.findDescendantById("project-new-conversation");
+      const directory = screen.renderer.root.findDescendantById("project-directory");
+      if (!button || !directory) throw new Error("Missing project controls after resize");
+      expect(button.x + button.width).toBeLessThanOrEqual(width);
+      expect(directory.y + directory.height).toBeLessThanOrEqual(height - 1);
+      expect(screen.captureCharFrame()).toContain("README.md");
+      writeFileSync(join(temp, `workspace-${width}.txt`), screen.captureCharFrame());
+      writeFileSync(join(temp, `workspace-${width}.json`), JSON.stringify(screen.captureSpans()));
+    }
+    await clickControl(screen, `recent-${conversation.id}`);
+    await waitFor(screen, () => !!editor(screen));
+    expect(
+      (screen.renderer.root.findDescendantById("workspace-heading") as TextRenderable).plainText,
+    ).toBe(conversation.title);
+    await clickControl(screen, projectKey(project.id));
+    await waitFor(
+      screen,
+      () => !!screen.renderer.root.findDescendantById("project-new-conversation"),
+    );
+    const before = (await conversations()).length;
+    await clickControl(screen, "project-new-conversation");
+    await waitFor(
+      screen,
+      async () => (await conversations()).length === before + 1 && !!editor(screen)?.focused,
+    );
+    const created = (await conversations()).find(
+      (c) => c.projectId === project.id && c.id !== conversation.id,
+    );
+    expect(created?.workspacePath).toBe(project.rootPath);
+    expect(created?.workspacePath).not.toBe(launchCwd);
+    expect(created?.activeNativeSessionId).toBeNull();
+    expect(created?.runtimeStatus).toBe("IDLE");
+    await screen.mockInput.typeText("Keep this local draft");
+    await clickControl(screen, "sidebar-add-project");
+    expect(screen.captureCharFrame()).toContain("Add existing project");
+    screen.mockInput.pressEscape();
+    await screen.renderOnce();
+    expect(editor(screen)?.plainText).toBe("Keep this local draft");
+  } finally {
+    await screen.dispose();
   }
 });

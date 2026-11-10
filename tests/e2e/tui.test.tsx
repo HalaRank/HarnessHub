@@ -70,7 +70,7 @@ test("Solid view registers real workspace and empty conversation through authent
     screen.mockInput.pressTab();
     await waitFor(`${temp.split("/").at(-1)}/`);
     screen.mockInput.pressEnter();
-    await waitFor("N creates a conversation");
+    await waitFor("+ New conversation");
     await invoke(screen, "New Conversation");
     await waitHeading(screen, "New conversation");
     await waitFor("Enter send");
@@ -144,6 +144,7 @@ test("project directory Tab completes common prefixes, spaces, Unicode and symli
     input.value = `${root}/project `;
     screen.mockInput.pressTab();
     await waitFor(() => input.value === `${root}/project alp`);
+    await waitFor(() => screen.captureCharFrame().includes("project alpha/"));
     expect(screen.captureCharFrame()).toContain("project alpha/");
     expect(screen.captureCharFrame()).toContain("project alpine/");
     expect(screen.captureCharFrame()).not.toContain("project file");
@@ -209,6 +210,8 @@ test("minimal ACP view sends once, preserves native choices and waits for a user
     "POST",
     { title: "UI ACP permission" },
   );
+  // New conversations may inherit the previous selection; give this cycling test a fixed start.
+  await client.request(`/v1/conversations/${c.id}/harness`, "PUT", { harnessId: "codex" });
   const screen = await testRender(() => <App onExit={() => {}} />, { width: 120, height: 42 });
   const waitFor = async (text: string) => {
     for (let i = 0; i < 150; i++) {

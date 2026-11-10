@@ -81,7 +81,7 @@ export function SlashCommands(props: {
                 backgroundColor={props.selected === index() ? ui.selection : ui.panel}
                 onMouse={(event) => click(command.name, event, () => props.choose(command))}
               >
-                <text selectable={false} fg={ui.text}>
+                <text selectable={false} fg={ui.text} height={1} wrapMode="none" truncate>
                   <span style={{ fg: ui.accent }}>{props.selected === index() ? "› " : "  "}</span>
                   <b>{`/${command.name}`}</b>
                   <span style={{ fg: props.selected === index() ? ui.secondary : ui.muted }}>

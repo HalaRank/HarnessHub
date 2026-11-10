@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="350" height="264" viewBox="0 0 350 264">
+<title>HarnessHub — OpenTUI renderer capture with test fixtures</title>
+<rect x="0" y="0" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="0" width="110" height="22" fill="#1b222a"/>
+<text x="10" y="16" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="110" lengthAdjust="spacingAndGlyphs"> HarnessHub</text>
+<rect x="120" y="0" width="120" height="22" fill="#1b222a"/>
+<text x="120" y="16" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="120" lengthAdjust="spacingAndGlyphs"> · Connected</text>
+<rect x="240" y="0" width="70" height="22" fill="#1b222a"/>
+<rect x="310" y="0" width="30" height="22" fill="#294456"/>
+<text x="310" y="16" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#80cbc4" textLength="30" lengthAdjust="spacingAndGlyphs"> / </text>
+<rect x="340" y="0" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="22" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="22" width="330" height="22" fill="#1b222a"/>
+<rect x="340" y="22" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="44" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="44" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="44" width="200" height="22" fill="#1b222a"/>
+<text x="20" y="60" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="200" lengthAdjust="spacingAndGlyphs">HarnessHub workspace</text>
+<rect x="220" y="44" width="120" height="22" fill="#1b222a"/>
+<rect x="340" y="44" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="66" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="66" width="10" height="22" fill="#1b222a"/>
+<rect x="20" y="66" width="310" height="22" fill="#1b222a"/>
+<text x="20" y="82" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="310" lengthAdjust="spacingAndGlyphs">Workspace · /t...sHub workspace</text>
+<rect x="330" y="66" width="10" height="22" fill="#1b222a"/>
+<rect x="340" y="66" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="88" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="88" width="10" height="22" fill="#294456"/>
+<rect x="20" y="88" width="160" height="22" fill="#294456"/>
+<text x="20" y="104" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#80cbc4" textLength="160" lengthAdjust="spacingAndGlyphs">New conversation</text>
+<rect x="180" y="88" width="30" height="22" fill="#294456"/>
+<text x="180" y="104" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="30" lengthAdjust="spacingAndGlyphs">  N</text>
+<rect x="210" y="88" width="10" height="22" fill="#294456"/>
+<rect x="220" y="88" width="10" height="22" fill="#14181d"/>
+<rect x="230" y="88" width="10" height="22" fill="#1b222a"/>
+<rect x="240" y="88" width="80" height="22" fill="#1b222a"/>
+<text x="240" y="104" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#edf2f7" textLength="80" lengthAdjust="spacingAndGlyphs">Worktree</text>
+<rect x="320" y="88" width="10" height="22" fill="#1b222a"/>
+<rect x="330" y="88" width="20" height="22" fill="#14181d"/>
+<rect x="0" y="110" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="110" width="20" height="22" fill="#14181d"/>
+<text x="10" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="20" lengthAdjust="spacingAndGlyphs">──</text>
+<rect x="30" y="110" width="150" height="22" fill="#14181d"/>
+<text x="30" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="150" lengthAdjust="spacingAndGlyphs"> Conversations </text>
+<rect x="180" y="110" width="160" height="22" fill="#14181d"/>
+<text x="180" y="126" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="160" lengthAdjust="spacingAndGlyphs">────────────────</text>
+<rect x="340" y="110" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="132" width="20" height="22" fill="#14181d"/>
+<rect x="20" y="132" width="20" height="22" fill="#14181d"/>
+<text x="20" y="148" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="20" lengthAdjust="spacingAndGlyphs">● </text>
+<rect x="40" y="132" width="290" height="22" fill="#14181d"/>
+<text x="40" y="148" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#edf2f7" textLength="290" lengthAdjust="spacingAndGlyphs">HarnessHub workspace existing</text>
+<rect x="330" y="132" width="20" height="22" fill="#14181d"/>
+<rect x="0" y="154" width="20" height="22" fill="#14181d"/>
+<rect x="20" y="154" width="310" height="22" fill="#14181d"/>
+<text x="20" y="170" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="310" lengthAdjust="spacingAndGlyphs">  IDLE · Harness not selected ·</text>
+<rect x="330" y="154" width="20" height="22" fill="#14181d"/>
+<rect x="0" y="176" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="176" width="20" height="22" fill="#14181d"/>
+<text x="10" y="192" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="20" lengthAdjust="spacingAndGlyphs">──</text>
+<rect x="30" y="176" width="190" height="22" fill="#14181d"/>
+<text x="30" y="192" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="190" lengthAdjust="spacingAndGlyphs"> Project directory </text>
+<rect x="220" y="176" width="120" height="22" fill="#14181d"/>
+<text x="220" y="192" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#394651" textLength="120" lengthAdjust="spacingAndGlyphs">────────────</text>
+<rect x="340" y="176" width="10" height="22" fill="#14181d"/>
+<rect x="0" y="198" width="20" height="22" fill="#14181d"/>
+<rect x="20" y="198" width="20" height="22" fill="#14181d"/>
+<text x="20" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="20" lengthAdjust="spacingAndGlyphs">▸ </text>
+<rect x="40" y="198" width="40" height="22" fill="#14181d"/>
+<text x="40" y="214" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b2dfdb" textLength="40" lengthAdjust="spacingAndGlyphs">src/</text>
+<rect x="80" y="198" width="270" height="22" fill="#14181d"/>
+<rect x="0" y="220" width="20" height="22" fill="#14181d"/>
+<rect x="20" y="220" width="20" height="22" fill="#14181d"/>
+<rect x="40" y="220" width="90" height="22" fill="#14181d"/>
+<text x="40" y="236" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#b8c4d0" textLength="90" lengthAdjust="spacingAndGlyphs">README.md</text>
+<rect x="130" y="220" width="220" height="22" fill="#14181d"/>
+<rect x="0" y="242" width="10" height="22" fill="#14181d"/>
+<rect x="10" y="242" width="10" height="22" fill="#1b222a"/>
+<text x="10" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b8c4d0" textLength="10" lengthAdjust="spacingAndGlyphs">/</text>
+<rect x="20" y="242" width="120" height="22" fill="#1b222a"/>
+<text x="20" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="120" lengthAdjust="spacingAndGlyphs"> Commands   </text>
+<rect x="140" y="242" width="60" height="22" fill="#1b222a"/>
+<text x="140" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="bold" fill="#b8c4d0" textLength="60" lengthAdjust="spacingAndGlyphs">Ctrl+C</text>
+<rect x="200" y="242" width="50" height="22" fill="#1b222a"/>
+<text x="200" y="258" xml:space="preserve" font-family="DejaVu Sans Mono, Noto Sans CJK SC, monospace" font-size="16" font-weight="normal" fill="#94a4b5" textLength="50" lengthAdjust="spacingAndGlyphs"> Quit</text>
+<rect x="250" y="242" width="90" height="22" fill="#1b222a"/>
+<rect x="340" y="242" width="10" height="22" fill="#14181d"/>
+</svg>
