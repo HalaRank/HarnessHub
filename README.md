@@ -8,6 +8,10 @@ HarnessHub 是 Linux x64 / WSL2 的本地 TUI。全局命令是 **`hhu`**。
 
 ## 安装与运行
 
+Linux x64 / WSL2 现提供独立发行包构建和安装流程，随包携带 Node、Bun 及运行依赖，无需保留源码仓库。GitHub 发布资产后的安装命令、离线安装、升级与维护者打包方法见 [GitHub 发行安装指南](docs/DISTRIBUTION.md)。本地构建不代表 GitHub Release 已发布。
+
+以下为开发者源码安装：
+
 使用 Node **24.18.0** 和 Bun **1.4.4**；需要 Linux `flock`、Git。版本与官方参考见 [兼容性记录](docs/COMPATIBILITY.md)。
 
 ```bash

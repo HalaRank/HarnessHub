@@ -1,0 +1,54 @@
+name: Linux release
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  linux-x64:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+      - run: bun install --frozen-lockfile
+      - run: bun run version:check
+      - name: Validate tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+      - run: bun run release:linux
+      - name: Verify installed release without development dependencies
+        run: node scripts/verify-linux-release.mjs "dist/linux/releases/$(node -p 'require("./package.json").version')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HarnessHub-linux-x64
+          path: dist/linux/releases/*/*
+          if-no-files-found: error
+          retention-days: 14
+  draft:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: linux-x64
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: HarnessHub-linux-x64
+          path: release
+      - name: Create draft for maintainer review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "HarnessHub $GITHUB_REF_NAME" --notes "Linux x64 / WSL2 package. Includes Node, Bun and runtime dependencies. Verify platform acceptance before publishing. See docs/DISTRIBUTION.md."
+          find release -type f -exec gh release upload "$GITHUB_REF_NAME" {} +

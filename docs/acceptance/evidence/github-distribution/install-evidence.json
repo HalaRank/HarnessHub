@@ -1,0 +1,19 @@
+{
+  "version": "0.6.2",
+  "archive": "/home/clj/HarnessHub/HarnessHub/dist/linux/releases/0.6.2-verified/harnesshub-0.6.2-linux-x64.tar.gz",
+  "results": [
+    "download checksum rejection leaves installation untouched",
+    "offline installation with no system Node/Bun or source dependency",
+    "payload tampering fails before launcher replacement",
+    "bundled Codex and Claude adapters perform real ACP initialize without login or prompts",
+    "a held daemon lock blocks installation even without instance metadata",
+    "Daemon and Desktop Bridge use bundled Node and preserve instance identity",
+    "running Daemon blocks install without touching launchers or SQLite",
+    "packaged ACP SDK handles workspace, permission, cancellation and deduplication",
+    "installed TUI opens in a real Linux PTY and exits without stopping Daemon",
+    "unrelated and dangling symlink launchers are never overwritten",
+    "reinstallation preserves old release, exact launcher backups and conversation history"
+  ],
+  "checksPassed": 11,
+  "home": "/home/clj/.cache/hhu-release-testing/hhu-release-verification-yLw30o/home with spaces and 'quote"
+}

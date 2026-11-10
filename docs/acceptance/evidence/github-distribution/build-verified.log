@@ -1,0 +1,25 @@
+$ bun scripts/linux-release.ts --outdir "dist/linux/releases/0.6.2-verified"
+glibc 2.43
+Release staging: /home/clj/.cache/hhu-release-testing/hhu-linux-release-IAVgqc
+bun install v1.4.4 (38afee6c8)
+
++ @agentclientprotocol/claude-agent-acp@0.99.1
++ @agentclientprotocol/codex-acp@2.5.0
++ @agentclientprotocol/sdk@2.2.0
++ @hono/node-server@2.1.5
++ @opentui/core@0.8.0
++ @opentui/solid@0.8.0
++ better-sqlite3@13.0.3
++ drizzle-orm@0.45.4
++ hono@4.13.14
++ solid-js@1.9.18
++ ws@8.21.0
++ zod@4.6.7
+
+228 packages installed [3.59s]
+Built HarnessHub CLI (Bun) and Daemon (Node)
+{ version: '3.53.4' }
+OpenTUI native loaded
+Built /home/clj/HarnessHub/HarnessHub/dist/linux/releases/0.6.2-verified/harnesshub-0.6.2-linux-x64.tar.gz
+Staging retained for inspection: /home/clj/.cache/hhu-release-testing/hhu-linux-release-IAVgqc
+Validate before publishing: bun run release:verify -- /home/clj/HarnessHub/HarnessHub/dist/linux/releases/0.6.2-verified

@@ -1,0 +1,12 @@
+PASS download checksum rejection leaves installation untouched
+PASS offline installation with no system Node/Bun or source dependency
+PASS payload tampering fails before launcher replacement
+PASS bundled Codex and Claude adapters perform real ACP initialize without login or prompts
+PASS a held daemon lock blocks installation even without instance metadata
+PASS Daemon and Desktop Bridge use bundled Node and preserve instance identity
+PASS running Daemon blocks install without touching launchers or SQLite
+PASS packaged ACP SDK handles workspace, permission, cancellation and deduplication
+PASS installed TUI opens in a real Linux PTY and exits without stopping Daemon
+PASS unrelated and dangling symlink launchers are never overwritten
+PASS reinstallation preserves old release, exact launcher backups and conversation history
+Verified 11 release checks. Evidence: /home/clj/.cache/hhu-release-testing/hhu-release-verification-yLw30o

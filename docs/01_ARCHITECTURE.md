@@ -179,6 +179,8 @@ Daemon 单实例，监听 127.0.0.1，正确处理重复启动、实例验证、
 
 源码构建 + 用户级安装：Bun Workspaces 统一安装和构建；Daemon 由 Node 运行；`install:local` 把 `hhu` 安装到 `~/.local/bin`，不使用 sudo、不过度更改用户 Shell。首版 Linux x64/WSL2；Node LTS 与 Bun/OpenTUI/SQLite 的**具体兼容版本在实施阶段锁定并测试**，不要在规范中宣称任意新版本都可运行。安装/升级时数据库迁移先备份、检测活跃任务。
 
+2026-11-10 用户新增 GitHub 独立发行安装要求：Linux x64 / WSL2 可从 GitHub Releases 下载预构建包，无需源码 checkout。发行包包含固定 Node/Bun、编译产物、迁移、生产依赖和许可；安装到用户级版本目录，CLI 与 Desktop Bridge 引用同一完整版本。继续持 Daemon flock、拒绝运行中替换、保留旧版本与数据，不做 npm 发布或自动更新。具体构建、校验及平台验收边界见 [发行指南](DISTRIBUTION.md)。
+
 ## 12. 数据安全及日志
 
 XDG 默认：`~/.config/harnesshub/config.json`, `~/.local/share/harnesshub/harnesshub.db`, `~/.local/state/harnesshub/logs/`；尊重用户 XDG 环境变量，`umask 077`、目录 0700、文件 0600。数据库包含敏感源码和对话，即使不加密也必须限制权限；已知 Token/Authorization 凭据按来源/结构做定向脱敏；原始事件的语义保真不能等同于无条件保存泄漏的明文 secret。日志不默认记录完整 Prompt、工具正文或敏感环境变量，按大小轮转。提供数据导出/删除；项目文件和用户原生 Harness 配置不受其影响。
