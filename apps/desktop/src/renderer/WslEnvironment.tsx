@@ -37,10 +37,21 @@ export function WslEnvironment({
   }, [state.status]);
 
   return (
-    <section className="wsl-environment" aria-label="WSL 执行环境">
-      <div className="wsl-heading">
-        <span>WSL 执行环境</span>
-        {fixed && (
+    <section className={`wsl-environment${fixed ? " is-fixed" : ""}`} aria-label="WSL 执行环境">
+      {!fixed && (
+        <div className="wsl-heading">
+          <span>WSL 执行环境</span>
+        </div>
+      )}
+      {fixed ? (
+        <div className={`wsl-current ${state.status}`}>
+          <div className="wsl-identity">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="2" y="3" width="16" height="14" rx="3" />
+              <path d="m6 7 3 3-3 3m5 0h3" />
+            </svg>
+            <strong title={state.distribution ?? undefined}>{state.distribution}</strong>
+          </div>
           <button
             type="button"
             className="text-button"
@@ -50,23 +61,12 @@ export function WslEnvironment({
           >
             切换
           </button>
-        )}
-      </div>
-      {fixed ? (
-        <div className={`wsl-current ${state.status}`}>
-          <div className="wsl-identity">
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <rect x="2" y="3" width="16" height="14" rx="3" />
-              <path d="m6 7 3 3-3 3m5 0h3" />
-            </svg>
-            <strong title={state.distribution ?? undefined}>{state.distribution}</strong>
-            <span className="wsl-version">WSL2</span>
-          </div>
           <div className="wsl-state" role="status">
             <span className="wsl-state-mark" aria-hidden="true">
               {state.status === "connected" ? "✓" : "●"}
             </span>
             {connectionLabels[state.status]}
+            <span className="wsl-version">· WSL2</span>
           </div>
         </div>
       ) : (

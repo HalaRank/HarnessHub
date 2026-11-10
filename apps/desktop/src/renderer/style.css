@@ -126,6 +126,9 @@ select {
   padding: 16px 14px 12px;
   flex-shrink: 0;
 }
+.wsl-environment.is-fixed {
+  padding-block: 10px 8px;
+}
 .wsl-heading {
   display: flex;
   align-items: center;
@@ -135,13 +138,13 @@ select {
   color: var(--muted);
   font-size: 11px;
 }
-.wsl-heading :where(.text-button) {
-  padding: 4px 6px;
-  color: var(--accent);
-}
 .wsl-current {
   --wsl-state-color: var(--muted);
-  padding: 11px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 8px;
+  padding: 7px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--raised);
@@ -156,13 +159,14 @@ select {
   --wsl-state-color: var(--error);
 }
 .wsl-identity {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .wsl-identity svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   stroke: var(--wsl-state-color);
   stroke-width: 1.4;
@@ -184,11 +188,11 @@ select {
   font-size: 10px;
 }
 .wsl-state {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 7px;
-  padding-left: 26px;
+  padding-left: 22px;
   color: var(--wsl-state-color);
   font-size: 11px;
 }
@@ -225,6 +229,11 @@ select {
   font-size: 11px;
   color: var(--muted);
   padding: 6px 0;
+}
+.wsl-current .text-button {
+  padding: 0 2px;
+  line-height: 20px;
+  color: var(--accent);
 }
 .search {
   padding: 6px 14px 12px;

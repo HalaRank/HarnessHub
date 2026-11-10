@@ -45,3 +45,16 @@ Chromium 截图接口连续超时，未取得可验收的渲染截图。浏览�
 ## 推送前独立检出复核
 
 2026-11-10，将本次 WSL 环境 UI 的 6 个文件和对应片段整理到独立 worktree。Desktop 49 项单元测试、lint、Desktop 构建通过。前述 60 项单测与 16 项集成结果来自当时的共享工作区，其中包含其他并行功能改动。独立检出复用已安装的依赖，未重新安装依赖。
+
+## 选定后压缩为两行（2026-11-10）
+
+根据用户再次提供的截图，选定环境后移除独立标题行：卡片第一行显示图标、发行版名称和“切换”，第二行显示真实连接状态与 WSL2。缩小卡片和环境区留白，保留绿色选中背景、长名称截断、完整名称 title 和 section 的无障碍名称。未选定及展开切换时继续显示选择器标题。
+
+本次仅修改 `apps/desktop/src/renderer/WslEnvironment.tsx`、`apps/desktop/src/renderer/style.css`，并补充本记录和 `evidence/desktop-wsl-environment/compact-browser-interactions.json`。工作区既有 TUI 改动不属于本次范围。
+
+- `bun run typecheck`：通过。初次 `bun run lint` 通过；收尾复查时工作区其他改动使 `packages/core/src/index.ts` 出现格式错误，全仓 lint 未通过。本次两个代码文件的独立 Biome 检查通过。
+- `bun run desktop:test`：CLI／Daemon／Desktop 构建、61 项 Desktop 单元测试、16 项真实 Daemon／SQLite／Mock ACP 集成测试通过。日志位于 `/tmp/hhu-wsl-compact-tests.log`。
+- Chromium 加载真实 App 与 CSS、使用隔离 Desktop API：选择连接、切换取消、再次连接、故障状态和 220px 长名称检查共五组通过。默认侧栏中卡片高度 55px，环境区总高度 73px，无独立标题行；窄侧栏无横向溢出。
+- `git diff --check`：本次代码文件通过。
+
+Chromium 截图接口超时，未取得本次截图；后续单独运行交互及 DOM 尺寸检查通过。Windows Electron 实机视觉、物理 DPI 与真实 WSL 连接本轮未验证。人工验收：连接后确认区域仅有两行；点击“切换”再“取消”确认恢复紧凑摘要；在 220px 侧栏及 Windows 125%、150%、200% DPI 下检查名称、状态和切换按钮。
