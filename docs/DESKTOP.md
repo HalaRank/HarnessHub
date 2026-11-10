@@ -4,7 +4,7 @@ Windows x64 Electron + React 客户端，连接用户选择的 WSL2 Linux 环境
 
 ## 首次安装（Windows 用户）
 
-1. 从下节 [GitHub Releases](https://github.com/HalaRank/HarnessHub/releases) 获取同版本的 `HarnessHub-0.6.2-windows-x64-unsigned-setup.exe` 或 `HarnessHub-0.6.2-windows-x64-unsigned.zip`，以及 `windows-x64-SHA256SUMS.txt`。本地/Actions 构建目录中的校验文件仍名为 `SHA256SUMS.txt`。当前是 **unsigned 测试包**。
+1. 从下节 [GitHub Releases](https://github.com/HalaRank/HarnessHub/releases) 获取同版本的 `HarnessHub-0.6.3-windows-x64-unsigned-setup.exe` 或 `HarnessHub-0.6.3-windows-x64-unsigned.zip`，以及 `windows-x64-SHA256SUMS.txt`。本地/Actions 构建目录中的校验文件仍名为 `SHA256SUMS.txt`。当前是 **unsigned 测试包**。
 2. 校验 SHA256 后运行安装器。默认当前用户安装，可选择安装目录，创建开始菜单/桌面快捷方式及 Windows“已安装的应用”卸载入口。不需要管理员权限；Windows App 安装不安装 WSL、Bun、Node 或原生 Harness。
 3. ZIP 用户将**整个目录**解压到独立目录，运行 `HarnessHub.exe`，不能只复制 exe。ZIP 不创建卸载项；关闭客户端后可手动移除该 ZIP 解压目录。不要把项目或数据存入安装目录。
 4. 双击 HarnessHub，应用自动检查 WSL 并显示发行版。第一次需显式选择 WSL2 开发发行版（不要选 docker-desktop）；WSL1 不可选。以后恢复所选发行版；连接成功进入 Project → Conversation 界面。
@@ -25,12 +25,12 @@ Windows x64 Electron + React 客户端，连接用户选择的 WSL2 Linux 环境
 | `windows-x64-release-manifest.json` | Windows 版本、协议、签名状态及产物清单 |
 | `install.sh`、`harnesshub-<版本>-linux-x64.tar.gz`、`SHA256SUMS.txt` | 在所选 WSL2 发行版中安装同版本后端 |
 
-**v0.6.2 已公开发布**：[安装器直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned-setup.exe) · [ZIP 直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned.zip)。远端构建、安装验证与公开发布证据见 [GitHub 分发验收](acceptance/desktop-phase-4-github-distribution.md)。后续版本在维护者发布 draft 后才可公开下载；Actions artifact 是临时构建下载。
+**v0.6.3 发布候选**：[安装器直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned-setup.exe) · [ZIP 直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned.zip)。本轮状态见 [v0.6.3 发布验收](acceptance/release-v0.6.3.md)。维护者发布 draft 后才可公开下载；Actions artifact 是临时构建下载。
 
 例如将安装器和 `windows-x64-SHA256SUMS.txt` 下载至同一个目录，在 PowerShell 进入该目录后校验并启动：
 
 ```powershell
-$file = 'HarnessHub-0.6.2-windows-x64-unsigned-setup.exe'
+$file = 'HarnessHub-0.6.3-windows-x64-unsigned-setup.exe'
 $line = @(Get-Content .\windows-x64-SHA256SUMS.txt | Where-Object { $_.EndsWith("  $file") })
 if ($line.Count -ne 1) { throw 'Missing or ambiguous installer checksum' }
 $expected = ($line[0] -split '\s+')[0]
@@ -42,10 +42,10 @@ Start-Process -FilePath ".\$file" -Wait
 
 ## WSL 后端准备
 
-推荐使用同一个 GitHub Release 的 Linux 独立包，无需源码、系统 Node/Bun。先准备 WSL2 x64/glibc、Git、flock 等系统工具（完整要求见 [发行安装指南](DISTRIBUTION.md)）。在**所选发行版默认 Linux 用户**中，进入已下载 `install.sh`、Linux tar.gz、`SHA256SUMS.txt` 的目录，以 0.6.2 为例：
+推荐使用同一个 GitHub Release 的 Linux 独立包，无需源码、系统 Node/Bun。先准备 WSL2 x64/glibc、Git、flock 等系统工具（完整要求见 [发行安装指南](DISTRIBUTION.md)）。在**所选发行版默认 Linux 用户**中，进入已下载 `install.sh`、Linux tar.gz、`SHA256SUMS.txt` 的目录，以 0.6.3 为例：
 
 ```bash
-sh ./install.sh --archive ./harnesshub-0.6.2-linux-x64.tar.gz
+sh ./install.sh --archive ./harnesshub-0.6.3-linux-x64.tar.gz
 export PATH="$HOME/.local/bin:$PATH"
 hhu doctor
 ```
@@ -79,13 +79,13 @@ bun run install:local
 
 | Desktop | Linux Bridge | Daemon | 协议 | 行为 |
 | --- | --- | --- | --- | --- |
-| 0.6.2 | 0.6.2 | 0.6.2 | 全部 1 | 支持连接；Phase 4 readiness 可用性还取决于后端构建 |
-| 0.6.2 | 其他版本 | 任意 | 任意 | 拒绝连接/Prompt，不停止后台 |
-| 0.6.2 | 0.6.2 | 其他版本 | 1 | 拒绝；只读报告身份和可用的升级预检 |
-| 0.6.2 | 任意 | 任意 | 不同 | 拒绝；不能假设旧后端支持新检查 |
+| 0.6.3 | 0.6.3 | 0.6.3 | 全部 1 | 支持连接；Phase 4 readiness 可用性还取决于后端构建 |
+| 0.6.3 | 其他版本 | 任意 | 任意 | 拒绝连接/Prompt，不停止后台 |
+| 0.6.3 | 0.6.3 | 其他版本 | 1 | 拒绝；只读报告身份和可用的升级预检 |
+| 0.6.3 | 任意 | 任意 | 不同 | 拒绝；不能假设旧后端支持新检查 |
 | 任意 | 未安装/旧 Bridge 无诊断字段 | 未确认 | 未确认 | 显示未知，不能把未知视为空闲 |
 
-Details/启动指引显示 Desktop/Bridge/Daemon/协议、instanceId、发行版和连接状态。断线后的历史身份仅是最近核验；重连重新发现实例，不复用旧 Token。当前策略为**精确版本相等**，不自动假定同一协议的不同版本兼容。本阶段从 0.6.1 统一升至 0.6.2；Windows 0.6.2 与旧 0.6.1 后端拒绝连接。未来发布 bump 必须同时构建客户端与后端。
+Details/启动指引显示 Desktop/Bridge/Daemon/协议、instanceId、发行版和连接状态。断线后的历史身份仅是最近核验；重连重新发现实例，不复用旧 Token。当前策略为**精确版本相等**，不自动假定同一协议的不同版本兼容。本轮从 0.6.2 统一升至 0.6.3；Windows 0.6.3 与旧 0.6.2 后端拒绝连接。未来发布 bump 必须同时构建客户端与后端。
 
 ## WSL 安全升级与恢复
 
@@ -134,16 +134,16 @@ bun run desktop:dev
 bun run desktop:release
 ```
 
-产物目录 `dist/desktop/releases/0.6.2-unsigned/`：NSIS、ZIP、`SHA256SUMS.txt`、`release-manifest.json`。只在可信网络/源码上构建；WSL 交叉构建可能还需 Wine/NSIS 下载，官方构建工具链：https://www.electron.build/docs/nsis 。本脚本明确 `publish: never`，打包本身不上传。GitHub Release 由下述工作流单独处理；不使用签名密钥，本轮明确 unsigned。依赖下载失败时不跳过校验，Electron 镜像仅按官方下载器配置；不从未知来源安装依赖。
+产物目录 `dist/desktop/releases/0.6.3-unsigned/`：NSIS、ZIP、`SHA256SUMS.txt`、`release-manifest.json`。只在可信网络/源码上构建；WSL 交叉构建可能还需 Wine/NSIS 下载，官方构建工具链：https://www.electron.build/docs/nsis 。本脚本明确 `publish: never`，打包本身不上传。GitHub Release 由下述工作流单独处理；不使用签名密钥，本轮明确 unsigned。依赖下载失败时不跳过校验，Electron 镜像仅按官方下载器配置；不从未知来源安装依赖。
 
 版本以根 package.json 为准，`bun scripts/version.ts <version>` 同步全部 workspace 与 shared VERSION，然后 `bun install --ignore-scripts` 更新 lockfile；`bun run version:check` 验证一致。Protocol 仍单独按契约管理。构建在仓库外新 staging，asar 白名单拒绝 Linux SQLite/OpenTUI/ACP Worker/node_modules/.node/链接/额外执行文件；Windows 自带 Electron DLL 属于运行时。包内不包含 Harness 登录配置或业务数据库。
 
 PowerShell 校验：
 
 ```powershell
-Get-FileHash .\HarnessHub-0.6.2-windows-x64-unsigned-setup.exe -Algorithm SHA256
-Get-FileHash .\HarnessHub-0.6.2-windows-x64-unsigned.zip -Algorithm SHA256
-Get-AuthenticodeSignature .\HarnessHub-0.6.2-windows-x64-unsigned-setup.exe | Select-Object Status
+Get-FileHash .\HarnessHub-0.6.3-windows-x64-unsigned-setup.exe -Algorithm SHA256
+Get-FileHash .\HarnessHub-0.6.3-windows-x64-unsigned.zip -Algorithm SHA256
+Get-AuthenticodeSignature .\HarnessHub-0.6.3-windows-x64-unsigned-setup.exe | Select-Object Status
 ```
 
 SHA256 应与 Release 的 `windows-x64-SHA256SUMS.txt`（本地构建为 `SHA256SUMS.txt`）一致；签名预期为 `NotSigned`。校验不等同安全审计或发布者认证。

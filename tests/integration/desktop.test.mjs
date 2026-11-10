@@ -195,16 +195,20 @@ test("closing Desktop during active turn leaves Daemon/Worker alive; reopening r
   const turn = await client.request(`/v1/conversations/${conversation.id}/turns`, "POST", {
     requestId: randomUUID(),
     harnessId: "desktop-mock",
-    message: "slow",
+    message: "wait",
   });
+  await waitFor(async () =>
+    (await client.request(`/v1/conversations/${conversation.id}/events?limit=1000`)).events.some(
+      (event) => event.turnId === turn.id && event.payload?.content?.text === "started",
+    ),
+  );
   const before = instance();
   desktop.dispose();
   await client.health();
   assert.equal(instance().pid, before.pid);
+  assert.equal((await client.request(`/v1/turns/${turn.id}`)).state, "RUNNING");
   await client.request(`/v1/turns/${turn.id}/cancel`, "POST");
-  await waitFor(async () =>
-    ["CANCELLED", "COMPLETED"].includes((await client.request(`/v1/turns/${turn.id}`)).state),
-  );
+  await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).state === "CANCELLED");
   const reopened = new DesktopConnection({ connect: bridge });
   cleanups.push(() => reopened.dispose());
   await reopened.connect("Ubuntu-test");
@@ -1041,8 +1045,13 @@ test("Desktop new conversations auto-name and shared/worktree workspaces use the
     const running = await local.request(`/v1/conversations/${shared.id}/turns`, "POST", {
       requestId: randomUUID(),
       harnessId: "desktop-mock",
-      message: "slow",
+      message: "wait",
     });
+    await waitFor(async () =>
+      (await local.request(`/v1/conversations/${shared.id}/events?limit=1000`)).events.some(
+        (event) => event.turnId === running.id && event.payload?.content?.text === "started",
+      ),
+    );
     await assert.rejects(
       connection.action({ ...sharedRequest, baseBranch: "main" }),
       (e) => e.status === 409,
