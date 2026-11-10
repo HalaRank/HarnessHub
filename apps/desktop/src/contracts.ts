@@ -6,6 +6,7 @@ import type {
   Snapshot,
 } from "@harnesshub/shared";
 import {
+  conversationInput,
   conversationPatch,
   draftInput,
   handoffAction,
@@ -66,6 +67,7 @@ export const desktopRequest = z.discriminatedUnion("type", [
     after: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   }),
   action({ type: z.literal("changes.list"), conversationId }),
+  action({ type: z.literal("project.branches"), projectId: z.string().uuid() }),
   action({ type: z.literal("changes.diff"), conversationId, path: z.string().min(1).max(4096) }),
   action({ type: z.literal("worktrees.list") }),
   action({
@@ -75,6 +77,8 @@ export const desktopRequest = z.discriminatedUnion("type", [
   }),
   action({ type: z.literal("workspace.open"), conversationId, location: workspaceLocationInput }),
   action({ type: z.literal("draft.load"), conversationId }),
+  action({ type: z.literal("new-draft.load") }),
+  action({ type: z.literal("new-draft.save"), draft: draftInput }),
   action({ type: z.literal("draft.save"), conversationId, draft: draftInput }),
   action({
     type: z.literal("turn.submit"),
@@ -110,14 +114,13 @@ export const desktopRequest = z.discriminatedUnion("type", [
   action({ type: z.literal("handoff.action"), conversationId, input: handoffAction }),
   action({
     type: z.literal("conversation.create"),
-    workspaceMode: z.enum(["shared", "worktree"]).optional(),
     projectId: z.string().uuid(),
-    title: z.string().trim().min(1).max(200),
+    ...conversationInput.shape,
   }),
   action({
     type: z.literal("conversation.standalone"),
     workspacePath: z.string().startsWith("/").max(4096),
-    title: z.string().trim().min(1).max(200),
+    title: z.string().trim().min(1).max(200).optional(),
   }),
   action({ type: z.literal("conversation.patch"), conversationId, patch: conversationPatch }),
   action({ type: z.literal("conversation.delete"), conversationId, confirmed: z.literal(true) }),

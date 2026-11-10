@@ -15,6 +15,21 @@ export async function call<T>(api: DesktopApi, request: DesktopRequest): Promise
   return reply.data as T;
 }
 
+export function newConversationDraft(api: DesktopApi) {
+  return new DesktopDraft(
+    {
+      subscribe: api.subscribe,
+      request: (request) => {
+        if (request.type === "draft.load") return api.request({ type: "new-draft.load" });
+        if (request.type === "draft.save")
+          return api.request({ type: "new-draft.save", draft: request.draft });
+        throw new Error("新建页仅保存草稿，发送前须创建 Conversation。");
+      },
+    },
+    "desktop-new",
+  );
+}
+
 // A framework-independent editor queue, deliberately separate from the TUI lifecycle.
 // Failed CAS never overwrites local text. No pending submission is sent by load/recovery.
 export class DesktopDraft {

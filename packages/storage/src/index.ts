@@ -81,6 +81,35 @@ export class Store {
   close() {
     this.sqlite.close();
   }
+  newConversationDraft(): Draft {
+    const row = this.db
+      .select()
+      .from(schema.newConversationDrafts)
+      .where(eq(schema.newConversationDrafts.id, "desktop"))
+      .get();
+    return {
+      conversationId: "desktop-new",
+      text: row?.text ?? "",
+      revision: row?.revision ?? 0,
+      pendingSubmission: null,
+    };
+  }
+  saveNewConversationDraft(input: Omit<Draft, "conversationId">): Draft {
+    return this.db.transaction(() => {
+      if (input.pendingSubmission)
+        throw new AppError(400, "Create a Conversation before reserving a Turn");
+      const previous = this.newConversationDraft();
+      if (input.revision !== previous.revision)
+        throw new AppError(409, "New conversation draft changed in another window");
+      const value = { id: "desktop", text: input.text, revision: previous.revision + 1 };
+      this.db
+        .insert(schema.newConversationDrafts)
+        .values(value)
+        .onConflictDoUpdate({ target: schema.newConversationDrafts.id, set: value })
+        .run();
+      return this.newConversationDraft();
+    });
+  }
   listProjects() {
     return this.db.select().from(schema.projects).all();
   }

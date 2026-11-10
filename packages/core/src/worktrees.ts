@@ -50,23 +50,33 @@ export class Worktrees {
             "Interrupted operation; inspect Git registration and path, then explicitly clean up",
         });
   }
-  async create(projectId: string) {
+  async create(projectId: string, baseBranch?: string) {
     if (this.store.projectOperations.has(projectId))
       throw new AppError(409, "Project already has a Worktree operation");
     this.store.projectOperations.add(projectId);
     try {
-      return await this.createReserved(projectId);
+      return await this.createReserved(projectId, baseBranch);
     } finally {
       this.store.projectOperations.delete(projectId);
     }
   }
-  private async createReserved(projectId: string) {
+  private async createReserved(projectId: string, baseBranch?: string) {
     const project = this.store.getProject(projectId);
     const cwd = projectRoot(project.rootPath);
     const repositoryPath = projectRoot(
       (await git(cwd, ["rev-parse", "--show-toplevel"])).replace(/\n$/, ""),
     );
-    await git(cwd, ["rev-parse", "--verify", "HEAD"]); // reject unborn / non-Git / bare repositories
+    if (baseBranch) await git(cwd, ["check-ref-format", `refs/heads/${baseBranch}`]);
+    // Resolve a fully qualified local branch to a commit before reserving any files.
+    // The default remains HEAD for existing TUI/API callers, including detached HEAD.
+    const startPoint = (
+      await git(cwd, [
+        "rev-parse",
+        "--verify",
+        "--end-of-options",
+        `${baseBranch ? `refs/heads/${baseBranch}` : "HEAD"}^{commit}`,
+      ])
+    ).trim();
     privateDir(this.root);
     const ownerRoot = realpathSync(this.root),
       id = randomUUID();
@@ -107,7 +117,7 @@ export class Worktrees {
         branch,
         "--",
         path,
-        "HEAD",
+        startPoint,
       ]);
       // Resolve branch/worktree-conditional config in the new directory before
       // checkout. checkout-index without --force refuses concurrently created files.

@@ -155,6 +155,7 @@ try {
           }
         : {}),
       realHandoff: process.env.HHU_DESKTOP_HANDOFF === "1",
+      newConversationOnly: process.env.HHU_DESKTOP_NEW_ONLY === "1",
     }),
   );
   // Run official Electron executable from a separately extracted, checksum-verified archive.

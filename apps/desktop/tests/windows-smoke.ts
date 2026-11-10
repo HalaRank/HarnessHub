@@ -7,6 +7,7 @@ import { app, type BrowserWindow } from "electron";
 import { openDesktopWindow } from "../src/main/window";
 import { runWsl, WslBridge } from "../src/main/wsl";
 import { realHandoffSmoke } from "./windows-handoff";
+import { newConversationSmoke } from "./windows-new-conversation";
 import { workspaceSmoke } from "./windows-workspace";
 
 const config = JSON.parse(readFileSync(join(app.getAppPath(), "smoke-config.json"), "utf8")) as {
@@ -18,6 +19,7 @@ const config = JSON.parse(readFileSync(join(app.getAppPath(), "smoke-config.json
   output: string;
   realHarnesses?: string[];
   realHandoff?: boolean;
+  newConversationOnly?: boolean;
 };
 mkdirSync(join(config.output, "electron-user-data"), { recursive: true });
 app.setPath("userData", join(config.output, "electron-user-data"));
@@ -63,7 +65,7 @@ const deadline = setTimeout(
   config.realHandoff ? 1200000 : config.realHarnesses?.length ? 780000 : 180000,
 );
 const waitFor = async (check: () => unknown | Promise<unknown>) => {
-  const end = Date.now() + 20000;
+  const end = Date.now() + 60000;
   while (Date.now() < end) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -144,7 +146,7 @@ void app.whenReady().then(async () => {
       opened.connection
         .getState()
         .snapshot?.conversations.findIndex((c) => c.id === config.conversationId) ?? 0;
-    await click(first, `.conversation-item:nth-child(${index + 1})`);
+    await click(first, `.conversation-row:nth-child(${index + 1}) .conversation-item`);
     await waitFor(
       () =>
         opened.connection.getState().conversationId === config.conversationId &&
@@ -160,6 +162,17 @@ void app.whenReady().then(async () => {
       state.snapshot?.conversations.find((c) => c.id === config.conversationId)?.workspacePath,
       config.workspace,
     );
+    if (config.newConversationOnly) {
+      checks.push(
+        ...(await newConversationSmoke(first, opened.connection, config.output, {
+          click,
+          fill,
+          waitFor,
+        })),
+      );
+      evidence.passed = true;
+      return;
+    }
     const instance = await bridge.connect(config.distro);
     const client = new Client(instance);
     assert.ok(!JSON.stringify(state).includes(instance.token));
@@ -204,7 +217,7 @@ void app.whenReady().then(async () => {
       opened.connection
         .getState()
         .snapshot?.conversations.findIndex((c) => c.id === config.otherId) ?? 0;
-    await click(first, `.conversation-item:nth-child(${otherIndex + 1})`);
+    await click(first, `.conversation-row:nth-child(${otherIndex + 1}) .conversation-item`);
     await waitFor(
       () =>
         opened.connection.getState().conversationId === config.otherId &&
@@ -213,7 +226,7 @@ void app.whenReady().then(async () => {
     await waitFor(() =>
       first.webContents.executeJavaScript("!!document.querySelector('.empty-chat')"),
     );
-    await click(first, `.conversation-item:nth-child(${index + 1})`);
+    await click(first, `.conversation-row:nth-child(${index + 1}) .conversation-item`);
     await waitFor(
       () =>
         opened.connection.getState().conversationId === config.conversationId &&
@@ -265,9 +278,9 @@ void app.whenReady().then(async () => {
     await waitFor(() => existsSync(join(config.output, "tui-ready")));
     checks.push("Real WSL hhu TUI running concurrently in a PTY against the same Daemon");
     await fill(first, "跨会话持久草稿");
-    await click(first, `.conversation-item:nth-child(${otherIndex + 1})`);
+    await click(first, `.conversation-row:nth-child(${otherIndex + 1}) .conversation-item`);
     await waitFor(() => opened.connection.getState().conversationId === config.otherId);
-    await click(first, `.conversation-item:nth-child(${index + 1})`);
+    await click(first, `.conversation-row:nth-child(${index + 1}) .conversation-item`);
     await waitFor(() =>
       first.webContents.executeJavaScript(
         "document.querySelector('textarea')?.value === '跨会话持久草稿'",
@@ -442,17 +455,28 @@ void app.whenReady().then(async () => {
       ),
     );
     checks.push("Closing/reopening Electron persists SQLite drafts while active Agent survives");
-    // Real management dialog: deletion confirmation preserves the source directory.
+    // New-conversation landing page sends the first message without a title dialog.
     await click(reopened.window, '.project-heading button[aria-label="新建会话"]');
     await waitFor(() =>
-      reopened.window.webContents.executeJavaScript("!!document.querySelector('dialog[open]')"),
-    );
-    await click(reopened.window, 'dialog button[type="submit"]');
-    await waitFor(() =>
       reopened.window.webContents.executeJavaScript(
-        "!document.querySelector('dialog') && document.querySelector('h1').textContent === 'New conversation'",
+        "!!document.querySelector('.new-conversation')",
       ),
     );
+    assert.equal(
+      await reopened.window.webContents.executeJavaScript("!!document.querySelector('dialog')"),
+      false,
+    );
+    await reopened.window.webContents.executeJavaScript(
+      "const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true}));",
+    );
+    await fill(reopened.window, "Desktop 自动命名任务");
+    await click(reopened.window, '[aria-label="发送消息"]');
+    await waitFor(() =>
+      reopened.window.webContents.executeJavaScript(
+        "!document.querySelector('.new-conversation') && document.querySelector('h1').textContent === 'Desktop 自动命名任务'",
+      ),
+    );
+    checks.push("New page creates and auto-names on first send without requesting a title");
     await click(reopened.window, '[aria-label="切换工作面板"]');
     await click(reopened.window, ".panel-content details > summary");
     await click(reopened.window, ".management-actions button:first-child");

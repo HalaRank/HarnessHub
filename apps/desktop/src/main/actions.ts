@@ -6,6 +6,8 @@ import type { DesktopRequest } from "../contracts";
 export async function performAction(client: Client, request: DesktopRequest): Promise<unknown> {
   const base = "conversationId" in request ? `/v1/conversations/${request.conversationId}` : "";
   switch (request.type) {
+    case "project.branches":
+      return client.request(`/v1/projects/${request.projectId}/branches`);
     case "changes.list":
       return client.request(`${base}/changes`);
     case "changes.diff":
@@ -22,6 +24,10 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
       return client.request(`${base}/events?after_seq=${request.after}&limit=200`);
     case "draft.load":
       return client.request(`${base}/draft`);
+    case "new-draft.load":
+      return client.request("/v1/new-conversation-draft");
+    case "new-draft.save":
+      return client.request("/v1/new-conversation-draft", "PUT", request.draft);
     case "draft.save":
       return client.request(`${base}/draft`, "PUT", request.draft);
     case "turn.submit": {
@@ -87,6 +93,7 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
       return client.request(`/v1/projects/${request.projectId}/conversations`, "POST", {
         title: request.title,
         workspaceMode: request.workspaceMode,
+        baseBranch: request.baseBranch,
       });
     case "conversation.standalone":
       return client.request("/v1/conversations", "POST", {

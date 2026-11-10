@@ -27,10 +27,11 @@ export const conversationInput = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),
     workspaceMode: z.enum(["shared", "worktree"]).optional(),
+    baseBranch: z.string().min(1).max(1024).optional(),
   })
   .strict();
 export const conversationPatch = conversationInput
-  .omit({ workspaceMode: true })
+  .omit({ workspaceMode: true, baseBranch: true })
   .partial()
   .extend({ archived: z.boolean().optional() })
   .strict()
@@ -49,6 +50,12 @@ export type Project = {
   rootPath: string;
   createdAt: number;
   updatedAt: number;
+};
+export type ProjectBranches = {
+  isGit: boolean;
+  hasCommits: boolean;
+  currentBranch: string | null;
+  branches: string[];
 };
 export type Conversation = {
   id: string;

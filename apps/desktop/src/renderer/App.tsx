@@ -4,11 +4,12 @@ import type { DesktopApi, DesktopRequest, DesktopState, Distribution } from "../
 import { Changes } from "./Changes";
 import { Composer } from "./Composer";
 import { ConversationDialog, type ConversationDialogValue } from "./ConversationDialog";
-import { call, DesktopDraft } from "./drafts";
+import { call, DesktopDraft, newConversationDraft } from "./drafts";
 import { Environment } from "./Environment";
 import { Handoffs } from "./Handoffs";
 import { DesktopTranscript } from "./history";
 import { TranscriptView } from "./Message";
+import { NewConversation, type NewConversationValue } from "./NewConversation";
 import { PathActions } from "./PathActions";
 import { Worktrees } from "./Worktrees";
 
@@ -62,6 +63,8 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const drafts = useRef(new Map<string, DesktopDraft>());
   const expanded = useRef(new Map<string, boolean>());
   const [dialog, setDialog] = useState<ConversationDialogValue | null>(null);
+  const [newConversation, setNewConversation] = useState<NewConversationValue | null>(null);
+  const creating = useRef(false);
   const [historyPage, setHistoryPage] = useState<number | null>(null);
   const [debugPage, setDebugPage] = useState(0);
   const history = useRef<HTMLDivElement>(null);
@@ -92,6 +95,8 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const request = async (input: DesktopRequest) => {
     setError("");
     try {
+      if (creating.current && ["select", "connect", "reconnect"].includes(input.type))
+        throw new Error("请等待新会话创建和消息提交完成。");
       if (["select", "connect"].includes(input.type)) {
         if (input.type === "connect" && [...drafts.current.values()].some((draft) => draft.busy))
           throw new Error("等待当前提交确认后再切换发行版。");
@@ -105,6 +110,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
         return;
       }
       accept(reply.state);
+      if (input.type === "select" || input.type === "connect") setNewConversation(null);
       if (reply.distributions) setDistros(reply.distributions);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Desktop 连接服务不可用，请重新打开窗口。");
@@ -163,6 +169,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   useEffect(() => {
     if (state.status === "connected" && state.snapshot) {
       const ids = new Set(state.snapshot.conversations.map((c) => c.id));
+      ids.add("desktop-new");
       for (const [key, editor] of drafts.current)
         if (!ids.has(editor.conversationId)) drafts.current.delete(key);
     }
@@ -172,6 +179,12 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   if (current && !draft) {
     draft = new DesktopDraft(api, current.id);
     drafts.current.set(draftKey, draft);
+  }
+  const newDraftKey = `${state.distribution}:new`;
+  let newDraft = drafts.current.get(newDraftKey);
+  if (newConversation && !newDraft) {
+    newDraft = newConversationDraft(api);
+    drafts.current.set(newDraftKey, newDraft);
   }
   useEffect(() => {
     const id = state.conversationId;
@@ -224,6 +237,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
         .then(() => {
           if ([...drafts.current.values()].some((editor) => editor.busy))
             throw new Error("正在提交消息，请等待请求确认再关闭。");
+          if (creating.current) throw new Error("正在创建会话，请等待请求确认再关闭。");
           closing = true;
           return api.request({ type: "window.close" });
         })
@@ -258,48 +272,63 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
     const id = project?.id ?? "standalone";
     const items = conversations.filter((c) => c.projectId === (project?.id ?? null));
 
-    if (query && !items.length) return null;
+    if (!items.length && (query || !project)) return null;
     return (
-      <section className="project" key={id}>
-        <div className="project-heading">
-          <button
-            type="button"
-            className="project-toggle"
-            aria-expanded={!collapsed.has(id)}
-            onClick={() => toggleProject(id)}
-            title={project?.rootPath}
-          >
-            <span aria-hidden="true">{collapsed.has(id) ? "›" : "⌄"}</span>
-            <span>{project?.name ?? "独立会话"}</span>
-            <small>{items.length}</small>
-          </button>
-          <button
-            type="button"
-            className="icon"
-            disabled={state.status !== "connected"}
-            onClick={() =>
-              setDialog({
-                kind: "create",
-                ...(project ? { projectId: project.id } : {}),
-                workspace: current?.workspacePath,
-              })
-            }
-            title="新建会话"
-            aria-label="新建会话"
-          >
-            ＋
-          </button>
-        </div>
-        {!collapsed.has(id) && (
-          <div className="conversation-list">
+      <section
+        className={project ? "project" : "standalone-conversations"}
+        key={id}
+        aria-label={project ? undefined : "独立会话"}
+      >
+        {project && (
+          <div className="project-heading">
+            <button
+              type="button"
+              className="project-toggle"
+              aria-expanded={!collapsed.has(id)}
+              onClick={() => toggleProject(id)}
+              title={project.rootPath}
+            >
+              <span aria-hidden="true">{collapsed.has(id) ? "›" : "⌄"}</span>
+              <span>{project.name}</span>
+              <small>{items.length}</small>
+            </button>
+            <button
+              type="button"
+              className="icon"
+              disabled={state.status !== "connected"}
+              onClick={() => {
+                if (!creating.current)
+                  setNewConversation({
+                    projectId: project?.id ?? "",
+                    workspace: current?.workspacePath ?? "",
+                  });
+              }}
+              title="新建会话"
+              aria-label="新建会话"
+            >
+              ＋
+            </button>
+          </div>
+        )}
+        {(!project || !collapsed.has(id)) && (
+          <div className={project ? "conversation-list" : "standalone-list"}>
             {items.map((c) => (
               <ConversationItem
                 key={c.id}
                 value={c}
-                active={c.id === state.conversationId}
+                active={!newConversation && c.id === state.conversationId}
+                disabled={state.status !== "connected"}
                 onSelect={() => {
                   void request({ type: "select", conversationId: c.id });
                 }}
+                rename={() => setDialog({ kind: "rename", conversation: c })}
+                archive={() =>
+                  void request({
+                    type: "conversation.patch",
+                    conversationId: c.id,
+                    patch: { archived: !c.archivedAt },
+                  })
+                }
               />
             ))}
             {!items.length && <p className="subtle empty-group">暂无会话</p>}
@@ -341,16 +370,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
           重新连接
         </button>
       </header>
-      {dialog && (
-        <ConversationDialog
-          value={dialog}
-          api={api}
-          close={() => setDialog(null)}
-          created={(id) => {
-            void request({ type: "select", conversationId: id });
-          }}
-        />
-      )}
+      {dialog && <ConversationDialog value={dialog} api={api} close={() => setDialog(null)} />}
       <div className={`workspace ${sidebar ? "" : "sidebar-hidden"} ${panel ? "panel-open" : ""}`}>
         {sidebar && (
           <>
@@ -391,6 +411,20 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                 </button>
               </div>
               <div className="search">
+                <button
+                  type="button"
+                  className="new-chat-button"
+                  disabled={state.status !== "connected"}
+                  onClick={() => {
+                    if (!creating.current)
+                      setNewConversation({
+                        projectId: current?.projectId ?? state.snapshot?.projects[0]?.id ?? "",
+                        workspace: current?.workspacePath ?? "",
+                      });
+                  }}
+                >
+                  <span aria-hidden="true">＋</span> 新建会话
+                </button>
                 <input
                   aria-label="搜索会话"
                   placeholder="搜索会话…"
@@ -454,12 +488,12 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
             />
           </>
         )}
-        <main className="chat">
+        <main className={`chat ${newConversation ? "chat-new" : ""}`}>
           <header className="conversation-header">
             <div>
-              <h1>{current?.title ?? "你的工作，从这里继续"}</h1>
+              <h1>{newConversation ? "新建会话" : (current?.title ?? "你的工作，从这里继续")}</h1>
               <div className="conversation-meta">
-                {current ? (
+                {newConversation ? null : current ? (
                   <>
                     <span>{current.selectedHarnessId ?? "尚未选择 Harness"}</span>
                     <span>{runtimeLabels[current.runtimeStatus] || "空闲"}</span>
@@ -491,91 +525,124 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
             </div>
           )}
           {state.status !== "connected" && <Environment state={state} />}
-          <div
-            className="history"
-            ref={history}
-            onScroll={(event) => {
-              const element = event.currentTarget;
-              follow.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
-              if (!follow.current) setHistoryPage((value) => value ?? visibleStart);
-            }}
-          >
-            {!current ? (
-              <div className="welcome">
-                <img className="welcome-mark" src="../assets/logo.png" alt="HarnessHub Logo" />
-                <h2>继续你的项目</h2>
-                <p>
-                  在左侧选择 WSL2 环境和会话。
-                  <br />
-                  这里显示与 TUI 相同的消息历史。
-                </p>
-              </div>
-            ) : (
-              <div className="transcript">
-                {state.historyLoading && !rows.length && (
-                  <p className="subtle" role="status">
-                    正在读取历史…
-                  </p>
-                )}
-                {!state.historyLoading && !rows.length && (
-                  <div className="empty-chat">
-                    <h2>还没有可显示的消息</h2>
-                    <p>选择 Harness，发送第一条消息开始工作。</p>
+          {newConversation && newDraft ? (
+            <NewConversation
+              key={state.distribution}
+              api={api}
+              state={state}
+              value={newConversation}
+              draft={newDraft}
+              change={setNewConversation}
+              busyChanged={(busy) => {
+                creating.current = busy;
+              }}
+              created={async (conversation, editor) => {
+                drafts.current.set(`${state.distribution}:${conversation.id}`, editor);
+                const reply = await api.request({
+                  type: "select",
+                  conversationId: conversation.id,
+                });
+                if (!reply.ok) throw new Error(reply.error);
+                accept(reply.state);
+                setNewConversation(null);
+              }}
+            />
+          ) : (
+            <>
+              <div
+                className="history"
+                ref={history}
+                onScroll={(event) => {
+                  const element = event.currentTarget;
+                  follow.current =
+                    element.scrollHeight - element.scrollTop - element.clientHeight < 80;
+                  if (!follow.current) setHistoryPage((value) => value ?? visibleStart);
+                }}
+              >
+                {!current ? (
+                  <div className="welcome">
+                    <img className="welcome-mark" src="../assets/logo.png" alt="HarnessHub Logo" />
+                    <h2>继续你的项目</h2>
+                    <p>
+                      在左侧选择 WSL2 环境和会话。
+                      <br />
+                      这里显示与 TUI 相同的消息历史。
+                    </p>
                   </div>
-                )}
-                {visibleStart > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      follow.current = false;
-                      setHistoryPage(Math.max(0, visibleStart - 100));
-                      if (history.current) history.current.scrollTop = 0;
-                    }}
-                  >
-                    查看较早消息（{visibleStart}）
-                  </button>
-                )}
-                <TranscriptView
-                  conversationId={current.id}
-                  rows={visibleRows}
-                  api={api}
-                  expanded={expanded.current}
-                />
-                {historyPage !== null && (
-                  <div className="history-navigation">
-                    {visibleStart + 100 < rows.length && (
+                ) : (
+                  <div className="transcript">
+                    {state.historyLoading && !rows.length && (
+                      <p className="subtle" role="status">
+                        正在读取历史…
+                      </p>
+                    )}
+                    {!state.historyLoading && !rows.length && (
+                      <div className="empty-chat">
+                        <h2>还没有可显示的消息</h2>
+                        <p>选择 Harness，发送第一条消息开始工作。</p>
+                      </div>
+                    )}
+                    {visibleStart > 0 && (
                       <button
                         type="button"
                         onClick={() => {
-                          setHistoryPage(visibleStart + 100);
+                          follow.current = false;
+                          setHistoryPage(Math.max(0, visibleStart - 100));
                           if (history.current) history.current.scrollTop = 0;
                         }}
                       >
-                        查看较新消息
+                        查看较早消息（{visibleStart}）
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        follow.current = true;
-                        setHistoryPage(null);
-                        if (history.current)
-                          history.current.scrollTop = history.current.scrollHeight;
-                      }}
-                    >
-                      回到最新消息
-                    </button>
+                    <TranscriptView
+                      conversationId={current.id}
+                      rows={visibleRows}
+                      api={api}
+                      expanded={expanded.current}
+                    />
+                    {historyPage !== null && (
+                      <div className="history-navigation">
+                        {visibleStart + 100 < rows.length && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHistoryPage(visibleStart + 100);
+                              if (history.current) history.current.scrollTop = 0;
+                            }}
+                          >
+                            查看较新消息
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            follow.current = true;
+                            setHistoryPage(null);
+                            if (history.current)
+                              history.current.scrollTop = history.current.scrollHeight;
+                          }}
+                        >
+                          回到最新消息
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
-          {current && draft ? (
-            <Composer key={draftKey} api={api} state={state} conversation={current} draft={draft} />
-          ) : (
-            <div className="composer-area">
-              <p className="composer-note">选择或新建会话开始聊天 · 关闭窗口不会停止后台任务</p>
-            </div>
+              {current && draft ? (
+                <Composer
+                  key={draftKey}
+                  api={api}
+                  state={state}
+                  conversation={current}
+                  draft={draft}
+                />
+              ) : (
+                <div className="composer-area">
+                  <p className="composer-note">选择或新建会话开始聊天 · 关闭窗口不会停止后台任务</p>
+                </div>
+              )}
+            </>
           )}
         </main>
         {panel && (
@@ -778,29 +845,65 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
     </div>
   );
 }
-function ConversationItem({
+export function ConversationItem({
   value,
   active,
   onSelect,
+  rename,
+  archive,
+  disabled,
 }: {
   value: Conversation;
   active: boolean;
   onSelect: () => void;
+  rename: () => void;
+  archive: () => void;
+  disabled: boolean;
 }) {
   return (
-    <button
-      type="button"
-      className={`conversation-item ${active ? "selected" : ""}`}
-      aria-current={active ? "page" : undefined}
-      onClick={onSelect}
-    >
-      <span className="conversation-title">{value.title}</span>
-      <span className="conversation-subtitle">
-        <span>{value.selectedHarnessId ?? "未选择 Harness"}</span>
-        <span className={`runtime ${value.runtimeStatus}`}>
-          {runtimeLabels[value.runtimeStatus]}
+    <div className={`conversation-row ${active ? "selected" : ""}`}>
+      <button
+        type="button"
+        className={`conversation-item ${active ? "selected" : ""}`}
+        aria-current={active ? "page" : undefined}
+        onClick={onSelect}
+        disabled={disabled}
+      >
+        <span className="conversation-title">{value.title}</span>
+        <span className="conversation-subtitle">
+          <span>
+            {value.projectId === null && <span className="standalone-label">独立会话</span>}
+            {value.selectedHarnessId ?? "未选择 Harness"}
+          </span>
+          <span className={`runtime ${value.runtimeStatus}`}>
+            {runtimeLabels[value.runtimeStatus]}
+          </span>
         </span>
-      </span>
-    </button>
+      </button>
+      <div className="conversation-actions">
+        <button
+          type="button"
+          aria-label={`重命名 ${value.title}`}
+          title="重命名"
+          disabled={disabled}
+          onClick={rename}
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="m4 13-1 4 4-1L17 6l-3-3L4 13Zm8-8 3 3" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          aria-label={`${value.archivedAt ? "恢复" : "归档"} ${value.title}`}
+          title={value.archivedAt ? "恢复归档" : "归档"}
+          disabled={disabled}
+          onClick={archive}
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M3 7h14v10H3V7Zm-1-4h16v4H2V3Zm6 7h4" />
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 }

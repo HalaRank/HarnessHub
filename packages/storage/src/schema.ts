@@ -45,6 +45,11 @@ export const drafts = sqliteTable("conversation_drafts", {
     import("@harnesshub/shared").Draft["pendingSubmission"]
   >(),
 });
+export const newConversationDrafts = sqliteTable("new_conversation_drafts", {
+  id: text("id").primaryKey(),
+  text: text("text").notNull().default(""),
+  revision: integer("revision").notNull().default(0),
+});
 export const uiPreferences = sqliteTable("ui_preferences", {
   id: integer("id").primaryKey(),
   lastProjectId: text("last_project_id").references(() => projects.id, { onDelete: "set null" }),

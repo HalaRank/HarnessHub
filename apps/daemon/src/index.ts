@@ -146,6 +146,10 @@ async function main() {
   );
   app.get("/v1/snapshot", (c) => c.json(store.snapshot()));
   app.get("/v1/preferences", (c) => c.json(store.preferences()));
+  app.get("/v1/new-conversation-draft", (c) => c.json(store.newConversationDraft()));
+  app.put("/v1/new-conversation-draft", async (c) =>
+    c.json(store.saveNewConversationDraft(draftInput.parse(await c.req.json()))),
+  );
   app.patch("/v1/preferences", async (c) => {
     const data = preferencesPatch.parse(await c.req.json());
     return c.json(
@@ -178,6 +182,9 @@ async function main() {
     return c.json(result.value, result.event ? 201 : 200);
   });
   app.get("/v1/projects/:id", (c) => c.json(store.getProject(c.req.param("id"))));
+  app.get("/v1/projects/:id/branches", async (c) =>
+    c.json(await projects.branches(c.req.param("id"))),
+  );
   app.patch("/v1/projects/:id", async (c) => {
     const result = projects.update(c.req.param("id"), projectPatch.parse(await c.req.json()));
     publish(result.event);
@@ -199,6 +206,7 @@ async function main() {
       c.req.param("id"),
       data.title,
       data.workspaceMode,
+      data.baseBranch,
     );
     publish(result.event);
     return c.json(result.value, 201);

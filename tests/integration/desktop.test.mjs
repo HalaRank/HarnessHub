@@ -908,3 +908,134 @@ test("release readiness refuses active Turns and stale prechecks without stoppin
   await client.request(`/v1/turns/${turn.id}/cancel`, "POST", {});
   await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
 });
+
+test("Desktop new conversations auto-name and managed worktrees start from the selected local branch", async () => {
+  // This test owns its backend so it also exercises the normal unnamed creation entry point.
+  const connection = new DesktopConnection({ connect: bridge }, 100);
+  const i = await bridge();
+  const local = new Client(i);
+  const root = join(temp, "starting-branch-project");
+  mkdirSync(root);
+  const git = (...args) => run("git", args, { cwd: root });
+  await git("init", "-b", "main");
+  writeFileSync(join(root, "branch.txt"), "main\n");
+  await git("add", ".");
+  await git("-c", "user.name=HHU", "-c", "user.email=test@localhost", "commit", "-m", "main");
+  await git("switch", "-c", "feature/start");
+  writeFileSync(join(root, "branch.txt"), "feature\n");
+  await git("add", ".");
+  await git("-c", "user.name=HHU", "-c", "user.email=test@localhost", "commit", "-m", "feature");
+  await git("switch", "main");
+  const p = await local.request("/v1/projects", "POST", { rootPath: root });
+  try {
+    await connection.connect("Ubuntu-test");
+    await waitFor(() => connection.getState().status === "connected");
+    const branches = await connection.action({ type: "project.branches", projectId: p.id });
+    const starter = await connection.action({ type: "new-draft.load" });
+    const savedStarter = await connection.action({
+      type: "new-draft.save",
+      draft: {
+        revision: starter.revision,
+        text: "离开新建页仍保留的草稿",
+        pendingSubmission: null,
+      },
+    });
+    assert.equal(savedStarter.text, "离开新建页仍保留的草稿");
+    assert.equal((await local.request("/v1/new-conversation-draft")).text, savedStarter.text);
+    await assert.rejects(
+      connection.action({
+        type: "new-draft.save",
+        draft: { revision: starter.revision, text: "过期窗口", pendingSubmission: null },
+      }),
+      (e) => e.status === 409,
+    );
+    assert.equal((await connection.action({ type: "new-draft.load" })).text, savedStarter.text);
+    assert.deepEqual(branches, {
+      isGit: true,
+      hasCommits: true,
+      currentBranch: "main",
+      branches: ["feature/start", "main"],
+    });
+    const created = await connection.action({ type: "conversation.create", projectId: p.id });
+    assert.equal(created.title, "New conversation");
+    assert.equal((await local.request(`/v1/conversations/${created.id}/sessions`)).length, 0);
+    await local.request("/v1/harness-profiles", "POST", {
+      id: "starter-mock",
+      name: "Starter mock",
+      command: process.execPath,
+      args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+      envOverrides: {},
+    });
+    const draft = await connection.action({ type: "draft.load", conversationId: created.id });
+    const turn = await connection.action({
+      type: "turn.submit",
+      conversationId: created.id,
+      revision: draft.revision,
+      input: { requestId: randomUUID(), harnessId: "starter-mock", message: "自动命名 首条任务" },
+    });
+    await waitFor(async () => (await local.request(`/v1/turns/${turn.id}`)).endedAt);
+    assert.equal(
+      (await local.request(`/v1/conversations/${created.id}`)).title,
+      "自动命名 首条任务",
+    );
+    const work = await connection.action({
+      type: "conversation.create",
+      projectId: p.id,
+      workspaceMode: "worktree",
+      baseBranch: "feature/start",
+    });
+    assert.equal(readFileSync(join(work.workspacePath, "branch.txt"), "utf8"), "feature\n");
+    assert.equal(readFileSync(join(root, "branch.txt"), "utf8"), "main\n");
+    assert.equal((await git("branch", "--show-current")).stdout.trim(), "main");
+    const count = (await connection.action({ type: "worktrees.list" })).length;
+    for (const baseBranch of ["missing", "main~1", "main@{0}", "--help"]) {
+      await assert.rejects(
+        connection.action({
+          type: "conversation.create",
+          projectId: p.id,
+          workspaceMode: "worktree",
+          baseBranch,
+        }),
+      );
+    }
+    assert.equal((await connection.action({ type: "worktrees.list" })).length, count);
+    await assert.rejects(
+      connection.action({
+        type: "conversation.create",
+        projectId: p.id,
+        workspaceMode: "shared",
+        baseBranch: "feature/start",
+      }),
+      (e) => e.status === 400,
+    );
+    const standalone = await connection.action({
+      type: "conversation.standalone",
+      workspacePath: root,
+    });
+    assert.equal(standalone.title, "New conversation");
+    await git("checkout", "--detach", "HEAD");
+    assert.equal(
+      (await connection.action({ type: "project.branches", projectId: p.id })).currentBranch,
+      null,
+    );
+    const unborn = join(temp, "unborn-project");
+    mkdirSync(unborn);
+    await run("git", ["init", "-b", "new"], { cwd: unborn });
+    const empty = await local.request("/v1/projects", "POST", { rootPath: unborn });
+    assert.deepEqual(await connection.action({ type: "project.branches", projectId: empty.id }), {
+      isGit: true,
+      hasCommits: false,
+      currentBranch: "new",
+      branches: [],
+    });
+    const nonGit = join(temp, "non-git-project");
+    mkdirSync(nonGit);
+    const plain = await local.request("/v1/projects", "POST", { rootPath: nonGit });
+    assert.equal(
+      (await connection.action({ type: "project.branches", projectId: plain.id })).isGit,
+      false,
+    );
+  } finally {
+    connection.dispose();
+  }
+});

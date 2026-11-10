@@ -211,13 +211,22 @@ export async function workspaceSmoke(
     "Windows cross-Harness roundtrip uses fresh target sessions, visible COMMITTED reports/source boundaries; selection alone starts no Handoff",
   );
   await capture("desktop-phase3-handoff.png");
-  // Create a managed worktree through the actual modal, then explicitly delete only its Conversation.
+  // Create a managed worktree from the new-conversation page.
   await click(win, '.project-heading button[aria-label="新建会话"]');
-  await waitFor(() => js("!!document.querySelector('dialog select')"));
-  await js(
-    "const select = document.querySelector('dialog select'); select.value = 'worktree'; select.dispatchEvent(new Event('change', { bubbles: true }));",
+  await waitFor(() =>
+    js(
+      "!!document.querySelector('.new-conversation input[aria-label=创建工作树]:not([disabled])')",
+    ),
   );
-  await click(win, 'dialog button[type="submit"]');
+  assert.equal(await js("!!document.querySelector('input[aria-label=会话名称]')"), false);
+  await capture("desktop-new-conversation.png");
+  await click(win, 'input[aria-label="创建工作树"]');
+  await waitFor(() => js("!document.querySelector('select[aria-label=分支]').disabled"));
+  await js(
+    "const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true}));",
+  );
+  await fill(win, "独立工作树首条任务");
+  await js("const b = document.querySelector('[aria-label=发送消息]'); b.click(); b.click();");
   await waitFor(
     () =>
       connection.getState().conversationId !== c.id &&

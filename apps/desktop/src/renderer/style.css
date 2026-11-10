@@ -198,6 +198,70 @@ select {
 .conversation-list {
   padding-left: 10px;
 }
+.standalone-conversations {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.standalone-label {
+  margin-right: 6px;
+  color: var(--accent);
+}
+.new-chat-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 10px;
+}
+.conversation-row {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  margin: 2px 0;
+}
+.conversation-row:hover {
+  background: var(--hover);
+}
+.conversation-row.selected {
+  background: var(--selected);
+}
+:where(.conversation-row) .conversation-item {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+.conversation-actions {
+  display: flex;
+  flex-shrink: 0;
+  padding-right: 4px;
+  visibility: hidden;
+}
+.conversation-row:hover .conversation-actions,
+.conversation-row.selected .conversation-actions,
+.conversation-row:focus-within .conversation-actions {
+  visibility: visible;
+}
+.conversation-actions button {
+  display: flex;
+  padding: 5px;
+  color: var(--muted);
+}
+.conversation-actions svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (hover: none) {
+  .conversation-actions {
+    visibility: visible;
+  }
+}
 .conversation-item {
   display: flex;
   flex-direction: column;
@@ -945,4 +1009,127 @@ dialog :where(pre) {
 }
 .environment li {
   margin: 8px 0;
+}
+
+.new-conversation {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.new-conversation-welcome {
+  flex: 1;
+  height: auto;
+  min-height: 180px;
+  padding: 32px 24px;
+}
+.new-conversation-welcome h2 {
+  font-size: 24px;
+  line-height: 1.6;
+  font-weight: 400;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+}
+.new-conversation-welcome strong {
+  font-weight: 500;
+}
+.new-conversation .composer-area {
+  max-height: none;
+  overflow: visible;
+  padding-bottom: 14px;
+}
+.new-conversation-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  max-width: 800px;
+  margin: 0 auto 10px;
+  padding: 0 6px;
+}
+.new-conversation-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  color: #abb0b8;
+  font-size: 12px;
+}
+.new-conversation-options select {
+  color: var(--text);
+  background: transparent;
+  border-color: transparent;
+  max-width: 200px;
+  padding: 6px 2px;
+  text-overflow: ellipsis;
+}
+.new-conversation-options option {
+  background: var(--raised);
+}
+.worktree-toggle {
+  cursor: pointer;
+}
+.worktree-toggle input {
+  appearance: none;
+  position: relative;
+  width: 28px;
+  height: 16px;
+  padding: 0;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--selected);
+}
+.worktree-toggle input::before {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  left: 2px;
+  top: 2px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.worktree-toggle input:checked {
+  background: var(--accent);
+}
+.worktree-toggle input:checked::before {
+  transform: translateX(12px);
+  background: var(--bg);
+}
+.worktree-toggle input:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.new-workspace {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 800px;
+  margin: 0 auto 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.new-workspace input {
+  flex: 1;
+  color: var(--text);
+}
+.new-conversation textarea::placeholder {
+  color: #abb0b8;
+}
+.new-conversation .send {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--bg);
+  background: var(--text);
+  font-size: 20px;
+}
+.new-conversation .send:disabled {
+  color: var(--text);
+  background: var(--selected);
 }

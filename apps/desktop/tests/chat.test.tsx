@@ -7,6 +7,7 @@ import { DesktopDraft } from "../src/renderer/drafts";
 import { DesktopTranscript } from "../src/renderer/history";
 import { Markdown } from "../src/renderer/Markdown";
 import { MessageView } from "../src/renderer/Message";
+import { NewConversation } from "../src/renderer/NewConversation";
 
 const id = "7ad657ec-2001-405b-801a-3d86b092f1b0";
 const state: DesktopState = {
@@ -206,6 +207,50 @@ test("independent drafts persist across editors and rapid conversation switches"
   await reopened.load();
   expect(reopened.text).toBe("中文\n草稿 A");
   expect(b.text).toBe("draft B");
+});
+test("new conversation picker prefers the previous Harness and falls back when its profile is unavailable", () => {
+  const conversation: Conversation = {
+    id,
+    title: "Previous",
+    projectId: null,
+    archivedAt: null,
+    workspaceMode: "shared",
+    workspacePath: "/tmp/test",
+    runtimeStatus: "IDLE",
+    selectedHarnessId: "grok",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+  const current: DesktopState = {
+    ...state,
+    profiles: [
+      { id: "codex", name: "Codex" },
+      { id: "grok", name: "Grok" },
+    ],
+    snapshot: {
+      projects: [],
+      conversations: [conversation],
+      cursor: 0,
+      activity: { running: 0, waitingApproval: 0, pendingApprovals: 0, problems: 0, items: [] },
+    },
+  };
+  const backend = editorBackend();
+  const draft = new DesktopDraft(backend.api, "desktop-new");
+  const render = () =>
+    renderToStaticMarkup(
+      <NewConversation
+        api={backend.api}
+        draft={draft}
+        state={current}
+        value={{ projectId: "", workspace: "/tmp/test" }}
+        change={() => {}}
+        created={async () => {}}
+        busyChanged={() => {}}
+      />,
+    );
+  expect(render()).toContain('value="grok" selected=""');
+  current.profiles = [{ id: "codex", name: "Codex" }];
+  expect(render()).toContain('value="codex" selected=""');
 });
 test("two clients obey CAS; failed save and send preserve local text without silent overwrite", async () => {
   const backend = editorBackend();

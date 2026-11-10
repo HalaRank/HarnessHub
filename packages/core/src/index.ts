@@ -1,7 +1,8 @@
 import { accessSync, constants, realpathSync, statSync } from "node:fs";
 import { basename, isAbsolute } from "node:path";
-import { AppError } from "@harnesshub/shared";
+import { AppError, type ProjectBranches } from "@harnesshub/shared";
 import type { Store } from "@harnesshub/storage";
+import { safeGit } from "./git";
 import { Worktrees } from "./worktrees";
 
 export function projectRoot(input: string) {
@@ -36,14 +37,43 @@ export class Projects {
   createStandaloneConversation(workspacePath: string, title?: string) {
     return this.store.addConversation(null, title, undefined, projectRoot(workspacePath));
   }
+  async branches(projectId: string): Promise<ProjectBranches> {
+    const cwd = projectRoot(this.store.getProject(projectId).rootPath);
+    try {
+      await safeGit(cwd, ["rev-parse", "--show-toplevel"]);
+    } catch (error) {
+      if (/not a git repository/.test((error as { stderr?: string }).stderr ?? ""))
+        return { isGit: false, hasCommits: false, currentBranch: null, branches: [] };
+      throw new AppError(409, "Unable to read project Git branches");
+    }
+    const [current, refs] = await Promise.all([
+      safeGit(cwd, ["symbolic-ref", "--quiet", "--short", "HEAD"]).catch(
+        (error: { code?: number }) => {
+          if (error.code === 1) return { stdout: "" };
+          throw error;
+        },
+      ),
+      safeGit(cwd, ["for-each-ref", "--format=%(refname:strip=2)", "refs/heads/"]),
+    ]);
+    const branches = refs.stdout.split("\n").filter(Boolean);
+    return {
+      isGit: true,
+      hasCommits: branches.length > 0 || !current.stdout.trim(),
+      currentBranch: current.stdout.trim() || null,
+      branches,
+    };
+  }
   async createConversation(
     projectId: string,
     title?: string,
     workspaceMode: "shared" | "worktree" = "shared",
+    baseBranch?: string,
   ) {
+    if (baseBranch && workspaceMode !== "worktree")
+      throw new AppError(400, "A starting branch requires a Git Worktree");
     projectRoot(this.store.getProject(projectId).rootPath);
     const workspace =
-      workspaceMode === "worktree" ? await this.worktrees.create(projectId) : undefined;
+      workspaceMode === "worktree" ? await this.worktrees.create(projectId, baseBranch) : undefined;
     try {
       return this.store.addConversation(projectId, title, workspace);
     } catch (error) {

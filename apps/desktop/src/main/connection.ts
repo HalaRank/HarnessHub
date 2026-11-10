@@ -361,7 +361,7 @@ export class DesktopConnection {
     const client = this.client;
     if (!client || this.state.status !== "connected" || this.disposed)
       throw new Error("Daemon 未连接；未重发任务。");
-    if (request.type === "changes.list" || request.type === "changes.diff") {
+    if (["changes.list", "changes.diff", "project.branches"].includes(request.type)) {
       const epoch = this.epoch;
       const key = `${epoch}:${JSON.stringify(request)}`;
       const existing = this.gitReads.get(key);
@@ -403,6 +403,8 @@ export class DesktopConnection {
         "history",
         "draft.load",
         "draft.save",
+        "new-draft.load",
+        "new-draft.save",
         "request.lookup",
         "changes.list",
         "changes.diff",
