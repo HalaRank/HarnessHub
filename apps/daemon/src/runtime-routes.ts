@@ -123,7 +123,19 @@ export function runtimeRoutes(app: Hono, runtime: Runtime) {
   });
   app.get("/v1/conversations/:id/sessions", (c) => {
     runtime.store.getConversation(c.req.param("id"));
-    return c.json(runtime.data.sessions(c.req.param("id")));
+    return c.json(
+      runtime.data.sessions(c.req.param("id")).map((session) => ({
+        ...session,
+        exitConfirmed: runtime.data.workerExitConfirmed(session.id),
+      })),
+    );
+  });
+  app.post("/v1/conversations/:id/session/recover", async (c) => {
+    const input = z
+      .object({ nativeSessionId: z.string().uuid(), confirmed: z.literal(true) })
+      .strict()
+      .parse(await c.req.json());
+    return c.json(await runtime.recoverSession(c.req.param("id"), input.nativeSessionId));
   });
   app.post("/v1/conversations/:id/session/stop", async (c) => {
     const input = closeInput.parse(await c.req.json());

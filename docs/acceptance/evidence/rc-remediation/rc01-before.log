@@ -1,0 +1,87 @@
+✖ RC-01 function: fsmonitor never executes; changes and files survive (119.600062ms)
+✖ RC-01 HTTP: fsmonitor never executes; changes and files survive (89.791081ms)
+✖ RC-01 Desktop: fsmonitor never executes; changes and files survive (89.085029ms)
+RC evidence: /tmp/hhu-rc-remediation-8qGbTH
+✖ RC-01 Worktree: fsmonitor never executes; changes and files survive (145.088128ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4712.514305
+
+✖ failing tests:
+
+test at tests/integration/rc-remediation.test.mjs:37:66
+✖ RC-01 function: fsmonitor never executes; changes and files survive (119.600062ms)
+  AssertionError [ERR_ASSERTION]: Git invoked the fsmonitor sentinel program
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:59:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/integration/rc-remediation.test.mjs:37:66
+✖ RC-01 HTTP: fsmonitor never executes; changes and files survive (89.791081ms)
+  AssertionError [ERR_ASSERTION]: Git invoked the fsmonitor sentinel program
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:59:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/integration/rc-remediation.test.mjs:37:66
+✖ RC-01 Desktop: fsmonitor never executes; changes and files survive (89.085029ms)
+  AssertionError [ERR_ASSERTION]: Git invoked the fsmonitor sentinel program
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:59:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/integration/rc-remediation.test.mjs:37:66
+✖ RC-01 Worktree: fsmonitor never executes; changes and files survive (145.088128ms)
+  AssertionError [ERR_ASSERTION]: Git invoked the fsmonitor sentinel program
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:59:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

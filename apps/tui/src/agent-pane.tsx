@@ -312,6 +312,8 @@ export function AgentPane(props: {
               "current_mode_update",
               "runtime.interrupted",
               "runtime.worker_lost",
+              "runtime.worker_exited",
+              "runtime.context_restarted",
               "runtime.context_ended",
               "runtime.settings_pending",
               "runtime.settings_settled",
@@ -572,6 +574,11 @@ export function AgentPane(props: {
     run(async () => {
       await selectionQueue;
       if (selectionFailure) throw new Error(selectionFailure);
+      if (
+        props.conversation.runtimeStatus === "UNCERTAIN" ||
+        pendingInputs().some((i) => ["SENDING", "UNCERTAIN"].includes(i.state))
+      )
+        throw new Error("输入投递或执行结果未确认；请检查历史，不会自动重发。");
       const message = messageText();
       if (!message.trim()) return;
       const token = message.split(/\s/, 1)[0] ?? "";
@@ -613,6 +620,17 @@ export function AgentPane(props: {
       }
     });
   const sessionChoices = createMemo(() => {
+    const ended = activeSession();
+    if (ended?.status === "INTERRUPTED")
+      return ended.exitConfirmed && props.conversation.runtimeStatus !== "UNCERTAIN"
+        ? [
+            {
+              name: "使用新原生上下文继续",
+              description: "确认旧上下文已结束；保留历史，创建新会话，不发送草稿",
+              value: { kind: "recover", nativeSessionId: ended.id },
+            },
+          ]
+        : [];
     const native = object(object(activeSession()?.capabilities).session);
     const choices: { name: string; value: unknown; description: string }[] = [];
     for (const mode of Array.isArray(object(native.modes).availableModes)
@@ -741,11 +759,21 @@ export function AgentPane(props: {
           retry / cancel. Target task has NOT been sent.
         </text>
       </Show>
+      <Show when={pendingInputs().some((i) => i.state === "UNCERTAIN")}>
+        <text fg={ui.warning}>
+          输入投递结果不确定（UNCERTAIN）。原 Turn 的结果独立保留；请检查历史，不会自动重发。 /queue
+          查看 requestId。
+        </text>
+      </Show>
       <Show when={["INTERRUPTED", "UNCERTAIN"].includes(props.conversation.runtimeStatus)}>
         <text fg={ui.warning}>
           {props.conversation.runtimeStatus === "UNCERTAIN"
             ? "Execution result unknown. Inspect history and workspace; no task will be replayed."
-            : "Previous native session interrupted. The next message starts a new native session."}
+            : activeSession()?.status === "INTERRUPTED"
+              ? activeSession()?.exitConfirmed
+                ? "旧原生上下文已结束；使用 ACP settings 中的恢复入口显式创建新上下文。"
+                : "Worker 退出尚未确认；旧上下文不可用。"
+              : "Previous native context ended. The next message starts a new native session."}
         </text>
       </Show>
       <Show
@@ -1281,10 +1309,13 @@ export function AgentPane(props: {
               onSelect={(_index, option) => {
                 if (option)
                   void run(async () => {
+                    const value = object(option.value);
                     await request(
-                      `/v1/conversations/${conversationId}/settings`,
+                      `/v1/conversations/${conversationId}/${value.kind === "recover" ? "session/recover" : "settings"}`,
                       "POST",
-                      option.value,
+                      value.kind === "recover"
+                        ? { nativeSessionId: value.nativeSessionId, confirmed: true }
+                        : value,
                     );
                     await refreshSessions();
                     if (!disposed) props.setForm(null);

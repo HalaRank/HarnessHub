@@ -1,0 +1,12 @@
+✔ RC-02 confirmed idle exit persists end and Desktop explicitly creates a new native context (1292.50731ms)
+✔ RC-02 recovery refuses stream-only without killing worker (634.296015ms)
+RC evidence: /tmp/hhu-rc-remediation-vmuJAU
+✔ RC-02 recovery refuses active without killing worker (490.290447ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4834.47263

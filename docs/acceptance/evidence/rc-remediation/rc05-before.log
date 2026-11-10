@@ -1,0 +1,63 @@
+bun test v1.4.4 (38afee6c8)
+
+tests/chat.test.tsx:
+(pass) Enter sends, Shift+Enter preserves newline, IME/229 and composition confirmation never send [0.21ms]
+(pass) independent drafts persist across editors and rapid conversation switches [1.23ms]
+(pass) two clients obey CAS; failed save and send preserve local text without silent overwrite [0.71ms]
+(pass) a competing reserved draft never replaces different unsaved local text [1.08ms]
+(pass) double send dispatches one turn and clears only an accepted draft [0.26ms]
+(pass) lost ACK keeps request ID locked; explicit lookup recovers without another prompt [0.81ms]
+(pass) confirmed unpublished slash text uses one plain Prompt and lost ACK never repeats it [0.54ms]
+(pass) reopening a durable unconfirmed request never automatically sends or releases it on 404 [0.19ms]
+(pass) 10k events append incrementally, merge native tools by session, preserve old rows and reject gaps [27.78ms]
+(pass) successful tools collapse, failed/waiting expand, manual preference wins [10.31ms]
+(pass) Markdown supports GFM/code highlights while HTML, event handlers and unsafe URLs stay inert [58.89ms]
+(pass) typed write actions reject arbitrary methods, paths, native configs, unconfirmed deletion [9.43ms]
+(pass) handoff records merge by ID and keep the expandable native report without internal prompt [13.82ms]
+361 |   await started;
+362 |   a.update("new input must survive");
+363 |   release();
+364 |   await reload;
+365 |   await a.flush().catch(() => {});
+366 |   expect(a.text).toBe("new input must survive");
+                       ^
+error: expect(received).toBe(expected)
+
+Expected: "new input must survive"
+Received: "client B draft"
+
+      at <anonymous> (/home/clj/HarnessHub/HarnessHub/apps/desktop/tests/chat.test.tsx:366:18)
+(fail) RC-05 reload cannot erase edits while a save succeeds [3.16ms]
+361 |   await started;
+362 |   a.update("new input must survive");
+363 |   release();
+364 |   await reload;
+365 |   await a.flush().catch(() => {});
+366 |   expect(a.text).toBe("new input must survive");
+                       ^
+error: expect(received).toBe(expected)
+
+Expected: "new input must survive"
+Received: "client B draft"
+
+      at <anonymous> (/home/clj/HarnessHub/HarnessHub/apps/desktop/tests/chat.test.tsx:366:18)
+(fail) RC-05 reload cannot erase edits while a save fails [0.47ms]
+384 |   while (releases.length < 2) await Promise.resolve();
+385 |   releases[1]!();
+386 |   await second;
+387 |   releases[0]!();
+388 |   await first;
+389 |   expect(a.text).toBe("latest");
+                       ^
+error: expect(received).toBe(expected)
+
+Expected: "latest"
+Received: ""
+
+      at <anonymous> (/home/clj/HarnessHub/HarnessHub/apps/desktop/tests/chat.test.tsx:389:18)
+(fail) RC-05 latest reload wins; invalidated component loads cannot overwrite cached editor [0.53ms]
+
+ 13 pass
+ 3 fail
+ 73 expect() calls
+Ran 16 tests across 1 file. [561.00ms]

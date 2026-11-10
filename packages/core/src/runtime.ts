@@ -223,7 +223,7 @@ export class Runtime {
     return event;
   }
   status(id: string, status: RuntimeStatus) {
-    this.metadata(this.data.status(id, status));
+    this.metadata(this.data.status(id, this.inputs?.uncertain(id) ? "UNCERTAIN" : status));
   }
   wire(live: Live, origin: "agent" | "client", raw: WireMessage) {
     let kind = typeof raw.method === "string" ? raw.method : "acp.response";
@@ -310,6 +310,17 @@ export class Runtime {
     if (this.closing) throw new AppError(503, "Runtime is stopping");
     this.store.getConversation(conversationId);
     this.profile(harnessId);
+    if (
+      this.inputs
+        .list(conversationId)
+        .some(
+          (i) =>
+            i.state === "UNCERTAIN" ||
+            (i.state === "SENDING" &&
+              !this.data.active(conversationId).some((t) => t.requestId === i.requestId)),
+        )
+    )
+      throw new AppError(409, "Input delivery is unresolved");
     const existing = this.live.get(conversationId);
     if (existing) {
       if (existing.harnessId !== harnessId)
@@ -368,6 +379,7 @@ export class Runtime {
         wire: (direction, message) => this.wire(live, direction, message),
         permission: (request, id, signal) => this.permission(live, request, id, signal),
         lost: () => this.lost(live),
+        exited: () => this.workerExited(live),
       });
       live.worker = worker;
       this.event(live, conversationId, "runtime.worker_started", {
@@ -658,10 +670,62 @@ export class Runtime {
     this.expire(live, "EXPIRED");
     if (live.turnId && this.data.turn(live.turnId).state !== "PREPARING")
       this.finish(live, "UNCERTAIN", "worker_connection_lost");
-    else if (!live.turnId && this.live.get(live.conversationId) === live)
+    else if (
+      !live.turnId &&
+      this.live.get(live.conversationId) === live &&
+      this.store.getConversation(live.conversationId).runtimeStatus !== "UNCERTAIN"
+    )
       this.status(live.conversationId, "INTERRUPTED");
     this.event(live, live.conversationId, "runtime.worker_lost", { state: "INTERRUPTED" });
     // Retain the handle until child exit is confirmed; a lost stream is not proof of process exit.
+  }
+  private workerExited(live: Live) {
+    if (!live.worker?.exitedConfirmed) return;
+    this.data.updateSession(live.id, { status: "INTERRUPTED", endedAt: Date.now() });
+    this.event(live, live.conversationId, "runtime.worker_exited", {
+      message:
+        "Native context ended; Worker process group exit confirmed. Continue only with a new native context.",
+      nativeSessionRecovered: false,
+    });
+    // Retain the ended Live until an explicit recovery, Handoff or close operation.
+    // In particular, exit does not resolve an UNCERTAIN Turn or input delivery.
+  }
+  async recoverSession(conversationId: string, nativeSessionId: string) {
+    this.assertAvailable(conversationId);
+    const conversation = this.store.getConversation(conversationId);
+    const live = this.live.get(conversationId);
+    const old = this.data.session(nativeSessionId);
+    if (
+      this.closing ||
+      conversation.activeNativeSessionId !== nativeSessionId ||
+      old.conversationId !== conversationId ||
+      old.status !== "INTERRUPTED" ||
+      !old.endedAt ||
+      this.data.sessionHasUncertainTurn(old.id) ||
+      conversation.runtimeStatus === "UNCERTAIN" ||
+      this.data.active(conversationId).length ||
+      this.data.pending(conversationId).length ||
+      live?.configuring ||
+      this.inputs.list(conversationId).some((i) => ["SENDING", "UNCERTAIN"].includes(i.state)) ||
+      this.inputs.isProcessing(conversationId) ||
+      this.handoffs.data.open(conversationId) ||
+      (conversation.selectedHarnessId && conversation.selectedHarnessId !== old.harnessId) ||
+      (live && (live.id !== old.id || !live.worker?.exitedConfirmed)) ||
+      !this.data.workerExitConfirmed(old.id)
+    )
+      throw new AppError(
+        409,
+        "Cannot safely start a new native context: exit is unconfirmed or an operation is unresolved",
+      );
+    this.live.delete(conversationId);
+    const next = await this.createLive(conversationId, old.harnessId, true);
+    this.event(next, conversationId, "runtime.context_restarted", {
+      previousNativeSessionId: old.id,
+      message:
+        "User explicitly continued with a new native context. Original history is preserved; old native context was not restored.",
+    });
+    this.status(conversationId, "IDLE");
+    return this.data.session(next.id);
   }
   permission(
     live: Live,

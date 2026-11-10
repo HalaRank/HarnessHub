@@ -66,6 +66,7 @@ export type Conversation = {
 };
 export type ChangeEvent = { seq: number; type: string; entityId: string; createdAt: number };
 export type Snapshot = {
+  pendingInputs?: import("./runtime").PendingInput[];
   projects: Project[];
   conversations: Conversation[];
   cursor: number;

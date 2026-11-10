@@ -46,6 +46,27 @@ export class RuntimeStore {
       .orderBy(nativeSessions.createdAt)
       .all();
   }
+  sessionHasUncertainTurn(nativeSessionId: string) {
+    return !!this.db
+      .select({ id: turns.id })
+      .from(turns)
+      .where(and(eq(turns.nativeSessionId, nativeSessionId), eq(turns.state, "UNCERTAIN")))
+      .limit(1)
+      .get();
+  }
+  workerExitConfirmed(nativeSessionId: string) {
+    return !!this.db
+      .select({ id: conversationEvents.id })
+      .from(conversationEvents)
+      .where(
+        and(
+          eq(conversationEvents.nativeSessionId, nativeSessionId),
+          eq(conversationEvents.kind, "runtime.worker_exited"),
+        ),
+      )
+      .limit(1)
+      .get();
+  }
   session(id: string) {
     const row = this.db.select().from(nativeSessions).where(eq(nativeSessions.id, id)).get();
     if (!row) throw new AppError(404, "Native session not found");
@@ -519,11 +540,41 @@ export class RuntimeStore {
           payload: { nativeSessionRecovered: false, reason: "native_session_already_closed" },
         });
       }
-      this.db
-        .update(approvals)
-        .set({ status: "EXPIRED", endedAt: Date.now() })
-        .where(eq(approvals.status, "PENDING"))
-        .run();
+      for (const approval of this.db
+        .select()
+        .from(approvals)
+        .where(sql`${approvals.status} in ('PENDING', 'EXPIRED')`)
+        .all()) {
+        if (approval.status === "PENDING") this.decide(approval.id, "EXPIRED");
+        // Also repair already-expired records from older builds. The state change
+        // and terminal journal entry commit together, with one monotonic seq.
+        const recorded = this.db
+          .select({ id: conversationEvents.id })
+          .from(conversationEvents)
+          .where(
+            and(
+              eq(conversationEvents.conversationId, approval.conversationId),
+              eq(conversationEvents.kind, "approval.expired"),
+              sql`json_extract(${conversationEvents.payload}, '$.approvalId') = ${approval.id}`,
+            ),
+          )
+          .get();
+        if (!recorded)
+          this.append({
+            conversationId: approval.conversationId,
+            nativeSessionId: approval.nativeSessionId,
+            turnId: approval.turnId,
+            kind: "approval.expired",
+            payload: {
+              approvalId: approval.id,
+              status: "EXPIRED",
+              reason:
+                approval.status === "PENDING" ? "daemon_restart" : "expired_history_reconciliation",
+            },
+            raw: null,
+            origin: "runtime",
+          });
+      }
     });
   }
 }

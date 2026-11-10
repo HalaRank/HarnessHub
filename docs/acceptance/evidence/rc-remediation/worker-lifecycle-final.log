@@ -1,0 +1,33 @@
+✔ migration upgrades a real Phase-1 database without losing projects/conversations (1326.059573ms)
+✔ SDK initialization, both cwd values, native settings, ordered raw streams and unknown events (697.212045ms)
+✔ concurrent duplicate prompts execute once; different content and overlapping Turns are rejected (742.302052ms)
+✔ native concurrent permissions block, validate optionId, and accept only one racing decision (625.48555ms)
+✔ cancel expires approvals and commits native trailing chunks before completion (720.117029ms)
+✔ independent Conversation sequences, committed WS events, pagination and real watcher reconnect (1091.524691ms)
+✔ Worker crash and lost stdio become UNCERTAIN without replay or usable stale approvals (965.508781ms)
+✔ daemon stop refuses active Turns; explicit cancel-active waits for tail and closes idle Workers (2150.998853ms)
+✔ uncooperative cancellation keeps Daemon alive; forced stop needs explicit confirmation (5780.366886ms)
+✔ Daemon crash recovers persisted history, expires approvals and never resumes/replays a Turn (1659.381943ms)
+✔ cancel during initialization never submits a prompt; unavailable executables leave traceable errors (1005.944271ms)
+✔ application logs contain no prompts, native tool output or profile environment values (0.384729ms)
+✔ negotiated session/close blocks racing prompts and closes before Worker termination (583.746907ms)
+Phase-2 test evidence: /tmp/hhu-phase2-jodoR6
+✔ incremental Phase 2 migration preserves history and privately stored legacy profiles (1145.777819ms)
+✔ automatic titles use the first message once, persist and respect explicit names (3844.616175ms)
+✔ parallel projects have separate native sessions, cwd, events, cancellation and background approvals (876.053259ms)
+✔ shared workspaces allow concurrent Turns and emit file-conflict warning without a global lock (1105.766979ms)
+✔ draft CAS, durable request reservation, duplicate clients and preferences survive restart (3579.612175ms)
+✔ two clients reconnect across real WS disconnects, page long history in order and never send a Prompt (3974.303048ms)
+✔ Daemon SIGKILL expires background approvals, marks idle sessions INTERRUPTED and active execution UNCERTAIN (2551.226535ms)
+✔ invalid project roots are never recreated; rebinding updates only stopped Conversation workspaces (624.023796ms)
+✔ Profiles inherit native credentials, reject new credential overrides and disclose only legacy key names (466.914701ms)
+✔ large Unicode drafts obey schema bounds; CAS races and metadata deletion preserve user files (103.013607ms)
+Phase-3 test evidence: /tmp/hhu-phase3-Ff0ZZO
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 38000.222993

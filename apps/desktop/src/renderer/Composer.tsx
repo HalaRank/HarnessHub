@@ -37,6 +37,7 @@ export function Composer({
 }) {
   const [, render] = useState(0);
   const [plain, setPlain] = useState<{ text: string; harness: string } | null>(null);
+  const [recover, setRecover] = useState(false);
   const actionLock = useRef(false);
   const [error, setError] = useState("");
   const [acting, setActing] = useState(false);
@@ -49,8 +50,15 @@ export function Composer({
   const slashMenu = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const unsubscribe = draft.subscribe(() => render((n) => n + 1));
-    void draft.load().catch((e) => setError(String(e)));
-    return unsubscribe;
+    let mounted = true;
+    void draft.load().catch((e) => {
+      if (mounted) setError(String(e));
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+      draft.invalidateLoads();
+    };
   }, [draft]);
   useEffect(() => {
     if (textarea.current && textarea.current.value === draft.text) {
@@ -78,7 +86,10 @@ export function Composer({
         ?.scrollIntoView({ block: "nearest" });
   }, [menu, selected]);
   const busy = acting || draft.busy || activeStates.has(conversation.runtimeStatus);
-  const uncertain = conversation.runtimeStatus === "UNCERTAIN";
+  const inputDelivery =
+    state.snapshot?.pendingInputs?.filter((i) => i.conversationId === conversation.id) ?? [];
+  const uncertainInput = inputDelivery.some((i) => i.state === "UNCERTAIN");
+  const uncertain = conversation.runtimeStatus === "UNCERTAIN" || uncertainInput;
   const connected = state.status === "connected";
   const handoff = context?.handoffs.find((h) => !["COMMITTED", "CANCELLED"].includes(h.status));
   const disabled =
@@ -88,7 +99,9 @@ export function Composer({
     uncertain ||
     !!draft.value.pendingSubmission ||
     !!context?.approvals.length ||
-    !!handoff;
+    !!handoff ||
+    inputDelivery.length > 0 ||
+    (!switching && source?.status === "INTERRUPTED");
   const act = async (request: DesktopRequest) => {
     if (actionLock.current) return;
     actionLock.current = true;
@@ -145,6 +158,47 @@ export function Composer({
             Agent，不作为已发布 ACP 命令调用。
           </p>
           <pre>{plain.text}</pre>
+        </Confirm>
+      )}
+      {!switching && source?.status === "INTERRUPTED" && (
+        <div className="banner" role="status">
+          旧原生上下文已断开；原始聊天和工具历史仍保留。
+          {source.endedAt !== null && source.exitConfirmed ? (
+            <button
+              type="button"
+              disabled={busy || uncertain || !connected || !!handoff || !!context?.approvals.length}
+              onClick={() => setRecover(true)}
+            >
+              使用新原生上下文继续
+            </button>
+          ) : (
+            <p>Worker 退出尚未确认，暂不能继续。</p>
+          )}
+        </div>
+      )}
+      {recover && source && (
+        <Confirm
+          title="使用新原生上下文继续"
+          disabled={
+            busy ||
+            uncertain ||
+            !connected ||
+            switching ||
+            !source.exitConfirmed ||
+            source.endedAt === null
+          }
+          cancel={() => setRecover(false)}
+          confirm={() => {
+            setRecover(false);
+            void act({
+              type: "session.recover",
+              conversationId: conversation.id,
+              nativeSessionId: source.id,
+              confirmed: true,
+            });
+          }}
+        >
+          <p>将创建新的 NativeSession。旧原生上下文不会恢复，历史记录保留；不会自动发送草稿。</p>
         </Confirm>
       )}
       {switching && (
@@ -217,7 +271,16 @@ export function Composer({
           </section>
         );
       })}
-      {uncertain && (
+      {inputDelivery.length > 0 && (
+        <div className="banner error" role="status">
+          {uncertainInput ? "输入投递结果不确定（UNCERTAIN）" : "输入投递等待确认（SENDING）"}。原
+          Turn 的结果独立保留；请检查历史，不会自动重发。
+          {inputDelivery.map((i) => (
+            <div key={i.requestId}>requestId · {i.requestId}</div>
+          ))}
+        </div>
+      )}
+      {uncertain && !uncertainInput && (
         <div className="banner error">
           UNCERTAIN · 执行结果不确定。请检查历史和工作区；此会话不会自动重发。
         </div>

@@ -73,25 +73,28 @@ test("the 181st Guardian Review keeps context and the wheel reaches all history 
     expect(screen.captureCharFrame()).not.toMatch(/History \d+\/\d+/);
     const scroll = screen.renderer.root.findDescendantById("native-history") as ScrollBoxRenderable;
     const seen = new Set<number>();
-    const collect = () => {
-      for (const match of screen.captureCharFrame().matchAll(/MESSAGE_(\d+)\s/g))
-        seen.add(Number(match[1]));
+    const collect = (frame: string) => {
+      for (const match of frame.matchAll(/MESSAGE_(\d+)\s/g)) seen.add(Number(match[1]));
     };
     // Only wheel events: no page keys or explicit scrollTo calls are needed.
-    collect();
-    for (let n = 0; n < 300 && !screen.captureCharFrame().includes("MESSAGE_1 "); n++) {
+    // The native renderer may begin another frame during a timer yield. Acquire
+    // snapshots through its frame waiter instead of reading a busy output lease.
+    let current = await screen.waitForFrame(() => true);
+    collect(current);
+    for (let n = 0; n < 300 && !current.includes("MESSAGE_1 "); n++) {
       await screen.mockMouse.scroll(scroll.x + 3, scroll.y + 2, "up");
       await screen.renderOnce();
-      collect();
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      current = await screen.waitForFrame(() => true);
+      collect(current);
     }
     await frame("MESSAGE_1 ");
     expect(scroll.getChildrenCount()).toBeLessThanOrEqual(63);
-    for (let n = 0; n < 300 && !screen.captureCharFrame().includes("Guardian Review"); n++) {
+    current = await screen.waitForFrame(() => true);
+    for (let n = 0; n < 300 && !current.includes("Guardian Review"); n++) {
       await screen.mockMouse.scroll(scroll.x + 3, scroll.y + 2, "down");
       await screen.renderOnce();
-      collect();
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      current = await screen.waitForFrame(() => true);
+      collect(current);
     }
     await frame("Guardian Review");
     expect(screen.captureCharFrame()).toContain("MESSAGE_180");

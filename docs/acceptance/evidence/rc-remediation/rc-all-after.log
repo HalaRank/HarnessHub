@@ -1,0 +1,25 @@
+✔ RC-01 function: fsmonitor never executes; changes and files survive (180.084668ms)
+✔ RC-01 HTTP: fsmonitor never executes; changes and files survive (188.512502ms)
+✔ RC-01 Desktop: fsmonitor never executes; changes and files survive (139.206096ms)
+✔ RC-01 Worktree: fsmonitor never executes; changes and files survive (298.453188ms)
+✔ RC-02 confirmed idle exit persists end and Desktop explicitly creates a new native context (1266.143262ms)
+✔ RC-02 recovery refuses stream-only without killing worker (592.22058ms)
+✔ RC-02 recovery refuses active without killing worker (447.941582ms)
+✔ RC-03 steer-turn-first: input outcome remains independent of completed Turn (20538.878124ms)
+✔ RC-03 steer-timeout-first: input outcome remains independent of completed Turn (20609.841253ms)
+✔ RC-03 steer-ack: input outcome remains independent of completed Turn (530.319231ms)
+✔ RC-03 steer-failed: input outcome remains independent of completed Turn (516.753731ms)
+✔ RC-03 Desktop and TUI reconnect to the same durable uncertain delivery after restart (1719.635645ms)
+✔ RC-04 crash recovery expires approvals atomically with replayable terminal events (3659.958206ms)
+✔ RC-01 include/filter/diff/textconv/environment commands cannot run; rename/untracked/ignore remain accurate (413.018997ms)
+✔ RC-01 status blocks submodule drivers and worktree checkout blocks branch-conditional filters (532.693236ms)
+RC evidence: /tmp/hhu-rc-remediation-yd4Wv7
+✔ RC-02 child close is not process-group exit; confirmation waits for its descendant (469.190558ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 54695.096783

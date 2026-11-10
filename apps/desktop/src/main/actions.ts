@@ -74,6 +74,11 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
       return client.request(`${base}/harness`, "PUT", { harnessId: request.harnessId });
     case "session.prepare":
       return client.request(`${base}/sessions`, "POST", { harnessId: request.harnessId });
+    case "session.recover":
+      return client.request(`${base}/session/recover`, "POST", {
+        nativeSessionId: request.nativeSessionId,
+        confirmed: request.confirmed,
+      });
     case "session.settings":
       return client.request(`${base}/settings`, "POST", request.setting);
     case "handoff.action":

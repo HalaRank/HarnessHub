@@ -339,3 +339,91 @@ test("TUI creates automatically named independent Worktree from palette; safe cl
     screen.renderer.destroy();
   }
 }, 20000);
+
+test("RC-03 TUI shows uncertain input delivery after completed Turn and preserves unsent editor text", async () => {
+  const { c } = await setup("RC uncertain input");
+  const gate = join(temp, "rc-turn-complete");
+  await api("/v1/harness-profiles", "POST", {
+    id: "rc-input",
+    name: "RC input",
+    command: "node",
+    args: [resolve("tests/fixtures/mock-acp/rc.mjs")],
+    envOverrides: { HHU_RC_MODE: "steer-unknown", HHU_RC_GATE: gate },
+  });
+  const turn = await api<Turn>(`/v1/conversations/${c.id}/turns`, "POST", {
+    harnessId: "rc-input",
+    requestId: crypto.randomUUID(),
+    message: "original",
+  });
+  await until(async () => (await api<Turn>(`/v1/turns/${turn.id}`)).state === "RUNNING");
+  await api(`/v1/conversations/${c.id}/inputs`, "POST", {
+    harnessId: "rc-input",
+    requestId: crypto.randomUUID(),
+    message: "uncertain input",
+    delivery: "steer",
+  });
+  await until(
+    async () =>
+      (await api<Conversation>(`/v1/conversations/${c.id}`)).runtimeStatus === "UNCERTAIN",
+  );
+  writeFileSync(gate, "complete original");
+  await until(async () => (await api<Turn>(`/v1/turns/${turn.id}`)).state === "COMPLETED");
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 160, height: 45 });
+  try {
+    await frame(screen, "输入投递结果不确定");
+    await focusMessage(screen);
+    await screen.mockInput.typeText("keep my unsent text");
+    screen.mockInput.pressEnter();
+    await frame(screen, "keep my unsent text");
+    expect((await es(c)).events.filter((e) => e.kind === "user.message")).toHaveLength(1);
+    expect((await api<Turn>(`/v1/turns/${turn.id}`)).state).toBe("COMPLETED");
+    expect(screen.captureCharFrame()).toContain("UNCERTAIN");
+  } finally {
+    screen.renderer.destroy();
+  }
+  // End this isolated process after assertions so normal suite shutdown can proceed.
+  await api(`/v1/conversations/${c.id}`, "DELETE", { confirmed: true });
+}, 15000);
+
+test("RC-02 TUI explicitly continues with new context without sending its draft or Handoff", async () => {
+  const { c } = await setup("RC context recovery");
+  await api("/v1/harness-profiles", "POST", {
+    id: "rc-exit",
+    name: "RC exit",
+    command: "node",
+    args: [resolve("tests/fixtures/mock-acp/rc.mjs")],
+    envOverrides: { HHU_RC_MODE: "idle-exit" },
+  });
+  const first = await api<Turn>(`/v1/conversations/${c.id}/turns`, "POST", {
+    harnessId: "rc-exit",
+    requestId: crypto.randomUUID(),
+    message: "first",
+  });
+  await settle(first);
+  type Session = { id: string; exitConfirmed?: boolean; status: string };
+  await until(
+    async () =>
+      (await api<Session[]>(`/v1/conversations/${c.id}/sessions`))[0]?.exitConfirmed === true,
+  );
+  const old = (await api<Session[]>(`/v1/conversations/${c.id}/sessions`))[0];
+  const screen = await testRender(() => <App onExit={() => {}} />, { width: 160, height: 45 });
+  try {
+    await frame(screen, "旧原生上下文已结束");
+    await invoke(screen, "HarnessHub ACP settings");
+    await frame(screen, "使用新原生上下文继续");
+    screen.mockInput.pressEnter();
+    await until(
+      async () => (await api<Session[]>(`/v1/conversations/${c.id}/sessions`)).length === 2,
+    );
+    const sessions = await api<Session[]>(`/v1/conversations/${c.id}/sessions`);
+    expect(sessions[1]?.id).not.toBe(old?.id);
+    expect(
+      (await es(c)).events.filter(
+        (e) => e.raw && (e.raw as { method?: string }).method === "session/prompt",
+      ),
+    ).toHaveLength(1);
+    expect(await api<Handoff[]>(`/v1/conversations/${c.id}/handoffs`)).toEqual([]);
+  } finally {
+    screen.renderer.destroy();
+  }
+}, 15000);

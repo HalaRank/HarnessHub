@@ -8,6 +8,7 @@ import Database from "better-sqlite3";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { RuntimeStore } from "./runtime";
 import * as schema from "./schema";
 
 export async function openStore(file: string, migrations: string) {
@@ -438,6 +439,9 @@ export class Store {
       projects: this.listProjects(),
       conversations: this.listConversations(),
       activity: this.activity(),
+      pendingInputs: new RuntimeStore(this)
+        .inputs()
+        .filter((i) => ["SENDING", "UNCERTAIN"].includes(i.state)),
       cursor:
         this.db.select({ seq: sql<number>`coalesce(max(seq), 0)` }).from(schema.changes).get()
           ?.seq ?? 0,

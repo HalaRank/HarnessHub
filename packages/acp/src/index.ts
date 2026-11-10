@@ -63,6 +63,7 @@ export type WorkerHooks = {
     signal: AbortSignal,
   ) => Promise<RequestPermissionResponse>;
   lost: () => void;
+  exited?: () => void;
 };
 export class Worker {
   readonly child: ChildProcessWithoutNullStreams;
@@ -99,6 +100,14 @@ export class Worker {
     this.child.on("close", () => {
       this.childClosed = true;
       failed();
+      // Transport loss, child close and owned process-group exit are separate facts.
+      // Observe remaining descendants without sending signals or assuming they exited.
+      const confirm = () => {
+        if (this.stopping) return;
+        if (this.exitedConfirmed) hooks.exited?.();
+        else setTimeout(confirm, 100).unref();
+      };
+      confirm();
     });
     this.child.stdin.on("error", failed);
     this.exited = new Promise((resolve) => {

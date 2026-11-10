@@ -10,6 +10,7 @@ export type Message = {
   toolSources?: { content?: number; locations?: number };
   tool?: Record<string, unknown>;
   waiting?: boolean;
+  approvalExpired?: boolean;
   handoff?: { report: string; incomplete: boolean; source: string; target: string };
 };
 
@@ -47,6 +48,7 @@ export class DesktopTranscript {
           this.rows[index] = {
             ...this.rows[index],
             waiting: [...this.approvals.values()].includes(key ?? ""),
+            approvalExpired: event.kind === "approval.expired" && p.status === "EXPIRED",
           };
       }
     }
@@ -151,6 +153,7 @@ export class DesktopTranscript {
         ...(Array.isArray(patch.locations) ? { locations: event.seq } : {}),
       },
       waiting: waiting ?? previous?.waiting ?? false,
+      approvalExpired: waiting ? false : (previous?.approvalExpired ?? false),
     };
     this.tools.set(key, index);
   }

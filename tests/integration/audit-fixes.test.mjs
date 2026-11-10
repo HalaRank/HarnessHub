@@ -17,6 +17,7 @@ import Database from "better-sqlite3";
 import { Worker } from "../../dist/acp/index.js";
 import { Client } from "../../dist/client/client.js";
 import { smokeEvidence } from "../../scripts/smoke-evidence.mjs";
+import { gitFixture } from "../fixtures/git-fail/fixture.mjs";
 
 const temp = mkdtempSync("/tmp/hhu-audit-fixes-");
 const env = {
@@ -110,9 +111,7 @@ test("a file written after preflight survives retained cleanup and interrupted m
     XDG_CONFIG_HOME: join(temp, "race/config"),
     XDG_DATA_HOME: join(temp, "race/data"),
     XDG_STATE_HOME: join(temp, "race/state"),
-    PATH: `${resolve("tests/fixtures/git-fail")}:${env.PATH}`,
-    HHU_REAL_GIT: "/usr/bin/git",
-    HHU_TEST_GIT_LATE_IGNORED: "1",
+    PATH: `${gitFixture(join(temp, "git-wrapper"), { HHU_REAL_GIT: "/usr/bin/git", HHU_TEST_GIT_LATE_IGNORED: "1" })}:${env.PATH}`,
   };
   cli(isolated, "daemon", "start");
   let local = connect(isolated);

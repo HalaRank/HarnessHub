@@ -1,0 +1,30 @@
+RC evidence: /tmp/hhu-rc-remediation-sZ05ke
+✖ RC-04 crash recovery expires approvals atomically with replayable terminal events (2000.709719ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4625.552061
+
+✖ failing tests:
+
+test at tests/integration/rc-remediation.test.mjs:143:1
+✖ RC-04 crash recovery expires approvals atomically with replayable terminal events (2000.709719ms)
+  AssertionError [ERR_ASSERTION]: EXPIRED approval lacks a replayable terminal event
+
+  0 !== 1
+
+      at TestContext.<anonymous> (file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:159:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

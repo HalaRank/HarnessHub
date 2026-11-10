@@ -1,0 +1,12 @@
+bun test v1.4.4 (38afee6c8)
+
+tests/e2e/chat-scroll.test.tsx:
+(pass) the 181st Guardian Review keeps context and the wheel reaches all history in both directions [1212.43ms]
+(pass) each chat wheel event scrolls five lines in either direction, clamped at the edges [830.24ms]
+(pass) Esc returns from scrolled history to the newest message and resumes following [673.36ms]
+(pass) modal Esc preserves scroll; an explicit editor follow request returns to the latest message [618.61ms]
+
+ 4 pass
+ 0 fail
+ 23 expect() calls
+Ran 4 tests across 1 file. [4.09s]

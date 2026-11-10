@@ -1,0 +1,13 @@
+✔ RC-01 function: fsmonitor never executes; changes and files survive (114.172922ms)
+✔ RC-01 HTTP: fsmonitor never executes; changes and files survive (110.456528ms)
+✔ RC-01 Desktop: fsmonitor never executes; changes and files survive (107.930714ms)
+RC evidence: /tmp/hhu-rc-remediation-D0zkrM
+✔ RC-01 Worktree: fsmonitor never executes; changes and files survive (185.140234ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3010.619344

@@ -17,6 +17,7 @@ if (args.includes("worktree") && args.includes("add")) {
   if (process.env.HHU_TEST_GIT_FAILURE === "path") { mkdirSync(path); writeFileSync(join(path, "user.txt"), "preserve concurrent path\n"); }
   if (process.env.HHU_TEST_GIT_FAILURE === "branch") spawnSync(real, ["branch", branch], { stdio: "inherit" });
   const result = spawnSync(real, args, { stdio: "inherit" });
-  process.exit(process.env.HHU_TEST_GIT_FAILURE === "partial" && result.status === 0 ? 17 : result.status ?? 1);
+  process.exit(process.env.HHU_TEST_GIT_FAILURE === "partial" && !args.includes("--no-checkout") && result.status === 0 ? 17 : result.status ?? 1);
 }
-process.exit(spawnSync(real, args, { stdio: "inherit" }).status ?? 1);
+const result = spawnSync(real, args, { stdio: "inherit" });
+process.exit(process.env.HHU_TEST_GIT_FAILURE === "partial" && args.includes("checkout-index") && result.status === 0 ? 17 : result.status ?? 1);

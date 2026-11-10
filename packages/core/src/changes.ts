@@ -1,33 +1,17 @@
-import { execFile } from "node:child_process";
 import { isAbsolute, relative, resolve } from "node:path";
 import { AppError, type GitChanges, type GitFile, type GitPatch } from "@harnesshub/shared";
+import { safeGit } from "./git";
 import { projectRoot } from "./index";
 
-// argv only, with literal pathspecs; never invokes a shell, pager, external diff or textconv.
 async function git(cwd: string, args: string[], allowDiffExit = false) {
-  return new Promise<string>((ok, fail) => {
-    execFile(
-      "git",
-      ["--no-pager", "--literal-pathspecs", ...args],
-      {
-        cwd,
-        encoding: "utf8",
-        timeout: 10000,
-        maxBuffer: 2 * 1024 * 1024,
-        env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0", LC_ALL: "C" },
-      },
-      (error, stdout) => {
-        if (!error || (allowDiffExit && error.code === 1)) ok(stdout);
-        else
-          fail(
-            new AppError(
-              503,
-              "Git query failed (unavailable, timeout, unsafe repository or output exceeds 2 MiB); inspect workspace with git",
-            ),
-          );
-      },
+  try {
+    return (await safeGit(cwd, args, allowDiffExit)).stdout;
+  } catch {
+    throw new AppError(
+      503,
+      "Git query failed (unavailable, timeout, unsafe repository or output exceeds 2 MiB); inspect workspace with git",
     );
-  });
+  }
 }
 export function parseStatus(value: string): GitFile[] {
   const parts = value.split("\0"),
@@ -54,25 +38,21 @@ export async function changes(workspace: string): Promise<GitChanges> {
     repository = (await git(cwd, ["rev-parse", "--show-toplevel"])).trimEnd();
   } catch {
     // A separate probe preserves useful failures (including missing git / ownership errors).
-    return new Promise((ok, fail) => {
-      execFile(
-        "git",
-        ["rev-parse", "--is-inside-work-tree"],
-        { cwd, encoding: "utf8", timeout: 10000 },
-        (error, _stdout, stderr) => {
-          if (error && /not a git repository/.test(stderr))
-            ok({
-              workspace: cwd,
-              repository: null,
-              files: [],
-              observedAt: Date.now(),
-              notice: "Workspace is not a Git repository",
-            });
-          else fail(new AppError(503, "Cannot inspect Git workspace"));
-        },
-      );
-    });
+    try {
+      await safeGit(cwd, ["rev-parse", "--is-inside-work-tree"]);
+    } catch (error) {
+      if (/not a git repository/.test((error as { stderr?: string }).stderr ?? ""))
+        return {
+          workspace: cwd,
+          repository: null,
+          files: [],
+          observedAt: Date.now(),
+          notice: "Workspace is not a Git repository",
+        };
+    }
+    throw new AppError(503, "Cannot inspect Git workspace");
   }
+
   const files = parseStatus(
     await git(cwd, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--", "."]),
   );

@@ -1,0 +1,4 @@
+Isolated test root: /tmp/hhu-rc-final-checks-16thx682
+Node: v24.18.0
+Bun: 1.4.4
+Git: git version 2.53.0

@@ -22,6 +22,8 @@ export class PendingInputs {
       if (input.state === "SENDING") {
         const turn = runtime.data.byRequest(input.requestId);
         this.update(input, turn ? "SENT" : "UNCERTAIN", "daemon_restart", turn?.id);
+      } else if (input.state === "UNCERTAIN") {
+        runtime.status(input.conversationId, "UNCERTAIN");
       } else if (input.state === "QUEUED") {
         this.update(input, "HELD", "daemon_restart; use /queue to resume explicitly");
       }
@@ -51,6 +53,14 @@ export class PendingInputs {
       null,
       "runtime",
       turnId,
+    );
+    // Publish metadata too: snapshot subscribers must observe delivery independently
+    // of the original Turn's lifecycle, including a timeout after COMPLETED.
+    this.runtime.status(
+      input.conversationId,
+      state === "UNCERTAIN"
+        ? "UNCERTAIN"
+        : this.runtime.store.getConversation(input.conversationId).runtimeStatus,
     );
     return next;
   }

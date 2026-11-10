@@ -14,6 +14,7 @@ const integration = spawnSync(
     "tests/integration/phase5.test.mjs",
     "tests/integration/phase6.test.mjs",
     "tests/integration/audit-fixes.test.mjs",
+    "tests/integration/rc-remediation.test.mjs",
     "tests/integration/deletion.test.mjs",
     "tests/integration/pending-inputs.test.mjs",
     "tests/integration/standalone-conversations.test.mjs",

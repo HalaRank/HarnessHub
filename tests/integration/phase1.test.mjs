@@ -78,6 +78,7 @@ test("simultaneous CLI starts share one authenticated Node Daemon, with empty gl
   assert.deepEqual(await api("/v1/snapshot"), {
     projects: [],
     conversations: [],
+    pendingInputs: [],
     cursor: 0,
     activity: { running: 0, waitingApproval: 0, pendingApprovals: 0, problems: 0, items: [] },
   });

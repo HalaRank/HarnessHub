@@ -33,7 +33,13 @@ export const MessageView = memo(function MessageView({
             <span>
               {open ? "⌄" : "›"} {row.role}
             </span>
-            <small>{row.waiting ? "等待审批" : row.text}</small>
+            <small>
+              {row.waiting
+                ? "等待审批"
+                : row.approvalExpired
+                  ? `审批已过期 · ${row.text}`
+                  : row.text}
+            </small>
           </button>
           {open && (
             <div className="tool-body">

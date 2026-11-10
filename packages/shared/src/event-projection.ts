@@ -79,6 +79,14 @@ export function projectEvent(event: ConversationEvent): EventProjection {
     return diagnostic;
   if (contentEvents.has(event.kind)) return { category: "CHAT_CONTENT" };
   if (activityEvents.has(event.kind)) return { category: "AGENT_ACTIVITY" };
+  if (event.kind === "approval.expired" && p.status === "EXPIRED")
+    return {
+      category: "USER_NOTICE",
+      label: "Approval expired",
+      text: "审批已过期（EXPIRED）；未发送用户允许或拒绝决定，不能再次操作旧审批。",
+    };
+  if (["runtime.worker_exited", "runtime.context_restarted"].includes(event.kind))
+    return { category: "USER_NOTICE", label: "Native context", text: visibleText(p) };
   if (event.kind === "approval.requested") {
     const request = object(p.request);
     const options = Array.isArray(request.options) ? request.options.map(object) : [];

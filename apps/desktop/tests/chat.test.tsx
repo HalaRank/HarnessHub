@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { ConversationEvent, Draft } from "@harnesshub/shared";
 import { renderToStaticMarkup } from "react-dom/server";
 import { type DesktopApi, type DesktopState, desktopRequest } from "../src/contracts";
-import { inputAction } from "../src/renderer/Composer";
+import { Composer, inputAction } from "../src/renderer/Composer";
 import { DesktopDraft } from "../src/renderer/drafts";
 import { DesktopTranscript } from "../src/renderer/history";
 import { Markdown } from "../src/renderer/Markdown";
@@ -329,4 +329,214 @@ test("handoff records merge by ID and keep the expandable native report without 
   expect(html).toContain("查看交接报告");
   expect(html).toContain("Exact report");
   expect(html).not.toContain("private internal envelope");
+});
+
+for (const saveFails of [false, true])
+  test(`RC-05 reload cannot erase edits while a save ${saveFails ? "fails" : "succeeds"}`, async () => {
+    const backend = editorBackend();
+    const a = new DesktopDraft(backend.api, id),
+      b = new DesktopDraft(backend.api, id);
+    await Promise.all([a.load(), b.load()]);
+    b.update("client B draft");
+    await b.flush();
+    a.update("client A conflict");
+    await expect(a.flush()).rejects.toThrow();
+    let release!: () => void;
+    const original = backend.api.request;
+    let loading!: () => void;
+    const started = new Promise<void>((resolve) => {
+      loading = resolve;
+    });
+    backend.api.request = async (request) => {
+      if (request.type === "draft.load") {
+        const response = await original(request);
+        loading();
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return response;
+      }
+      if (request.type === "draft.save" && !saveFails) {
+        // Another save may legitimately succeed after a revision synchronization.
+        const current = backend.drafts.get(id);
+        if (!current) throw new Error("Missing test draft");
+        return original({ ...request, draft: { ...request.draft, revision: current.revision } });
+      }
+      return original(request);
+    };
+    const reload = a.reload();
+    await started;
+    a.update("new input must survive");
+    release();
+    await reload;
+    await a.flush().catch(() => {});
+    expect(a.text).toBe("new input must survive");
+    expect(backend.count()).toBe(0);
+  });
+
+test("RC-05 latest reload wins; invalidated component loads cannot overwrite cached editor", async () => {
+  const backend = editorBackend(),
+    a = new DesktopDraft(backend.api, id);
+  await a.load();
+  const original = backend.api.request;
+  const releases: (() => void)[] = [];
+  backend.api.request = async (request) => {
+    const response = await original(request);
+    if (request.type === "draft.load") await new Promise<void>((resolve) => releases.push(resolve));
+    return response;
+  };
+  const first = a.reload();
+  while (releases.length < 1) await Promise.resolve();
+  backend.drafts.set(id, {
+    conversationId: id,
+    revision: 2,
+    text: "latest",
+    pendingSubmission: null,
+  });
+  const second = a.reload();
+  while (releases.length < 2) await Promise.resolve();
+  releases[1]?.();
+  await second;
+  releases[0]?.();
+  await first;
+  expect(a.text).toBe("latest");
+  backend.drafts.set(id, {
+    conversationId: id,
+    revision: 3,
+    text: "stale after unmount",
+    pendingSubmission: null,
+  });
+  const stale = a.reload();
+  while (releases.length < 3) await Promise.resolve();
+  a.invalidateLoads();
+  const other = new DesktopDraft({ ...backend.api, request: original }, "other-conversation");
+  await other.load();
+  other.update("other text");
+  releases[2]?.();
+  await stale;
+  expect(a.text).toBe("latest");
+  expect(other.text).toBe("other text");
+});
+
+test("RC-02/03 Desktop shows explicit context recovery and independently blocks uncertain delivery", async () => {
+  const backend = editorBackend(),
+    draft = new DesktopDraft(backend.api, id);
+  await draft.load();
+  draft.update("do not silently submit");
+  await draft.flush();
+  const conversation = {
+    id,
+    title: "RC",
+    projectId: null,
+    archivedAt: null,
+    workspaceMode: "shared" as const,
+    workspacePath: "/tmp/test",
+    runtimeStatus: "INTERRUPTED" as const,
+    activeNativeSessionId: id,
+    selectedHarnessId: "mock",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+  const session = {
+    id,
+    conversationId: id,
+    harnessId: "mock",
+    agentSessionId: "native",
+    workerId: id,
+    epoch: id,
+    status: "INTERRUPTED",
+    cwd: "/tmp/test",
+    capabilities: {},
+    createdAt: 0,
+    endedAt: 1,
+    exitConfirmed: true,
+  };
+  const current = {
+    ...state,
+    snapshot: {
+      projects: [],
+      conversations: [conversation],
+      cursor: 0,
+      activity: { running: 0, waitingApproval: 0, pendingApprovals: 0, problems: 1, items: [] },
+    },
+    interaction: { conversationId: id, sessions: [session], approvals: [], handoffs: [] },
+  };
+  const render = () =>
+    renderToStaticMarkup(
+      <Composer api={backend.api} draft={draft} state={current} conversation={conversation} />,
+    );
+  expect(render()).toContain("使用新原生上下文继续");
+  session.exitConfirmed = false;
+  expect(render()).toContain("Worker 退出尚未确认");
+  expect(render()).not.toContain("使用新原生上下文继续");
+  // Even a stale IDLE Conversation cannot enable submission over the input journal.
+  const uncertain = {
+    ...current,
+    snapshot: {
+      ...current.snapshot,
+      pendingInputs: [
+        {
+          conversationId: id,
+          requestId: id,
+          state: "UNCERTAIN" as const,
+          turnId: id,
+          reason: "ACK lost",
+          input: { requestId: id, harnessId: "mock", message: "steer", delivery: "steer" as const },
+        },
+      ],
+    },
+  };
+  const html = renderToStaticMarkup(
+    <Composer
+      api={backend.api}
+      draft={draft}
+      state={uncertain}
+      conversation={{ ...conversation, runtimeStatus: "IDLE" }}
+    />,
+  );
+  expect(html).toContain("输入投递结果不确定（UNCERTAIN）");
+  expect(html).toContain("requestId");
+  expect(html).toMatch(/<button[^>]*disabled=""[^>]*>↑ 发送/);
+  expect(backend.count()).toBe(0);
+});
+
+test("RC-04 expired approval replay clears waiting without rewriting native tool status", () => {
+  const make = (seq: number, kind: string, payload: unknown): ConversationEvent => ({
+    id: String(seq),
+    conversationId: id,
+    nativeSessionId: id,
+    turnId: id,
+    seq,
+    kind,
+    payload,
+    raw: null,
+    origin: "runtime",
+    createdAt: 0,
+  });
+  const requested = make(1, "approval.requested", {
+    id: "approval",
+    request: {
+      toolCall: { toolCallId: "tool", title: "Native tool", status: "pending" },
+      options: [{ optionId: "deny", name: "Reject" }],
+    },
+  });
+  const expired = make(2, "approval.expired", {
+    approvalId: "approval",
+    status: "EXPIRED",
+    reason: "daemon_restart",
+  });
+  const transcript = new DesktopTranscript();
+  transcript.append([requested]);
+  expect(transcript.rows.find((r) => r.tool)?.waiting).toBe(true);
+  transcript.append([expired]);
+  transcript.append([requested, expired]);
+  const row = transcript.rows.find((r) => r.tool);
+  if (!row) throw new Error("Missing tool projection");
+  expect(row.waiting).toBe(false);
+  expect(row.tool?.status).toBe("pending");
+  const html = renderToStaticMarkup(
+    <MessageView row={row} api={editorBackend().api} expanded={new Map()} />,
+  );
+  expect(html).toContain("审批已过期");
+  expect(html).not.toContain("等待审批");
 });

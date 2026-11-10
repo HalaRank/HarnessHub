@@ -1,0 +1,24 @@
+bun test v1.4.4 (38afee6c8)
+
+tests/chat.test.tsx:
+(pass) Enter sends, Shift+Enter preserves newline, IME/229 and composition confirmation never send [0.16ms]
+(pass) independent drafts persist across editors and rapid conversation switches [0.91ms]
+(pass) two clients obey CAS; failed save and send preserve local text without silent overwrite [0.67ms]
+(pass) a competing reserved draft never replaces different unsaved local text [0.32ms]
+(pass) double send dispatches one turn and clears only an accepted draft [0.29ms]
+(pass) lost ACK keeps request ID locked; explicit lookup recovers without another prompt [0.45ms]
+(pass) confirmed unpublished slash text uses one plain Prompt and lost ACK never repeats it [0.39ms]
+(pass) reopening a durable unconfirmed request never automatically sends or releases it on 404 [0.18ms]
+(pass) 10k events append incrementally, merge native tools by session, preserve old rows and reject gaps [26.90ms]
+(pass) successful tools collapse, failed/waiting expand, manual preference wins [14.85ms]
+(pass) Markdown supports GFM/code highlights while HTML, event handlers and unsafe URLs stay inert [45.87ms]
+(pass) typed write actions reject arbitrary methods, paths, native configs, unconfirmed deletion [15.40ms]
+(pass) handoff records merge by ID and keep the expandable native report without internal prompt [4.29ms]
+(pass) RC-05 reload cannot erase edits while a save succeeds [0.92ms]
+(pass) RC-05 reload cannot erase edits while a save fails [0.36ms]
+(pass) RC-05 latest reload wins; invalidated component loads cannot overwrite cached editor [0.44ms]
+
+ 16 pass
+ 0 fail
+ 77 expect() calls
+Ran 16 tests across 1 file. [305.00ms]

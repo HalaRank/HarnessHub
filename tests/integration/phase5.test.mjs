@@ -14,6 +14,7 @@ import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 import Database from "better-sqlite3";
 import { Client } from "../../dist/client/client.js";
+import { gitFixture } from "../fixtures/git-fail/fixture.mjs";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-phase5-"));
 const env = {
@@ -564,9 +565,7 @@ test("real concurrent Git path/branch conflicts and partial creation never bind 
       XDG_DATA_HOME: join(isolated, "data"),
       XDG_STATE_HOME: join(isolated, "state"),
       XDG_CONFIG_HOME: join(isolated, "config"),
-      PATH: `${resolve("tests/fixtures/git-fail")}:${process.env.PATH}`,
-      HHU_REAL_GIT: realGit,
-      HHU_TEST_GIT_FAILURE: mode,
+      PATH: `${gitFixture(join(isolated, "git-wrapper"), { HHU_REAL_GIT: realGit, HHU_TEST_GIT_FAILURE: mode })}:${process.env.PATH}`,
     };
     const run = (...args) =>
       execFileSync(process.env.HARNESSHUB_BUN, [resolve("dist/cli/hhu.js"), ...args], {

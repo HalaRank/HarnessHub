@@ -1,0 +1,55 @@
+✖ RC-03 steer-turn-first: input outcome remains independent of completed Turn (20630.463157ms)
+✖ RC-03 steer-timeout-first: input outcome remains independent of completed Turn (20591.653866ms)
+✔ RC-03 steer-ack: input outcome remains independent of completed Turn (540.807088ms)
+RC evidence: /tmp/hhu-rc-remediation-OHWf71
+✔ RC-03 steer-failed: input outcome remains independent of completed Turn (546.987002ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 2
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44894.682574
+
+✖ failing tests:
+
+test at tests/integration/rc-remediation.test.mjs:110:94
+✖ RC-03 steer-turn-first: input outcome remains independent of completed Turn (20630.463157ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'IDLE'
+  - 'UNCERTAIN'
+
+      at TestContext.<anonymous> (file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:129:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'IDLE',
+    expected: 'UNCERTAIN',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/integration/rc-remediation.test.mjs:110:94
+✖ RC-03 steer-timeout-first: input outcome remains independent of completed Turn (20591.653866ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'IDLE'
+  - 'UNCERTAIN'
+
+      at TestContext.<anonymous> (file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:129:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'IDLE',
+    expected: 'UNCERTAIN',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

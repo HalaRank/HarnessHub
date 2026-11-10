@@ -26,6 +26,8 @@ export class DesktopDraft {
   result = "";
   private queue: Promise<unknown> = Promise.resolve();
   private loading: Promise<void> | undefined;
+  private editGeneration = 0;
+  private loadGeneration = 0;
   private listeners = new Set<() => void>();
   constructor(
     readonly api: DesktopApi,
@@ -54,19 +56,40 @@ export class DesktopDraft {
     });
     return this.loading;
   }
+  invalidateLoads() {
+    this.loadGeneration++;
+    this.loading = undefined;
+  }
   async reload() {
+    const request = ++this.loadGeneration;
+    const edit = this.editGeneration;
     await this.queue.catch(() => {});
-    this.value = await call<Draft>(this.api, {
+    if (request !== this.loadGeneration) return;
+    const revision = this.value.revision;
+    const pendingRequestId = this.value.pendingSubmission?.requestId;
+    const value = await call<Draft>(this.api, {
       type: "draft.load",
       conversationId: this.conversationId,
     });
-    this.text = this.value.text;
+    if (request !== this.loadGeneration) return;
+    if (
+      edit !== this.editGeneration ||
+      revision !== this.value.revision ||
+      pendingRequestId !== this.value.pendingSubmission?.requestId
+    ) {
+      this.error = "重载期间草稿已变更；保留了本地新输入，请重新确认后再载入。";
+      this.changed();
+      return;
+    }
+    this.value = value;
+    this.text = value.text;
     this.loaded = true;
     this.error = "";
     this.changed();
   }
   update(text: string) {
     if (!this.loaded || this.busy || this.value.pendingSubmission) return;
+    this.editGeneration++;
     this.text = text;
     this.changed();
     void this.flush().catch(() => {});
@@ -94,6 +117,7 @@ export class DesktopDraft {
     nativeCommand?: NonNullable<Draft["pendingSubmission"]>["nativeCommand"],
   ) {
     if (this.busy || !this.loaded || !this.text.trim() || this.value.pendingSubmission) return;
+    this.invalidateLoads();
     this.busy = true;
     this.error = "";
     this.result = "";
@@ -141,6 +165,7 @@ export class DesktopDraft {
   async lookup() {
     const pending = this.value.pendingSubmission;
     if (!pending || this.busy) return;
+    this.invalidateLoads();
     this.busy = true;
     this.changed();
     try {

@@ -1,26 +1,18 @@
-import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { promisify } from "node:util";
 import { AppError } from "@harnesshub/shared";
 import { privateDir } from "@harnesshub/shared/paths";
 import { HandoffStore, type Store } from "@harnesshub/storage";
+import { safeGit } from "./git";
 import { projectRoot } from "./index";
 
 // Await Git so slow repositories never block ACP events or approvals. Reservations below
 // protect ownership and Workspace bindings across awaits. Cleanup retains files because
 // neither these reservations nor Git status can exclude external writers.
-const exec = promisify(execFile);
 async function git(cwd: string, args: string[]) {
   try {
-    const result = await exec("git", ["--no-pager", "-c", "core.hooksPath=/dev/null", ...args], {
-      cwd,
-      encoding: "utf8",
-      timeout: 15000,
-      maxBuffer: 2 * 1024 * 1024,
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
-    });
+    const result = await safeGit(cwd, args);
     return result.stdout;
   } catch {
     throw new AppError(
@@ -107,7 +99,20 @@ export class Worktrees {
     });
     this.store.workspaceOperations.add(path);
     try {
-      await git(repositoryPath, ["worktree", "add", "-b", branch, "--", path, "HEAD"]);
+      await git(repositoryPath, [
+        "worktree",
+        "add",
+        "--no-checkout",
+        "-b",
+        branch,
+        "--",
+        path,
+        "HEAD",
+      ]);
+      // Resolve branch/worktree-conditional config in the new directory before
+      // checkout. checkout-index without --force refuses concurrently created files.
+      await git(path, ["read-tree", "HEAD"]);
+      await git(path, ["checkout-index", "--all"]);
       if (
         projectRoot(path) !== path ||
         !(await registered(repositoryPath)).some(

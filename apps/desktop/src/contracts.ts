@@ -100,6 +100,12 @@ export const desktopRequest = z.discriminatedUnion("type", [
     conversationId,
     harnessId: z.string().min(1).max(80),
   }),
+  action({
+    type: z.literal("session.recover"),
+    conversationId,
+    nativeSessionId: z.string().uuid(),
+    confirmed: z.literal(true),
+  }),
   action({ type: z.literal("session.settings"), conversationId, setting: settingInput }),
   action({ type: z.literal("handoff.action"), conversationId, input: handoffAction }),
   action({

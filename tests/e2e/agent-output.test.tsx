@@ -573,3 +573,36 @@ test("tool detail links toggle the clicked tool, preserve selection and survive 
     }
   }
 });
+
+test("RC-04 expired approval replay clears TUI waiting and preserves the native pending tool", async () => {
+  const model = new Transcript();
+  const requested = event(1, "approval.requested", {
+    id: "expired",
+    request: {
+      toolCall: { toolCallId: "expired-tool", title: "Native pending", status: "pending" },
+    },
+  });
+  const expired = event(2, "approval.expired", {
+    approvalId: "expired",
+    status: "EXPIRED",
+    reason: "daemon_restart",
+  });
+  model.append([requested]);
+  const tool = model.rows.find((row) => row.value().tool);
+  expect(tool?.value().waiting).toBe(true);
+  model.append([expired]);
+  model.append([requested, expired]);
+  expect(tool?.value().waiting).toBe(false);
+  expect(tool?.value().tool?.status).toBe("pending");
+  const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+    width: 100,
+    height: 24,
+  });
+  try {
+    await frame(screen, "EXPIRED");
+    expect(screen.captureCharFrame()).not.toContain("WAITING_APPROVAL");
+    expect(model.events).toEqual([requested, expired]);
+  } finally {
+    screen.renderer.destroy();
+  }
+});

@@ -89,6 +89,7 @@ export type PendingInput = {
   reason: string;
 };
 export type NativeSession = {
+  exitConfirmed?: boolean;
   id: string;
   conversationId: string;
   harnessId: string;

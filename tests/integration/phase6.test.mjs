@@ -21,6 +21,7 @@ import { Worker } from "../../dist/acp/index.js";
 import { Client } from "../../dist/client/client.js";
 import { appendPrivateLog, paths, securePaths } from "../../dist/paths/paths.js";
 import { openStore, RuntimeStore } from "../../dist/storage/index.js";
+import { gitFixture } from "../fixtures/git-fail/fixture.mjs";
 
 const temp = mkdtempSync(join(tmpdir(), "hhu-phase6-"));
 const env = {
@@ -476,10 +477,7 @@ test("slow Git creation/removal leaves Daemon responsive and reservations block 
     XDG_CONFIG_HOME: join(dir, "config"),
     XDG_DATA_HOME: join(dir, "data"),
     XDG_STATE_HOME: join(dir, "state"),
-    PATH: `${resolve("tests/fixtures/git-fail")}:${env.PATH}`,
-    HHU_REAL_GIT: "/usr/bin/git",
-    HHU_TEST_GIT_DELAY: "1800",
-    HHU_TEST_GIT_MARKER: marker,
+    PATH: `${gitFixture(join(dir, "git-wrapper"), { HHU_REAL_GIT: "/usr/bin/git", HHU_TEST_GIT_DELAY: "1800", HHU_TEST_GIT_MARKER: marker })}:${env.PATH}`,
   };
   const run = (...args) =>
     execFileSync(process.env.HARNESSHUB_BUN, [resolve("dist/cli/hhu.js"), ...args], {
