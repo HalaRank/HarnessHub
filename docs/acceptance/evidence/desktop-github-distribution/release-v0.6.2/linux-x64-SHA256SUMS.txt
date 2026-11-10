@@ -1,0 +1,3 @@
+7c8e76bac7f573fab10a81461d3dd2ef32e0bbca9ec98ad4be06e79ad16dde9f  harnesshub-0.6.2-linux-x64.tar.gz
+aa6df4bba54288c980f7a958fface5d80c14452fd0d1f390baa71d9613a34c84  install.sh
+138004a8fee0161a3c41c84cf710723624640346be02a6dbff3de85c4f6b1c76  release-manifest.json

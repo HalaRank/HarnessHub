@@ -1,0 +1,32 @@
+{
+  "product": "HarnessHub",
+  "version": "0.6.2",
+  "protocolVersion": 1,
+  "platform": "win32",
+  "arch": "x64",
+  "signing": "unsigned",
+  "autoUpdate": false,
+  "payload": [
+    "assets/icon.ico",
+    "assets/icon.png",
+    "assets/logo.png",
+    "main/index.cjs",
+    "main/preload.cjs",
+    "package.json",
+    "renderer/index.css",
+    "renderer/index.html",
+    "renderer/index.js"
+  ],
+  "artifacts": [
+    {
+      "file": "HarnessHub-0.6.2-windows-x64-unsigned-setup.exe",
+      "bytes": 110813562,
+      "sha256": "b9fa7edd5eb45e1baf442ad47c1445f85e8a6d3cef456d84f07b0f3050784771"
+    },
+    {
+      "file": "HarnessHub-0.6.2-windows-x64-unsigned.zip",
+      "bytes": 153517161,
+      "sha256": "323baf152e70727564f6ff68eab58ba2f0346df8696e382b86418c109744f415"
+    }
+  ]
+}

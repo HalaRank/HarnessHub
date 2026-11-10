@@ -25,7 +25,7 @@ Windows x64 Electron + React 客户端，连接用户选择的 WSL2 Linux 环境
 | `windows-x64-release-manifest.json` | Windows 版本、协议、签名状态及产物清单 |
 | `install.sh`、`harnesshub-<版本>-linux-x64.tar.gz`、`SHA256SUMS.txt` | 在所选 WSL2 发行版中安装同版本后端 |
 
-维护者发布后，0.6.2 的 [安装器直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned-setup.exe) 和 [ZIP 直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned.zip) 才生效。draft Release 仅维护者可见，Actions artifact 是临时构建下载；配置好工作流不代表已经公开发布。
+**v0.6.2 已公开发布**：[安装器直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned-setup.exe) · [ZIP 直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned.zip)。远端构建、安装验证与公开发布证据见 [GitHub 分发验收](acceptance/desktop-phase-4-github-distribution.md)。后续版本在维护者发布 draft 后才可公开下载；Actions artifact 是临时构建下载。
 
 例如将安装器和 `windows-x64-SHA256SUMS.txt` 下载至同一个目录，在 PowerShell 进入该目录后校验并启动：
 

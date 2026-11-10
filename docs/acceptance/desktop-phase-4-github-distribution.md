@@ -37,3 +37,25 @@
 用户随后明确要求“上传发布”，授权提交发布配置、推送版本 Tag、上传并公开发布 Release。重新检查发现现有 Git credential 可用于认证 GitHub API；先前匿名 API 的 HTTP 403 是共享出口未认证配额耗尽。已认证确认仓库有发布权限且尚无 Release。后续以最终提交的 Tag 运行构建/验证，不直接发布前述历史本地产物；实际远端结果另行补录。
 
 首轮远端运行 `42780279640` 暴露 Windows filtered install 后从仓库根执行 Bun 会加载 Linux TUI 的 `@opentui/solid/preload`，而该依赖刻意未安装。改为从已有 Desktop bunfig 所在目录执行版本检查和打包；本地同命令版本检查、Desktop build、4 项 release 边界测试通过。发布工作流增加显式已有 Tag 的手动重建输入，两个平台均 checkout 该 Tag，Linux 验证版本后才创建 draft；保留已推送 Tag，不移动或覆盖它。
+
+## GitHub v0.6.2 已公开发布
+
+2026-11-10 08:25:42 UTC（Asia/Shanghai 2026-11-10 16:25:42），用户授权后已公开发布 [HarnessHub v0.6.2](https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.2)，共 8 个资产。`releases/latest` 实际解析到此版本。CLI/Windows app 版本仍为 0.6.2，Windows unsigned；不是对未完成物理平台/真实模型验收的追认。
+
+远端 [Actions 42780879784](https://github.com/HalaRank/HarnessHub/actions/runs/42780879784) **success**：Windows 构建 exe/ZIP、4 项发布边界测试、实际安装/启动/重装/异常退出/卸载保留验证与 artifact 上传成功；Linux typecheck/lint/全量测试/构建/隔离发行安装验收成功；draft 汇总与两平台校验成功。首轮有失败 Windows job 的旧运行已取消，不计为通过。
+
+应用源码来自不可变 `v0.6.2` Tag 提交 `4bb7ef37bd0ffa28fd6902ce1debb5d80c4da98b`。执行修复后的工作流定义来自 main 提交 `9e5be78bd88f1a139beec415b1011a3945fa9280`；两个平台明确 checkout 原 Tag。Linux manifest 实读 `sourceCommit` 匹配、`sourceDirty=false`，随包 Node 24.18.0/Bun 1.4.4。没有上传旧的本地验收包，也没有移动 Tag。
+
+发布前已从 GitHub 下载两个平台校验文件和 manifest，核对元数据自身 SHA256、全部安装包/脚本/manifest 与 GitHub 资产 digest 一致。公开后已匿名下载 Windows 校验文件和 Linux install.sh，与发布前核验内容完全相同。续查再次确认两文件匿名 HTTP 200、内容未变，且 `releases/latest` 返回 HTTP 200 并解析到 v0.6.2；具体大小、SHA256 与复查时间见 [匿名下载记录](evidence/desktop-github-distribution/release-v0.6.2/public-download-verification.json)。发布证据见 [release-v0.6.2](evidence/desktop-github-distribution/release-v0.6.2/)。
+
+| 文件 | 字节数 | SHA256 |
+| --- | ---: | --- |
+| Windows setup.exe | 110813562 | `b9fa7edd5eb45e1baf442ad47c1445f85e8a6d3cef456d84f07b0f3050784771` |
+| Windows ZIP | 153517161 | `323baf152e70727564f6ff68eab58ba2f0346df8696e382b86418c109744f415` |
+| Linux tar.gz | 428448032 | `7c8e76bac7f573fab10a81461d3dd2ef32e0bbca9ec98ad4be06e79ad16dde9f` |
+
+2026-11-10 08:38:42 UTC 已完成 Windows 安装器公开下载复核。网络多次超时及 TLS EOF 后，以断点续传和校验 Content-Range 的匿名 HTTP 206 分段补齐；最终对完整 110813562 字节文件计算 SHA256，结果与公开 `windows-x64-SHA256SUMS.txt` 及 GitHub 资产 digest 同时一致。不是仅校验下载样本或元数据；详情见 [完整安装器校验](evidence/desktop-github-distribution/release-v0.6.2/public-installer-verification.json)。本次没有在用户 Windows 环境运行该安装器。
+
+本次文档收尾检查：`bun run lint` 通过；8 个资产记录、已保存校验文件/Windows manifest 的大小及 SHA256、两平台校验条目与资产 digest、Linux sourceCommit/sourceDirty 一致性检查通过；公开下载证据与完整安装器再次核对通过；发布文档 `git diff --check` 通过。未重新运行产品测试；远端构建及安装测试结果见本节 Actions 记录。
+
+前述“未验证：远端 Actions/公开下载”是首轮实施结束时的历史状态，已由本节的实际结果更新。干净 Windows/WSL 从公开包全流程、物理硬件、真实登录模型等未验证项仍保持未验证。

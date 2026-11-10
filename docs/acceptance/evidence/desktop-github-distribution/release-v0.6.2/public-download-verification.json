@@ -1,0 +1,26 @@
+{
+  "verified_at": "2026-11-10T08:32:50.235853+00:00",
+  "authentication": "none; curl -q, no Authorization header or credentials",
+  "latest": {
+    "http_status": 200,
+    "resolved_url": "https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.2"
+  },
+  "assets": [
+    {
+      "name": "windows-x64-SHA256SUMS.txt",
+      "http_status": 200,
+      "url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/windows-x64-SHA256SUMS.txt",
+      "size": 222,
+      "sha256": "55327c32b42576cdf36243a28e05a534f59882d9432df6001eef4718f02da67c",
+      "matches_prepublication_copy": true
+    },
+    {
+      "name": "install.sh",
+      "http_status": 200,
+      "url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/install.sh",
+      "size": 2945,
+      "sha256": "aa6df4bba54288c980f7a958fface5d80c14452fd0d1f390baa71d9613a34c84",
+      "matches_prepublication_copy": true
+    }
+  ]
+}

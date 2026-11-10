@@ -1,0 +1,12 @@
+{
+  "verified_at": "2026-11-10T08:38:42.533088+00:00",
+  "authentication": "none; public release URL, curl -q, no Authorization header or credentials",
+  "url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned-setup.exe",
+  "name": "HarnessHub-0.6.2-windows-x64-unsigned-setup.exe",
+  "size": 110813562,
+  "expected_size": 110813562,
+  "sha256": "b9fa7edd5eb45e1baf442ad47c1445f85e8a6d3cef456d84f07b0f3050784771",
+  "matches_published_checksums": true,
+  "matches_github_asset_digest": true,
+  "download_method": "resume existing public-download prefix and validated HTTP 206 ranges; verify complete file SHA256"
+}

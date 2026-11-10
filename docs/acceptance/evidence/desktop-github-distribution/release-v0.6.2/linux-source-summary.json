@@ -1,0 +1,15 @@
+{
+  "product": "HarnessHub",
+  "version": "0.6.2",
+  "protocolVersion": 1,
+  "platform": "linux",
+  "arch": "x64",
+  "libc": "glibc",
+  "runtimes": {
+    "node": "24.18.0",
+    "bun": "1.4.4"
+  },
+  "sourceCommit": "4bb7ef37bd0ffa28fd6902ce1debb5d80c4da98b",
+  "sourceDirty": false,
+  "lockfileSha256": "b147c8e10375bcdde1ce7070abb643cc4f8135d50a8d0a941a6d0dacc7ec9ac6"
+}
