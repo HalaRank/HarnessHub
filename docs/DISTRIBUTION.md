@@ -73,7 +73,7 @@ bun run release:verify -- dist/linux/releases/<版本>
 
 GitHub Actions 的 `HarnessHub release`（`.github/workflows/linux-release.yml`）支持手动运行生成 Linux 和 Windows artifact；推送与 package.json 一致的 `v<版本>` tag 后，执行 Linux 检查、打包、隔离安装验收，并调用 Windows 工作流构建 NSIS/ZIP、执行安装器验收。两个平台全部成功且资产校验通过后，创建包含所有包的一个 **draft Release**。Windows 的元数据上传为 `windows-x64-SHA256SUMS.txt`、`windows-x64-release-manifest.json`，避免覆盖 Linux 下载器依赖的同名文件；本地构建文件名不变。维护者检查资产及验收记录后再发布；无自动更新，不假定全部人工平台验收已通过。
 
-首次发布时提交待发布代码、推送版本匹配的 Tag（当前发布候选 `v0.6.3`），等待上述两个平台完成。在 GitHub Releases 打开 draft，核对 Windows 安装器/ZIP、Linux tar.gz/下载脚本、两个平台校验文件和 manifest，再发布。已有相同 Tag 的 Release 时工作流拒绝重复创建；不覆盖已发布资产。公开发布前，文档中的版本下载地址不可用。
+首次发布时提交待发布代码、推送版本匹配的 Tag（当前 `v0.6.3` 已发布），等待上述两个平台完成。在 GitHub Releases 打开 draft，核对 Windows 安装器/ZIP、Linux tar.gz/下载脚本、两个平台校验文件和 manifest，再发布。已有相同 Tag 的 Release 时工作流拒绝重复创建；不覆盖已发布资产。公开发布前，文档中的版本下载地址不可用。
 
 验收脚本使用独立 HOME/XDG、包内运行时及最小 PATH，覆盖校验失败、运行锁、入口覆盖保护、安装/重装、Daemon、SQLite、Bridge、Mock ACP 和 PTY。全新系统、实际 GitHub 下载和物理 Windows 终端的验证须单独记录。
 

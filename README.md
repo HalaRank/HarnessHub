@@ -12,7 +12,7 @@ Linux x64 / WSL2 现提供独立发行包构建和安装流程，随包携带 No
 
 Windows 用户可从 [GitHub Releases](https://github.com/HalaRank/HarnessHub/releases) 下载同版本的 `HarnessHub-<版本>-windows-x64-unsigned-setup.exe` 安装，或下载 ZIP 解压运行。所选 WSL2 发行版仍需安装该 Release 的 Linux 后端包，无需源码或系统 Node/Bun；完整步骤见 [Windows 下载与安装](docs/DESKTOP.md#从-github-下载)。匹配版本的 Tag 会在两个平台验证通过后生成含全部安装包的 draft Release，维护者发布后下载才可用。当前 Windows 包未签名。
 
-**v0.6.2 已发布**：[Windows 安装器](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned-setup.exe) · [Windows ZIP](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned.zip) · [全部资产与 WSL 后端](https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.2)。
+**v0.6.3 已发布**：[Windows 安装器](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned-setup.exe) · [Windows ZIP](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned.zip) · [全部资产与 WSL 后端](https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.3)。
 
 以下为开发者源码安装：
 

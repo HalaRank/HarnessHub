@@ -1,0 +1,73 @@
+{
+  "verifiedAt": "2026-11-10T10:03:13.870630+00:00",
+  "releaseId": 440193155,
+  "sourceCommit": "c1d13d064411d183c6baaead2ea587e81c931215",
+  "metadataAndGithubDigestsVerified": true,
+  "linux": {
+    "product": "HarnessHub",
+    "version": "0.6.3",
+    "protocolVersion": 1,
+    "platform": "linux",
+    "arch": "x64",
+    "libc": "glibc",
+    "runtimes": {
+      "node": "24.18.0",
+      "bun": "1.4.4"
+    },
+    "sourceCommit": "c1d13d064411d183c6baaead2ea587e81c931215",
+    "sourceDirty": false,
+    "lockfileSha256": "638a5fa3cec1500704e033cf13288c70d27526421e6e96d1accc9d91044dad8b"
+  },
+  "assets": [
+    {
+      "name": "harnesshub-0.6.3-linux-x64.tar.gz",
+      "size": 428449440,
+      "digest": "sha256:9913ecd2c7e45f3ed50c6c382f3f967242b6bca78def5e553eff88d64d1b7aeb",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/harnesshub-0.6.3-linux-x64.tar.gz"
+    },
+    {
+      "name": "HarnessHub-0.6.3-windows-x64-unsigned-setup.exe",
+      "size": 110767900,
+      "digest": "sha256:4838eca0d3a4f4dfd6d6234285b79aec8330df2b43c8524e434b7f8f670ff537",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned-setup.exe"
+    },
+    {
+      "name": "HarnessHub-0.6.3-windows-x64-unsigned.zip",
+      "size": 153520017,
+      "digest": "sha256:82c892bf2442f37196d48817902642ec63b30f3f40d7511f954b8238d49a0385",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned.zip"
+    },
+    {
+      "name": "install.sh",
+      "size": 2945,
+      "digest": "sha256:57da5894f207f6965154aa6d43deb26be25757c5be22558dc5df05ff1e19f4da",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/install.sh"
+    },
+    {
+      "name": "release-manifest.json",
+      "size": 2466042,
+      "digest": "sha256:603c50b228d04874e973529e7d22b5f949057ee4e0e3fc8fe7477a3020ce3102",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/release-manifest.json"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 265,
+      "digest": "sha256:da4964aba2a6cd6b03286ae37138ef952206f1704436bdb44a976cfd291bb954",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/SHA256SUMS.txt"
+    },
+    {
+      "name": "windows-x64-release-manifest.json",
+      "size": 785,
+      "digest": "sha256:e51d892a24835b28061f46acff39a381de5e6d108898315215bb327ce8491364",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/windows-x64-release-manifest.json"
+    },
+    {
+      "name": "windows-x64-SHA256SUMS.txt",
+      "size": 222,
+      "digest": "sha256:cc7cbf5f2a4a7d5ca76d889fd4117573dc14eb2e971c45e5267f1f4a3a8bcef2",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/windows-x64-SHA256SUMS.txt"
+    }
+  ],
+  "publishedAt": "2026-11-10T10:03:31Z",
+  "releaseUrl": "https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.3"
+}

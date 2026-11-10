@@ -1,0 +1,687 @@
+2026-11-10T09:53:57.9994822Z Current runner version: '2.338.2'
+2026-11-10T09:53:58.0020560Z ##[group]Runner Image Provisioner
+2026-11-10T09:53:58.0021737Z Hosted Compute Agent
+2026-11-10T09:53:58.0022359Z Version: 20261028.624
+2026-11-10T09:53:58.0022967Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+2026-11-10T09:53:58.0023719Z Build Date: 2026-10-28T21:51:42Z
+2026-11-10T09:53:58.0024391Z Worker ID: {d01008ed-272f-47fd-9f24-f8e5bc27e288}
+2026-11-10T09:53:58.0025069Z Region: northcentralus
+2026-11-10T09:53:58.0025694Z Cloud: Azure
+2026-11-10T09:53:58.0026224Z ##[endgroup]
+2026-11-10T09:53:58.0027586Z ##[group]Operating System
+2026-11-10T09:53:58.0028250Z Ubuntu
+2026-11-10T09:53:58.0028744Z 22.04.5
+2026-11-10T09:53:58.0029293Z LTS
+2026-11-10T09:53:58.0029799Z ##[endgroup]
+2026-11-10T09:53:58.0030342Z ##[group]Runner Image
+2026-11-10T09:53:58.0030934Z Image: ubuntu-22.04
+2026-11-10T09:53:58.0031646Z Version: 20261101.347.1
+2026-11-10T09:53:58.0032946Z Included Software: https://github.com/actions/runner-images/blob/ubuntu22/20261101.347/images/ubuntu/Ubuntu2204-Readme.md
+2026-11-10T09:53:58.0034815Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu22%2F20261101.347
+2026-11-10T09:53:58.0035775Z ##[endgroup]
+2026-11-10T09:53:58.0036893Z ##[group]GITHUB_TOKEN Permissions
+2026-11-10T09:53:58.0039034Z Contents: read
+2026-11-10T09:53:58.0039599Z Metadata: read
+2026-11-10T09:53:58.0040179Z ##[endgroup]
+2026-11-10T09:53:58.0042459Z Secret source: Actions
+2026-11-10T09:53:58.0043666Z Cache mode: write
+2026-11-10T09:53:58.0044546Z Prepare workflow directory
+2026-11-10T09:53:58.0375615Z Prepare all required actions
+2026-11-10T09:53:58.0432685Z Getting action download info
+2026-11-10T09:53:58.3624334Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-10T09:53:58.4803380Z Download action repository 'oven-sh/setup-bun@v2' (SHA:0c5077e51419868618aeaa5fe8019c62421857d6)
+2026-11-10T09:53:58.7716698Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-10T09:53:58.9793463Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-10T09:53:59.2843943Z Complete job name: linux-x64
+2026-11-10T09:53:59.3912158Z ##[group]Run actions/checkout@v4
+2026-11-10T09:53:59.3913763Z with:
+2026-11-10T09:53:59.3914888Z   ref: refs/tags/v0.6.3
+2026-11-10T09:53:59.3915977Z   repository: HalaRank/HarnessHub
+2026-11-10T09:53:59.3925300Z   token: ***
+2026-11-10T09:53:59.3926213Z   ssh-strict: true
+2026-11-10T09:53:59.3927181Z   ssh-user: git
+2026-11-10T09:53:59.3928149Z   persist-credentials: true
+2026-11-10T09:53:59.3929229Z   clean: true
+2026-11-10T09:53:59.3930187Z   sparse-checkout-cone-mode: true
+2026-11-10T09:53:59.3931598Z   fetch-depth: 1
+2026-11-10T09:53:59.3932891Z   fetch-tags: false
+2026-11-10T09:53:59.3933998Z   show-progress: true
+2026-11-10T09:53:59.3935650Z   lfs: false
+2026-11-10T09:53:59.3936912Z   submodules: false
+2026-11-10T09:53:59.3937900Z   set-safe-directory: true
+2026-11-10T09:53:59.3939079Z   allow-unsafe-pr-checkout: false
+2026-11-10T09:53:59.3940702Z ##[endgroup]
+2026-11-10T09:53:59.6280822Z Syncing repository: HalaRank/HarnessHub
+2026-11-10T09:53:59.6284906Z ##[group]Getting Git version info
+2026-11-10T09:53:59.6286657Z Working directory is '/home/runner/work/HarnessHub/HarnessHub'
+2026-11-10T09:53:59.6288787Z [command]/usr/bin/git version
+2026-11-10T09:53:59.6337367Z git version 2.56.0
+2026-11-10T09:53:59.6360083Z ##[endgroup]
+2026-11-10T09:53:59.6376772Z Temporarily overriding HOME='/home/runner/work/_temp/63b5702c-e37a-4ae9-9ee5-6bc6214530f9' before making global git config changes
+2026-11-10T09:53:59.6379745Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-10T09:53:59.6382712Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/HarnessHub/HarnessHub
+2026-11-10T09:53:59.6565509Z Deleting the contents of '/home/runner/work/HarnessHub/HarnessHub'
+2026-11-10T09:53:59.6571590Z ##[group]Initializing the repository
+2026-11-10T09:53:59.6577161Z [command]/usr/bin/git init /home/runner/work/HarnessHub/HarnessHub
+2026-11-10T09:53:59.6696546Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-10T09:53:59.6698928Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-10T09:53:59.6700872Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-10T09:53:59.6702881Z hint: call:
+2026-11-10T09:53:59.6704185Z hint:
+2026-11-10T09:53:59.6705693Z hint: 	git config --global init.defaultBranch <name>
+2026-11-10T09:53:59.6706965Z hint:
+2026-11-10T09:53:59.6708767Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-10T09:53:59.6711374Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-10T09:53:59.6713606Z hint:
+2026-11-10T09:53:59.6714714Z hint: 	git branch -m <name>
+2026-11-10T09:53:59.6716202Z hint:
+2026-11-10T09:53:59.6717771Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-10T09:53:59.6720239Z Initialized empty Git repository in /home/runner/work/HarnessHub/HarnessHub/.git/
+2026-11-10T09:53:59.6724555Z [command]/usr/bin/git remote add origin https://github.com/HalaRank/HarnessHub
+2026-11-10T09:53:59.6774125Z ##[endgroup]
+2026-11-10T09:53:59.6775684Z ##[group]Disabling automatic garbage collection
+2026-11-10T09:53:59.6780576Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-10T09:53:59.6819594Z ##[endgroup]
+2026-11-10T09:53:59.6821315Z ##[group]Setting up auth
+2026-11-10T09:53:59.6827705Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-10T09:53:59.6862359Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-10T09:53:59.7202116Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-10T09:53:59.7237703Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-10T09:53:59.7438099Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-10T09:53:59.7470590Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-10T09:53:59.7675867Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-10T09:53:59.7720068Z ##[endgroup]
+2026-11-10T09:53:59.7722023Z ##[group]Fetching the repository
+2026-11-10T09:53:59.7729059Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +refs/tags/v0.6.3:refs/tags/v0.6.3
+2026-11-10T09:54:00.8053183Z From https://github.com/HalaRank/HarnessHub
+2026-11-10T09:54:00.8054490Z  * [new tag]         v0.6.3     -> v0.6.3
+2026-11-10T09:54:00.8057510Z ##[endgroup]
+2026-11-10T09:54:00.8058210Z ##[group]Determining the checkout info
+2026-11-10T09:54:00.8059977Z ##[endgroup]
+2026-11-10T09:54:00.8067295Z [command]/usr/bin/git sparse-checkout disable
+2026-11-10T09:54:00.8115441Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-10T09:54:00.8147538Z ##[group]Checking out the ref
+2026-11-10T09:54:00.8150891Z [command]/usr/bin/git checkout --progress --force refs/tags/v0.6.3
+2026-11-10T09:54:00.8973566Z Note: switching to 'refs/tags/v0.6.3'.
+2026-11-10T09:54:00.8974882Z
+2026-11-10T09:54:00.8976532Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-10T09:54:00.8978083Z changes and commit them, and you can discard any commits you make in this
+2026-11-10T09:54:00.8979148Z state without impacting any branches by switching back to a branch.
+2026-11-10T09:54:00.8979677Z
+2026-11-10T09:54:00.8980235Z If you want to create a new branch to retain commits you create, you may
+2026-11-10T09:54:00.8981890Z do so (now or later) by using -c with the switch command. Example:
+2026-11-10T09:54:00.8982382Z
+2026-11-10T09:54:00.8982745Z   git switch -c <new-branch-name>
+2026-11-10T09:54:00.8983267Z
+2026-11-10T09:54:00.8983612Z Or undo this operation with:
+2026-11-10T09:54:00.8984205Z
+2026-11-10T09:54:00.8984541Z   git switch -
+2026-11-10T09:54:00.8985013Z
+2026-11-10T09:54:00.8985582Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-10T09:54:00.8986263Z
+2026-11-10T09:54:00.8986807Z HEAD is now at c1d13d0 chore(release): prepare HarnessHub v0.6.3
+2026-11-10T09:54:00.8989759Z ##[endgroup]
+2026-11-10T09:54:00.9024642Z [command]/usr/bin/git log -1 --format=%H
+2026-11-10T09:54:00.9048933Z c1d13d064411d183c6baaead2ea587e81c931215
+2026-11-10T09:54:00.9322583Z ##[group]Run oven-sh/setup-bun@v2
+2026-11-10T09:54:00.9323152Z with:
+2026-11-10T09:54:00.9323587Z   bun-version: 1.4.4
+2026-11-10T09:54:00.9324190Z   no-cache: false
+2026-11-10T09:54:00.9327097Z   token: ***
+2026-11-10T09:54:00.9327604Z ##[endgroup]
+2026-11-10T09:54:01.2370298Z Cache hit for: bun-vyrKTwhw5PEh6pGRz1Zgyle11uQ=
+2026-11-10T09:54:01.8596290Z Received 50544742 of 50544742 (100.0%), 97.0 MBs/sec
+2026-11-10T09:54:01.8597512Z Cache Size: ~48 MB (50544742 B)
+2026-11-10T09:54:01.8625332Z [command]/usr/bin/tar -xf /home/runner/work/_temp/01b292be-2dd1-4ffd-ab5e-d439fb2c2632/cache.tzst -P -C /home/runner/work/HarnessHub/HarnessHub --use-compress-program unzstd
+2026-11-10T09:54:02.0494063Z Cache restored successfully
+2026-11-10T09:54:02.0568568Z [command]/home/runner/.bun/bin/bun --revision
+2026-11-10T09:54:02.0620341Z 1.4.4+38afee6c8
+2026-11-10T09:54:02.0625751Z Using a cached version of Bun: 1.4.4+38afee6c8
+2026-11-10T09:54:02.0793999Z ##[group]Run actions/setup-node@v4
+2026-11-10T09:54:02.0794383Z with:
+2026-11-10T09:54:02.0794787Z   node-version: 24.18.0
+2026-11-10T09:54:02.0795161Z   always-auth: false
+2026-11-10T09:54:02.0795514Z   check-latest: false
+2026-11-10T09:54:02.0798230Z   token: ***
+2026-11-10T09:54:02.0798544Z ##[endgroup]
+2026-11-10T09:54:02.2349151Z Attempting to download 24.18.0...
+2026-11-10T09:54:02.2458333Z (node:2046) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-10T09:54:02.2459402Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-10T09:54:03.0394373Z Acquiring 24.18.0 - x64 from https://github.com/actions/node-versions/releases/download/24.18.0-28070977815/node-24.18.0-linux-x64.tar.gz
+2026-11-10T09:54:03.4540887Z Extracting ...
+2026-11-10T09:54:03.4656408Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/6c3e18f2-98c8-4909-a79a-c04c92dff5b2 -f /home/runner/work/_temp/5d75dabd-377d-4619-84ad-e5612788e57b
+2026-11-10T09:54:04.7994819Z Adding to the cache ...
+2026-11-10T09:54:06.9664792Z ##[group]Environment details
+2026-11-10T09:54:07.2134603Z node: v24.18.0
+2026-11-10T09:54:07.2135188Z npm: 11.16.0
+2026-11-10T09:54:07.2135575Z yarn: 1.22.22
+2026-11-10T09:54:07.2136388Z ##[endgroup]
+2026-11-10T09:54:07.2278348Z ##[group]Run bun install --frozen-lockfile
+2026-11-10T09:54:07.2278898Z [36;1mbun install --frozen-lockfile[0m
+2026-11-10T09:54:07.2335225Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:54:07.2335657Z ##[endgroup]
+2026-11-10T09:54:07.2464277Z bun install v1.4.4 (38afee6c8)
+2026-11-10T09:54:09.9242082Z
+2026-11-10T09:54:09.9242800Z + @biomejs/biome@2.6.4
+2026-11-10T09:54:09.9243550Z + @types/better-sqlite3@9.6.0
+2026-11-10T09:54:09.9243924Z + @types/bun@1.3.14
+2026-11-10T09:54:09.9244259Z + @types/node@24.10.1
+2026-11-10T09:54:09.9244676Z + @types/ws@8.18.1
+2026-11-10T09:54:09.9245015Z + drizzle-kit@0.31.11
+2026-11-10T09:54:09.9245355Z + typescript@5.9.3
+2026-11-10T09:54:09.9245754Z + @agentclientprotocol/claude-agent-acp@0.99.1
+2026-11-10T09:54:09.9246272Z + @agentclientprotocol/codex-acp@2.5.0
+2026-11-10T09:54:09.9246705Z + @agentclientprotocol/sdk@2.2.0
+2026-11-10T09:54:09.9247086Z + @hono/node-server@2.1.5
+2026-11-10T09:54:09.9247747Z + @opentui/core@0.8.0
+2026-11-10T09:54:09.9248210Z + @opentui/solid@0.8.0
+2026-11-10T09:54:09.9248590Z + better-sqlite3@13.0.3
+2026-11-10T09:54:09.9248925Z + drizzle-orm@0.45.4
+2026-11-10T09:54:09.9249307Z + hono@4.13.14
+2026-11-10T09:54:09.9249634Z + solid-js@1.9.18
+2026-11-10T09:54:09.9249922Z + ws@8.21.0
+2026-11-10T09:54:09.9250293Z + zod@4.6.7
+2026-11-10T09:54:09.9250433Z
+2026-11-10T09:54:09.9250642Z 573 packages installed [2.68s]
+2026-11-10T09:54:09.9250865Z
+2026-11-10T09:54:09.9251383Z Blocked 4 postinstalls. Run `bun pm untrusted` for details.
+2026-11-10T09:54:09.9822447Z ##[group]Run bun run version:check
+2026-11-10T09:54:09.9823049Z [36;1mbun run version:check[0m
+2026-11-10T09:54:09.9874876Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:54:09.9875368Z ##[endgroup]
+2026-11-10T09:54:10.0346074Z $ bun scripts/version.ts --check
+2026-11-10T09:54:10.3703723Z Unified version: 0.6.3
+2026-11-10T09:54:10.3861594Z ##[group]Run echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+2026-11-10T09:54:10.3862834Z [36;1mecho "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"[0m
+2026-11-10T09:54:10.3917462Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:54:10.3918024Z ##[endgroup]
+2026-11-10T09:54:10.4551172Z ##[group]Run test "$RELEASE_TAG" = "v$(node -p 'require("./package.json").version')"
+2026-11-10T09:54:10.4552175Z [36;1mtest "$RELEASE_TAG" = "v$(node -p 'require("./package.json").version')"[0m
+2026-11-10T09:54:10.4603222Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:54:10.4603829Z env:
+2026-11-10T09:54:10.4604226Z   RELEASE_TAG: v0.6.3
+2026-11-10T09:54:10.4604741Z ##[endgroup]
+2026-11-10T09:54:10.4996666Z ##[group]Run bun run typecheck
+2026-11-10T09:54:10.4997271Z [36;1mbun run typecheck[0m
+2026-11-10T09:54:10.5047957Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:54:10.5048476Z ##[endgroup]
+2026-11-10T09:54:10.5161422Z $ tsc --noEmit && tsc --noEmit -p apps/daemon/tsconfig.json && tsc --noEmit -p apps/desktop/tsconfig.json
+2026-11-10T09:54:21.8780229Z ##[group]Run bun run lint
+2026-11-10T09:54:21.8780638Z [36;1mbun run lint[0m
+2026-11-10T09:54:21.8816416Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:54:21.8816877Z ##[endgroup]
+2026-11-10T09:54:21.9104464Z $ biome check .
+2026-11-10T09:54:22.3128244Z Checked 167 files in 332ms. No fixes applied.
+2026-11-10T09:54:22.4344295Z ##[group]Run bun run test
+2026-11-10T09:54:22.4344698Z [36;1mbun run test[0m
+2026-11-10T09:54:22.4385423Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:54:22.4385882Z ##[endgroup]
+2026-11-10T09:54:22.4798001Z $ bun scripts/test.ts
+2026-11-10T09:54:22.6579736Z $ bun scripts/build.ts
+2026-11-10T09:54:23.4516395Z Built HarnessHub CLI (Bun) and Daemon (Node)
+2026-11-10T09:54:25.8399706Z ✔ cleanup rejects assume-unchanged and skip-worktree without losing hidden edits (240.051948ms)
+2026-11-10T09:54:29.4739052Z ✔ a file written after preflight survives retained cleanup and interrupted move reconciliation (4553.319183ms)
+2026-11-10T09:54:39.9619865Z ✔ no-pipe descendant blocks stop until explicit force (10495.204743ms)
+2026-11-10T09:54:41.3046488Z ✔ no-pipe descendant exits cooperatively (1346.1593ms)
+2026-11-10T09:54:41.5401624Z ✔ retry after degraded target preparation failure delivers the fresh report exactly once (236.583803ms)
+2026-11-10T09:54:43.1879661Z ✔ explicit native close and clean restart persist a visible lost-context boundary (1647.692345ms)
+2026-11-10T09:55:08.9303072Z Audit remediation evidence: /tmp/hhu-audit-fixes-3aetSr
+2026-11-10T09:55:08.9306824Z ✔ timed-out native settings block new Turns until late response or confirmed stop (22178.202581ms)
+2026-11-10T09:55:08.9308568Z ✔ failed partial installation preserves the entire previous runnable release (3142.147944ms)
+2026-11-10T09:55:08.9310809Z ✔ real smoke evidence rejects later-Turn tools, failed outputs and input-only cwd (1.201465ms)
+2026-11-10T09:55:10.5344310Z ✔ confirmed project deletion closes idle Workers and cascades archived history and drafts, preserving files and other projects (513.415879ms)
+2026-11-10T09:55:11.7774512Z ✔ project deletion reserves all children during cooperative close and refuses new work or metadata rebinding (1241.909396ms)
+2026-11-10T09:55:12.1782749Z ✔ an active child blocks the whole project before any idle sibling is stopped; archiving keeps it running (401.681228ms)
+2026-11-10T09:55:17.5151665Z ✔ unconfirmed Worker exit retains project history and releases reservations for an explicit retry (5335.580618ms)
+2026-11-10T09:55:25.0689078Z ✔ confirmed Conversation deletion cancels running work and approvals, terminates unresponsive owned Workers and removes UNCERTAIN history (7554.665751ms)
+2026-11-10T09:55:26.7672630Z ✔ deleting an initializing Worker reserves the Conversation, settles async writers and never dispatches its Prompt (1698.510343ms)
+2026-11-10T09:55:28.4600029Z ✔ deleting during native configuration closes the pending RPC before removing its Conversation (1692.666027ms)
+2026-11-10T09:55:34.8075584Z Deletion integration evidence: /tmp/hhu-deletion-CPyN28
+2026-11-10T09:55:34.8080840Z ✔ deleting failed, generating, preparing-target and delivering Handoffs closes both owned sides and releases reservations (5936.867406ms)
+2026-11-10T09:55:37.3138660Z ✔ Enter follow-up uses advertised steering, keeps one active turn and deduplicates request IDs (1484.158753ms)
+2026-11-10T09:55:38.8012360Z ✔ Tab queue persists FIFO and sends each follow-up once after normal completion (1487.398943ms)
+2026-11-10T09:55:40.2255057Z ✔ Agents without steering advertise a visible queue fallback and receive no steering request (1424.132785ms)
+2026-11-10T09:55:40.4682284Z ✔ Esc cancellation holds queued work until explicit resume and retains cancel tail events (242.663343ms)
+2026-11-10T09:55:40.6730503Z ✔ Follow-ups while waiting for native permission never approve it and queue removal is explicit (204.733037ms)
+2026-11-10T09:55:42.0939231Z ✔ Idle steering race waits for original prompt completion and starts one host-owned next turn (1420.87666ms)
+2026-11-10T09:55:43.7892128Z ✔ Lost steering acknowledgement becomes UNCERTAIN, survives restart, and is never replayed (1695.247891ms)
+2026-11-10T09:55:45.1622667Z ✔ Daemon crash holds unsubmitted queue entries and reconnect GET never dispatches them (1372.943246ms)
+2026-11-10T09:55:46.6424160Z ✔ Harness switching holds the queue and duplicate explicit resumes cannot dispatch twice (1479.811997ms)
+2026-11-10T09:55:47.3102302Z Input evidence /tmp/hhu-inputs-il3joN
+2026-11-10T09:55:47.3107133Z ✔ a request ID reserved by the queue cannot be reused as a normal turn in another conversation (211.489949ms)
+2026-11-10T09:55:47.9253961Z ✔ new conversations inherit the last selected Harness across projects, standalone and store reopen (34.221741ms)
+2026-11-10T09:55:49.1043370Z ✔ simultaneous CLI starts share one authenticated Node Daemon, with empty global state (1225.657943ms)
+2026-11-10T09:55:49.1881225Z ✔ Project/Conversation CRUD validates actual paths, canonicalizes duplicates, and preserves files (88.198135ms)
+2026-11-10T09:55:49.2188508Z ✔ real WS invalidations commit before broadcast; reconnect recovers missed changes (26.72724ms)
+2026-11-10T09:55:49.2189974Z ✔ SQLite uses WAL, foreign keys, schema version, and private permissions (1.83639ms)
+2026-11-10T09:55:50.2182687Z ✔ graceful stop and fresh Node process recover real SQLite history (1002.106869ms)
+2026-11-10T09:55:51.1064914Z ✔ kernel lock recovers after Daemon crash and stale instance metadata is safely replaced (885.55827ms)
+2026-11-10T09:55:51.9858151Z ✔ doctor reports real runtime and native binding; CLI errors are explicit (877.370061ms)
+2026-11-10T09:55:52.0049261Z ✔ pending migrations back up existing database; newer schema is refused intact (20.985041ms)
+2026-11-10T09:55:54.5343537Z ✔ built hhu cold-starts from home in two real PTYs; closing clients keeps the Daemon alive (2527.613946ms)
+2026-11-10T09:55:55.7801895Z ✔ actual client subscription reconnects across Daemon restart and refreshes SQLite without command replay (1247.04958ms)
+2026-11-10T09:55:55.9942452Z Phase-1 test evidence: /tmp/hhu-phase1-EYhQcY
+2026-11-10T09:55:57.3695427Z ✔ migration upgrades a real Phase-1 database without losing projects/conversations (847.673858ms)
+2026-11-10T09:55:57.6593914Z ✔ SDK initialization, both cwd values, native settings, ordered raw streams and unknown events (290.766559ms)
+2026-11-10T09:55:57.9681806Z ✔ concurrent duplicate prompts execute once; different content and overlapping Turns are rejected (308.550902ms)
+2026-11-10T09:55:58.2935785Z ✔ native concurrent permissions block, validate optionId, and accept only one racing decision (325.341233ms)
+2026-11-10T09:55:58.5714955Z ✔ cancel expires approvals and commits native trailing chunks before completion (277.913174ms)
+2026-11-10T09:55:59.0349606Z ✔ independent Conversation sequences, committed WS events, pagination and real watcher reconnect (463.426711ms)
+2026-11-10T09:55:59.4399123Z ✔ Worker crash and lost stdio become UNCERTAIN without replay or usable stale approvals (404.544499ms)
+2026-11-10T09:56:00.9372122Z ✔ daemon stop refuses active Turns; explicit cancel-active waits for tail and closes idle Workers (1497.680171ms)
+2026-11-10T09:56:06.3198627Z ✔ uncooperative cancellation keeps Daemon alive; forced stop needs explicit confirmation (5381.883408ms)
+2026-11-10T09:56:07.4138875Z ✔ Daemon crash recovers persisted history, expires approvals and never resumes/replays a Turn (1094.58153ms)
+2026-11-10T09:56:07.8944749Z ✔ cancel during initialization never submits a prompt; unavailable executables leave traceable errors (480.361234ms)
+2026-11-10T09:56:07.8946594Z ✔ application logs contain no prompts, native tool output or profile environment values (0.378971ms)
+2026-11-10T09:56:08.2787660Z ✔ negotiated session/close blocks racing prompts and closes before Worker termination (380.32698ms)
+2026-11-10T09:56:08.5490605Z Phase-2 test evidence: /tmp/hhu-phase2-pOf7OL
+2026-11-10T09:56:09.9386056Z ✔ incremental Phase 2 migration preserves history and privately stored legacy profiles (847.746255ms)
+2026-11-10T09:56:12.0116180Z ✔ automatic titles use the first message once, persist and respect explicit names (2073.640393ms)
+2026-11-10T09:56:12.3754298Z ✔ parallel projects have separate native sessions, cwd, events, cancellation and background approvals (363.788127ms)
+2026-11-10T09:56:12.8762584Z ✔ shared workspaces allow concurrent Turns and emit file-conflict warning without a global lock (500.628439ms)
+2026-11-10T09:56:15.2336571Z ✔ draft CAS, durable request reservation, duplicate clients and preferences survive restart (2357.544434ms)
+2026-11-10T09:56:18.1712400Z ✔ two clients reconnect across real WS disconnects, page long history in order and never send a Prompt (2937.284479ms)
+2026-11-10T09:56:19.6263470Z ✔ Daemon SIGKILL expires background approvals, marks idle sessions INTERRUPTED and active execution UNCERTAIN (1454.983518ms)
+2026-11-10T09:56:19.8791395Z ✔ invalid project roots are never recreated; rebinding updates only stopped Conversation workspaces (252.834669ms)
+2026-11-10T09:56:20.0630305Z ✔ Profiles inherit native credentials, reject new credential overrides and disclose only legacy key names (183.639619ms)
+2026-11-10T09:56:20.1287853Z ✔ large Unicode drafts obey schema bounds; CAS races and metadata deletion preserve user files (62.993808ms)
+2026-11-10T09:56:20.4545106Z Phase-3 test evidence: /tmp/hhu-phase3-uqaGNP
+2026-11-10T09:56:21.8312265Z ✔ Changes returns actual staged, unstaged, untracked, rename, delete and binary data (247.88646ms)
+2026-11-10T09:56:21.9957771Z ✔ Changes uses bound workspace, handles non-repositories and rejects arbitrary paths (161.537726ms)
+2026-11-10T09:56:22.0375287Z ✔ oversized Git output is an explicit error and does not silently truncate (45.007769ms)
+2026-11-10T09:56:23.3534459Z ✔ sidebar and validated shortcut preferences persist across daemon restart in private SQLite (1307.750322ms)
+2026-11-10T09:56:23.7290996Z ✔ Bun and Node clients reach only the local Daemon even with proxy environment variables (383.324147ms)
+2026-11-10T09:56:26.0796416Z ✔ archive/restore survives restart; confirmed deletion removes app relations and preserves workspace (2350.806247ms)
+2026-11-10T09:56:27.3463809Z ✔ confirmed Conversation deletion stops active or UNCERTAIN work while project deletion keeps its preflight guard (1264.764725ms)
+2026-11-10T09:56:29.4977968Z Phase-4 integration evidence: /tmp/hhu-phase4-ML0sSV
+2026-11-10T09:56:29.4983858Z ✔ built TUI handles raw Ctrl+C and OS SIGINT; exiting leaves the running Worker intact (1728.158191ms)
+2026-11-10T09:56:31.3487949Z ✔ A → B → A creates three native sessions, same Harness reuses, pending selection has zero model calls and cancels (747.313118ms)
+2026-11-10T09:56:31.9103102Z ✔ two clients duplicate target submissions use one reservation/report/Prompt; cross-content and overlapping requests are rejected (561.91818ms)
+2026-11-10T09:56:32.2028720Z ✔ generation failure holds target, explicit cancel never sends; explicit retry stays on same request (292.461612ms)
+2026-11-10T09:56:32.7547440Z ✔ degraded continuation requires confirmation, uses prior saved report and observable history without another user message (551.788442ms)
+2026-11-10T09:56:33.3208681Z ✔ target Session creation failure preserves source and report; target RPC rejection is UNCERTAIN and never resends (565.88624ms)
+2026-11-10T09:56:34.1507614Z ✔ source running, approval and cancellation block target execution; internal report permissions remain native user decisions (829.337937ms)
+2026-11-10T09:56:36.2486006Z ✔ isolated worktrees bind actual cwd, preserve on Conversation deletion, reject dirty/ignored files and preserve branch on safe cleanup (2098.025349ms)
+2026-11-10T09:56:36.3637307Z ✔ non-Git projects refuse worktree creation; ownership/branch mismatches refuse cleanup (115.360166ms)
+2026-11-10T09:56:37.8225213Z ✔ shared Conversations remain parallel with conflict warning and never mix native history (1458.672131ms)
+2026-11-10T09:56:39.7463749Z ✔ switch after source shutdown exposes its cause and requires explicit degraded confirmation (1923.538442ms)
+2026-11-10T09:56:41.5891910Z ✔ restart preserves saved report through unavailable-source retry and requires explicit confirmation without replaying source (1842.505843ms)
+2026-11-10T09:56:46.5279277Z ✔ daemon recovery never commits/replays GENERATING or DELIVERING and blocks UNCERTAIN request actions (4939.147664ms)
+2026-11-10T09:56:51.6098071Z ✔ interrupted worktree creation is not treated as usable; unregistered directories are never removed (2783.819885ms)
+2026-11-10T09:56:51.6099581Z ✔ real schema 5 SQL migrates all existing data to the current schema with backup and explicit session binding (1356.997466ms)
+2026-11-10T09:56:57.9152397Z ✔ real concurrent Git path/branch conflicts and partial creation never bind a Conversation or delete pre-existing data (7245.967156ms)
+2026-11-10T09:57:00.7044305Z ✔ actual isolated daemon crashes during GENERATING and DELIVERING recover UNCERTAIN with no Prompt replay (2789.442424ms)
+2026-11-10T09:57:01.6353395Z Phase-5 integration evidence: /tmp/hhu-phase5-JUwun3
+2026-11-10T09:57:01.6357405Z ✔ unexpected source report tools preserve native evidence and require explicit risk/degraded confirmation (471.626681ms)
+2026-11-10T09:57:03.9564453Z HarnessHub: EEXIST: file already exists, open '/tmp/hhu-phase6-FOJf8O/conversation.md'
+2026-11-10T09:57:03.9860172Z ✔ conversation export separates readable records from raw ACP debug data (838.108902ms)
+2026-11-10T09:57:03.9862340Z ✔ private data and actual multi-generation log rotation retain user-only permissions (2.337169ms)
+2026-11-10T09:57:04.3198181Z HarnessHub: Invalid JSON input (contents omitted)
+2026-11-10T09:57:04.3457688Z ✔ failed migration rolls back all SQL, preserves the schema and a restorable private backup (33.844053ms)
+2026-11-10T09:57:04.3458889Z ✔ unsafe SQLite/sidecar symlinks are rejected before touching external files; permissions are repaired (1.392675ms)
+2026-11-10T09:57:04.3463729Z ✔ structured secrets are redacted in raw, normalized and debug export; native prose remains exact (338.639514ms)
+2026-11-10T09:57:15.0095560Z ✔ an adapter exiting before its stubborn descendant closes stdio cannot report cleanup success (10307.685486ms)
+2026-11-10T09:57:15.3799453Z ✔ explicit doctor handshake sends initialize/session/new without any prompt (734.450971ms)
+2026-11-10T09:57:15.3853075Z ✔ WS rejects browser Origins and incorrect tokens; client rejects an instance identity substitution (6.768615ms)
+2026-11-10T09:57:17.2125710Z ✔ cancel-active safely cancels a FAILED Handoff and restart accepts new work without replay (1824.238134ms)
+2026-11-10T09:57:17.5886464Z ✔ installer locks out an unresponsive instance even when instance metadata is missing (378.732342ms)
+2026-11-10T09:57:30.4313153Z ✔ confirmed deletion terminates a retained Handoff source without stopping another Conversation (11895.462931ms)
+2026-11-10T09:57:38.6527781Z ✔ slow Git creation/removal leaves Daemon responsive and reservations block rebind, shutdown and cleanup races (6690.429041ms)
+2026-11-10T09:57:40.2269795Z ✔ user-level installation is atomic, runnable from Home and refuses an active old-version instance (4046.930322ms)
+2026-11-10T09:57:40.8094894Z Phase-6 integration evidence: /tmp/hhu-phase6-FOJf8O
+2026-11-10T09:57:40.8099199Z ✔ unborn repositories and locked Worktrees fail safely without deleting files or branches (210.945286ms)
+2026-11-10T09:57:42.2996176Z ✔ RC-01 function: fsmonitor never executes; changes and files survive (88.178498ms)
+2026-11-10T09:57:42.3789357Z ✔ RC-01 HTTP: fsmonitor never executes; changes and files survive (79.674355ms)
+2026-11-10T09:57:42.4531731Z ✔ RC-01 Desktop: fsmonitor never executes; changes and files survive (74.312959ms)
+2026-11-10T09:57:42.5979950Z ✔ RC-01 Worktree: fsmonitor never executes; changes and files survive (146.876476ms)
+2026-11-10T09:57:43.2932794Z ✔ RC-02 confirmed idle exit persists end and Desktop explicitly creates a new native context (694.70349ms)
+2026-11-10T09:57:43.6180196Z ✔ RC-02 recovery refuses stream-only without killing worker (323.694485ms)
+2026-11-10T09:57:43.8090676Z ✔ RC-02 recovery refuses active without killing worker (191.385644ms)
+2026-11-10T09:58:04.0031440Z ✔ RC-03 steer-turn-first: input outcome remains independent of completed Turn (20194.248661ms)
+2026-11-10T09:58:24.2209000Z ✔ RC-03 steer-timeout-first: input outcome remains independent of completed Turn (20216.719531ms)
+2026-11-10T09:58:24.4100757Z ✔ RC-03 steer-ack: input outcome remains independent of completed Turn (189.843921ms)
+2026-11-10T09:58:24.5890410Z ✔ RC-03 steer-failed: input outcome remains independent of completed Turn (191.621563ms)
+2026-11-10T09:58:25.7239311Z ✔ RC-03 Desktop and TUI reconnect to the same durable uncertain delivery after restart (1120.52367ms)
+2026-11-10T09:58:28.2806371Z ✔ RC-04 crash recovery expires approvals atomically with replayable terminal events (2543.051908ms)
+2026-11-10T09:58:28.5220824Z ✔ RC-01 include/filter/diff/textconv/environment commands cannot run; rename/untracked/ignore remain accurate (185.634195ms)
+2026-11-10T09:58:28.6940303Z ✔ RC-01 status blocks submodule drivers and worktree checkout blocks branch-conditional filters (247.03983ms)
+2026-11-10T09:58:29.0274970Z ✔ RC-02 child close is not process-group exit; confirmation waits for its descendant (328.67202ms)
+2026-11-10T09:58:29.8887192Z RC evidence: /tmp/hhu-rc-remediation-bIIlhT
+2026-11-10T09:58:29.8890302Z ✔ RC-02 rejected Prompt followed by exit never unlocks an UNCERTAIN Turn (495.696936ms)
+2026-11-10T09:58:31.3930695Z ✔ schema 6 upgrade preserves dependent history, drafts and preferences, backs up and restores FK enforcement (44.248546ms)
+2026-11-10T09:58:33.3001711Z Standalone Conversation evidence: /tmp/hhu-standalone-oWGCgq
+2026-11-10T09:58:33.3007954Z ✔ standalone creation validates the explicit path, uses it for both ACP cwd values and persists without a project (2478.380217ms)
+2026-11-10T09:58:33.3227718Z ℹ tests 119
+2026-11-10T09:58:33.3228476Z ℹ suites 0
+2026-11-10T09:58:33.3229547Z ℹ pass 119
+2026-11-10T09:58:33.3230187Z ℹ fail 0
+2026-11-10T09:58:33.3230913Z ℹ cancelled 0
+2026-11-10T09:58:33.3231823Z ℹ skipped 0
+2026-11-10T09:58:33.3232457Z ℹ todo 0
+2026-11-10T09:58:33.3233026Z ℹ duration_ms 249827.599422
+2026-11-10T09:58:33.3301263Z bun test v1.4.4 (38afee6c8)
+2026-11-10T09:58:33.3337081Z
+2026-11-10T09:58:33.3339156Z ##[group]tests/e2e/paste-blocks.test.tsx:
+2026-11-10T09:58:33.6738517Z (pass) paste folding thresholds count lines and Unicode characters, not UTF-16 units [0.40ms]
+2026-11-10T09:58:33.7065828Z (pass) multiple paste blocks preserve original text, Unicode prefixes and literal labels [32.72ms]
+2026-11-10T09:58:33.7173835Z (pass) backspace deletes a whole block and undo/redo restore its full original payload [10.80ms]
+2026-11-10T09:58:33.7266306Z (pass) partial selections replace complete blocks without leaving placeholder fragments [9.24ms]
+2026-11-10T09:58:33.7345238Z (pass) replacing a selection with a paste, clearing and restoring drafts never leak markers [7.90ms]
+2026-11-10T09:58:33.7385410Z (pass) ordinary typing stays expanded and paste uses the terminal's existing ANSI sanitization [4.04ms]
+2026-11-10T09:58:33.7474011Z (pass) word deletion and forward delete treat folded text as an indivisible block [8.82ms]
+2026-11-10T09:58:33.7553441Z (pass) expansion can be undone and line-edit shortcuts never strand a partial marker [7.94ms]
+2026-11-10T09:58:33.7667007Z (pass) newline and line deletion cannot split a selected paste marker [11.32ms]
+2026-11-10T09:58:33.7667522Z
+2026-11-10T09:58:33.7668212Z ##[endgroup]
+2026-11-10T09:58:33.7668689Z
+2026-11-10T09:58:33.7669111Z ##[group]tests/e2e/tui.test.tsx:
+2026-11-10T09:58:36.1379087Z (pass) Solid view registers real workspace and empty conversation through authenticated Daemon [840.73ms]
+2026-11-10T09:58:36.1959489Z (pass) project directory Tab completes common prefixes, spaces, Unicode and symlinks without submitting [58.02ms]
+2026-11-10T09:58:37.4624822Z (pass) minimal ACP view sends once, preserves native choices and waits for a user decision [1266.55ms]
+2026-11-10T09:58:37.4733228Z (pass) native tool success collapses by default and manual expansion survives updates [10.75ms]
+2026-11-10T09:58:38.6545186Z (pass) drafts stay isolated when switching Conversations and restore with recent selection and preference after TUI exit [1181.16ms]
+2026-11-10T09:58:39.0969119Z (pass) background approval is discoverable in another Project, survives TUI exit and reconnects to the same Worker [442.41ms]
+2026-11-10T09:58:39.3182736Z (pass) persisted unconfirmed submission is read on reopen and explicit retries retain one requestId [221.24ms]
+2026-11-10T09:58:39.3262680Z (pass) a failed save while leaving a Conversation remains available for the next exit flush [8.09ms]
+2026-11-10T09:58:39.7458493Z
+2026-11-10T09:58:39.7459709Z ##[endgroup]
+2026-11-10T09:58:39.7459946Z
+2026-11-10T09:58:39.7460334Z ##[group]tests/e2e/slash-commands.test.tsx:
+2026-11-10T09:58:40.7535242Z (pass) shortcut validation rejects editor collisions, terminal aliases and nonexistent keys [1.47ms]
+2026-11-10T09:58:40.7536131Z (pass) slash trigger uses the actual cursor prefix and rejects paths, code and later lines [0.12ms]
+2026-11-10T09:58:41.2373696Z (pass) slash filters native names, Tab and Enter complete without a Turn; explicit send has one idempotent Prompt [480.87ms]
+2026-11-10T09:58:41.5689633Z (pass) Esc closes suggestions first, then editor; unmatched Enter never creates a Turn [334.37ms]
+2026-11-10T09:58:42.2132877Z (pass) native new/model/quit are sent unchanged to ACP, never intercepted as HHU actions [643.66ms]
+2026-11-10T09:58:42.5578790Z (pass) unpublished native commands never fall back to HHU operations [345.27ms]
+2026-11-10T09:58:42.8705743Z (pass) ordinary letters, Ctrl+D/Y, arrows, Shift+Enter and Ctrl+J retain editor semantics [312.67ms]
+2026-11-10T09:58:43.4088990Z (pass) command menu owns keys, restores draft/cursor and sidebar actions preserve both [538.25ms]
+2026-11-10T09:58:43.7486614Z (pass) Ctrl+C copies valid editor selection, then clears draft, then exits without stopping Daemon/session [339.77ms]
+2026-11-10T09:58:44.1450785Z (pass) bracketed paste /path is never auto-executed and requires explicit ordinary-text sending [394.40ms]
+2026-11-10T09:58:45.0752431Z (pass) snapshot replacement/empty clearing is isolated; two TUI subscribers and reopen rebuild state [932.13ms]
+2026-11-10T09:58:45.9582118Z (pass) pending switch hides source commands; A → B → A creates fresh session and stale command submission is rejected [882.91ms]
+2026-11-10T09:58:46.3916751Z (pass) uninitialized/unpublished/closed sessions show precise status and initialize never sends a Prompt [433.52ms]
+2026-11-10T09:58:46.7579508Z (pass) long popup supports keyboard scrolling, mouse completion, narrow resize and Unicode parameters [366.28ms]
+2026-11-10T09:58:46.9356970Z (pass) advertised command without output records actual ACP response and does not claim success [177.68ms]
+2026-11-10T09:58:49.2671485Z (pass) daemon restart reconnects without replay and old persisted command snapshots cannot execute [2331.36ms]
+2026-11-10T09:58:50.1453672Z Slash command evidence: /tmp/hhu-slash-ui-QH2rJo
+2026-11-10T09:58:50.1462202Z
+2026-11-10T09:58:50.1463357Z ##[endgroup]
+2026-11-10T09:58:50.1463585Z
+2026-11-10T09:58:50.1464144Z ##[group]tests/e2e/agent-output.test.tsx:
+2026-11-10T09:58:50.5725598Z (pass) Agent replies and public thinking have distinct gutters and headings without changing native text [400.94ms]
+2026-11-10T09:58:50.7270620Z (pass) styled streaming replies wrap and copy original Markdown while user backgrounds stay separate [154.51ms]
+2026-11-10T09:58:50.9558813Z (pass) native tool accents follow streaming status and approvals while preserving expansion and output [228.81ms]
+2026-11-10T09:58:50.9805751Z (pass) command syntax keeps its colors across tool states and narrow layouts [24.66ms]
+2026-11-10T09:58:51.0270566Z (pass) historical terminal and Guardian Review details stay folded without changing native events [46.43ms]
+2026-11-10T09:58:51.1133154Z (pass) tool summaries bound multiline commands and stdout without exposing protocol data [85.81ms]
+2026-11-10T09:58:51.9040930Z (pass) tool detail links toggle the clicked tool, preserve selection and survive updates and remounts [791.19ms]
+2026-11-10T09:58:51.9128768Z (pass) RC-04 expired approval replay clears TUI waiting and preserves the native pending tool [8.84ms]
+2026-11-10T09:58:51.9129360Z
+2026-11-10T09:58:51.9129948Z ##[endgroup]
+2026-11-10T09:58:51.9130181Z
+2026-11-10T09:58:51.9130547Z ##[group]tests/e2e/chat-scroll.test.tsx:
+2026-11-10T09:58:52.6897838Z (pass) the 181st Guardian Review keeps context and the wheel reaches all history in both directions [763.54ms]
+2026-11-10T09:58:53.4713420Z (pass) each chat wheel event scrolls five lines in either direction, clamped at the edges [781.27ms]
+2026-11-10T09:58:54.0884122Z (pass) Esc returns from scrolled history to the newest message and resumes following [617.42ms]
+2026-11-10T09:58:54.6701323Z (pass) modal Esc preserves scroll; an explicit editor follow request returns to the latest message [581.64ms]
+2026-11-10T09:58:54.6702086Z
+2026-11-10T09:58:54.6702929Z ##[endgroup]
+2026-11-10T09:58:54.6703216Z
+2026-11-10T09:58:54.6703756Z ##[group]tests/e2e/mouse-sidebar.test.tsx:
+2026-11-10T09:58:55.8527557Z (pass) sidebar spacing preserves names and keeps project headings more prominent [189.57ms]
+2026-11-10T09:58:56.6473179Z (pass) project arrows collapse independently; names expand/select; hover, selected highlight and keyboard/palette work [794.62ms]
+2026-11-10T09:58:57.1667492Z (pass) large sidebar wheel is isolated from chat, selection and metadata refresh; offscreen rows are clickable [517.73ms]
+2026-11-10T09:58:58.1692791Z (pass) mouse navigation preserves unsent drafts, scroll and manual tools; background Worker keeps its Turn [1004.12ms]
+2026-11-10T09:58:58.4143340Z (pass) Enter focuses the selected conversation at the draft end without sending it [242.12ms]
+2026-11-10T09:58:59.3253200Z (pass) chat area clicks focus the draft without sending or stealing modal focus [911.52ms]
+2026-11-10T09:58:59.9866870Z (pass) sidebar click/drag and chat selection do not cross-trigger; Ctrl+C copies, clears then quits [663.69ms]
+2026-11-10T09:59:00.3801981Z (pass) mouse rename targets the clicked conversation, supports cancel and syncs another TUI [393.50ms]
+2026-11-10T09:59:01.3216864Z (pass) row actions archive/restore/delete the intended ID without selecting a neighbor; delete still requires confirmation [941.50ms]
+2026-11-10T09:59:01.3260220Z (pass) project directory reports an unavailable root without creating or modifying it [4.47ms]
+2026-11-10T09:59:01.8403294Z
+2026-11-10T09:59:01.8404253Z Mouse sidebar evidence: /tmp/hhu-mouse-sidebar-AcL18H
+2026-11-10T09:59:01.8405429Z ##[endgroup]
+2026-11-10T09:59:01.8405733Z
+2026-11-10T09:59:01.8406207Z ##[group]tests/e2e/ui-hierarchy.test.tsx:
+2026-11-10T09:59:01.9023979Z (pass) slash commands distinguish names, native hints and descriptions in both selection states [17.40ms]
+2026-11-10T09:59:01.9186651Z (pass) palette keeps path search and empty results safe at narrow terminal sizes [16.28ms]
+2026-11-10T09:59:01.9190064Z (pass) chrome text, descriptions and placeholders meet normal-text contrast [0.47ms]
+2026-11-10T09:59:02.0513430Z (pass) command menu groups actions, stays bounded on resize, and preserves exact execution targets [130.62ms]
+2026-11-10T09:59:02.0514568Z Command menu evidence: /tmp/hhu-command-ui-Y9TvGt
+2026-11-10T09:59:02.0599629Z (pass) shared dialogs fit their containing conversation pane with the sidebar open [10.25ms]
+2026-11-10T09:59:02.0600153Z
+2026-11-10T09:59:02.0600716Z ##[endgroup]
+2026-11-10T09:59:02.0601211Z
+2026-11-10T09:59:02.0601628Z ##[group]tests/e2e/shortcuts.test.ts:
+2026-11-10T09:59:02.0607856Z (pass) Codex CLI defaults reserve Esc interrupt, Ctrl+J newline and Ctrl+O response copy [0.25ms]
+2026-11-10T09:59:02.0642578Z (pass) explicit shortcut overrides remain available, can be unbound and reject editor collisions [2.98ms]
+2026-11-10T09:59:02.0643784Z (pass) Ctrl+H supports legacy BS without consuming DEL or modified Backspace [0.11ms]
+2026-11-10T09:59:02.0644308Z
+2026-11-10T09:59:02.0645097Z ##[endgroup]
+2026-11-10T09:59:02.0645372Z
+2026-11-10T09:59:02.0645879Z ##[group]tests/e2e/chat-input-focus.test.tsx:
+2026-11-10T09:59:03.5349042Z (pass) message composer grows upward for newlines and wrapped text, then shrinks [1452.74ms]
+2026-11-10T09:59:03.6796939Z (pass) message placeholder clears on focus before IME composition and returns only outside editing [144.74ms]
+2026-11-10T09:59:05.3056233Z (pass) chat whitespace and input borders focus the editor; native clicks, scroll and modals stay intact [1625.81ms]
+2026-11-10T09:59:05.3056811Z
+2026-11-10T09:59:05.3057357Z ##[endgroup]
+2026-11-10T09:59:05.3057517Z
+2026-11-10T09:59:05.3057954Z ##[group]tests/e2e/codex-inputs.test.tsx:
+2026-11-10T09:59:06.6360513Z (pass) folded pastes expand for editing and send original text exactly once [363.56ms]
+2026-11-10T09:59:06.8518031Z (pass) folded drafts survive reopening as full editable text without submitting [216.34ms]
+2026-11-10T09:59:07.1197704Z (pass) queueing folded text persists the original payload without submitting a new Turn [266.71ms]
+2026-11-10T09:59:07.3246317Z (pass) folding never bypasses confirmation for unadvertised slash text [206.03ms]
+2026-11-10T09:59:07.9930995Z (pass) Enter steers while running, Tab queues, Esc dismisses suggestions before interrupting and preserves a draft [668.05ms]
+2026-11-10T09:59:08.2929985Z (pass) retired shortcuts leave editing keys available and HHU settings stay in the command palette [300.28ms]
+2026-11-10T09:59:08.7983326Z (pass) prompt history uses Up/Down and Ctrl+R while Ctrl+T opens transcript navigation [501.75ms]
+2026-11-10T09:59:09.3075134Z (pass) Agent/model remain visible and Ctrl+H switches without editing drafts or starting Handoff [512.80ms]
+2026-11-10T09:59:09.7924171Z
+2026-11-10T09:59:09.7925625Z ##[endgroup]
+2026-11-10T09:59:09.7925848Z
+2026-11-10T09:59:09.7926256Z ##[group]tests/e2e/phase5.test.tsx:
+2026-11-10T09:59:10.9959018Z (pass) internal report events remain available in Debug without appearing as user/agent chat; one expandable Handoff row preserves complete report and sources [228.37ms]
+2026-11-10T09:59:11.2463252Z (pass) failed Handoff keeps raw fallback out of collapsed and expanded chat while Source retains complete materials [250.39ms]
+2026-11-10T09:59:13.4863866Z (pass) TUI Harness selection persists pending state, explicit menu cancellation restores source, and first message performs one Handoff with retained draft CAS [2240.03ms]
+2026-11-10T09:59:14.1417103Z (pass) failed Handoff TUI exposes saved materials and requires explicit degraded confirmation before dispatch [655.01ms]
+2026-11-10T09:59:14.4927078Z (pass) TUI creates automatically named independent Worktree from palette; safe cleanup is independent and asks for CLEAN confirmation [351.38ms]
+2026-11-10T09:59:14.8966822Z (pass) RC-03 TUI shows uncertain input delivery after completed Turn and preserves unsent editor text [403.94ms]
+2026-11-10T09:59:15.3999545Z (pass) RC-02 TUI explicitly continues with new context without sending its draft or Handoff [503.17ms]
+2026-11-10T09:59:16.3754183Z Phase-5 UI evidence: /tmp/hhu-phase5-ui-oY9Wld
+2026-11-10T09:59:16.3756499Z
+2026-11-10T09:59:16.3757008Z ##[endgroup]
+2026-11-10T09:59:16.3757345Z
+2026-11-10T09:59:16.3757759Z ##[group]tests/e2e/phase4.test.tsx:
+2026-11-10T09:59:17.4304449Z (pass) native projection preserves Markdown, public thinking, tools, plans, unknown events and source correspondence [8.86ms]
+2026-11-10T09:59:17.6207575Z (pass) Markdown headings, lists, quotes, tables, code indentation and colored Diff render with OpenTUI [190.30ms]
+2026-11-10T09:59:18.0112874Z (pass) user messages have full-width gray backgrounds without coloring Agent replies at wide and narrow widths [388.72ms]
+2026-11-10T09:59:18.0257633Z (pass) tool details default to collapsed, explicit expansion survives status and pane remount [16.22ms]
+2026-11-10T09:59:18.5936868Z (pass) tool detail clicks work while composing and respect modal ownership without submitting a turn [567.93ms]
+2026-11-10T09:59:18.6042716Z (pass) source viewer copies exact original Markdown, code and native tool output using OSC52 [10.57ms]
+2026-11-10T09:59:18.6447613Z (pass) unknown events expose raw and normalized payloads with event IDs and sequence numbers [40.53ms]
+2026-11-10T09:59:18.9693727Z {"phase4Performance":true,"chunks":20000,"projectionMs":20,"displaySegments":20,"historyRows":10000,"mountedRowLimit":60}
+2026-11-10T09:59:18.9740775Z (pass) long history has bounded mounted rows, incremental content, scroll lock, bottom following and scroll restore [329.23ms]
+2026-11-10T09:59:19.3930151Z (pass) App Esc returns chat to the bottom from navigation or the editor without discarding drafts; modals take priority [418.39ms]
+2026-11-10T09:59:19.6133908Z (pass) unmodified letters other than N never invoke navigation, Harness or transcript actions [220.89ms]
+2026-11-10T09:59:20.0646009Z (pass) Enter sends once, Kitty Shift+Enter and Ctrl+J insert newlines without submitting [451.16ms]
+2026-11-10T09:59:20.3849292Z (pass) command palette searches projects and conversations, responsive sidebar hides and configured shortcuts work [320.24ms]
+2026-11-10T09:59:21.9514181Z (pass) two concurrently streaming Conversations switch without mixing output, losing drafts or cancelling Workers [1566.57ms]
+2026-11-10T09:59:22.4041618Z (pass) Changes panel reads actual workspace Git state and exposes an inline patch [452.69ms]
+2026-11-10T09:59:22.4733282Z (pass) Codex terminal metadata deltas render and copy without changing native payloads; tool Diff stays inline [67.42ms]
+2026-11-10T09:59:22.5172643Z (pass) rapidly returning to a Conversation waits for its departing editor's pending CAS save [45.59ms]
+2026-11-10T09:59:22.5178644Z (pass) long text segments keep surrogate pairs and original full-message copying intact [0.71ms]
+2026-11-10T09:59:22.6708831Z (pass) new messages cannot replace the history being read after the user scrolls up [152.95ms]
+2026-11-10T09:59:22.6799505Z (pass) refinement hides ACP control traffic, retains real errors and all raw sources [9.01ms]
+2026-11-10T09:59:23.2653897Z (pass) Ctrl+C clears draft, second Ctrl+C exits; selection takes precedence and does not cancel running Agent [585.41ms]
+2026-11-10T09:59:24.0138827Z (pass) mouse release copies multiline chat and code; double click selects a word and triple click selects a line [748.46ms]
+2026-11-10T09:59:25.0019129Z (pass) archive, restore, Raw Events and delete confirmation synchronize between two TUI clients [987.98ms]
+2026-11-10T09:59:25.6886912Z (pass) confirmed deletion cancels an active Conversation from the TUI, while closing the dialog keeps it running [686.79ms]
+2026-11-10T09:59:26.0547005Z (pass) Delete edits the draft while typing and deletion confirmation can be cancelled [365.98ms]
+2026-11-10T09:59:26.2267108Z (pass) two Delete presses confirm Conversation and Project deletion [172.05ms]
+2026-11-10T09:59:26.6550993Z (pass) conversation header uses two rows with title, path, Agent, model and status, wrapping safely when narrow [428.32ms]
+2026-11-10T09:59:26.8586173Z (pass) compact layout gives transcript most rows; input grows and narrow sidebar collapses [203.63ms]
+2026-11-10T09:59:27.7103469Z (pass) action menu archives without confirmation, archive view isolates history, project deletion offers Cancel and Delete [851.56ms]
+2026-11-10T09:59:27.7231673Z (pass) a deleted Conversation retires another client's dirty draft saver without blocking remaining drafts [12.94ms]
+2026-11-10T09:59:27.7397269Z (pass) clearing an unconfirmed draft persists empty input while retaining the reserved requestId [16.55ms]
+2026-11-10T09:59:27.7405505Z (pass) semantic projection classifies chat, activity, actions, notices, diagnostics and unknown extensions [0.82ms]
+2026-11-10T09:59:27.7952165Z (pass) diagnostic floods and legacy history replay produce the same clean chat without changing sources [54.46ms]
+2026-11-10T09:59:27.9266361Z (pass) public thinking, plans, tools, permission options and context/error notices render without metadata JSON [131.44ms]
+2026-11-10T09:59:27.9656800Z (pass) unknown visible text is concise by default, expandable, and linked to its full source [39.01ms]
+2026-11-10T09:59:28.0154413Z (pass) Raw Events Debug retains and copies full worker and authStatus sources hidden from chat [49.77ms]
+2026-11-10T09:59:28.6264192Z (pass) new Conversation stays empty after worker/auth startup, shows hello and reloads clean persisted history [610.91ms]
+2026-11-10T09:59:28.6318913Z (pass) diagnostic-only chat has a clean empty state and a concise running indicator [5.55ms]
+2026-11-10T09:59:29.0527257Z
+2026-11-10T09:59:29.0528744Z Phase-4 UI evidence: /tmp/hhu-phase4-ui-SOa3PW
+2026-11-10T09:59:29.0529632Z ##[endgroup]
+2026-11-10T09:59:29.0529815Z
+2026-11-10T09:59:29.0530237Z ##[group]tests/e2e/new-conversation.test.tsx:
+2026-11-10T09:59:30.1529621Z (pass) Ctrl+N works without projects and restores an ungrouped conversation at the captured launch path [129.97ms]
+2026-11-10T09:59:30.3477515Z (pass) N uses the selected project or child, does not steal chat input, and Ctrl+N preserves the draft [194.78ms]
+2026-11-10T09:59:30.5648144Z (pass) conversation shortcuts do not create while a modal or chat history owns the keys [217.04ms]
+2026-11-10T09:59:30.8501388Z (pass) restored TUI keeps the project tree on the left and opens chat on the right across resize [285.28ms]
+2026-11-10T09:59:31.2339126Z
+2026-11-10T09:59:31.2340207Z ##[endgroup]
+2026-11-10T09:59:31.2340802Z New conversation evidence: /tmp/hhu-new-conversation-TroxCB
+2026-11-10T09:59:31.2341643Z
+2026-11-10T09:59:31.2341840Z  122 pass
+2026-11-10T09:59:31.2342171Z  0 fail
+2026-11-10T09:59:31.2342602Z  1694 expect() calls
+2026-11-10T09:59:31.2343126Z Ran 122 tests across 13 files. [57.90s]
+2026-11-10T09:59:31.2595769Z ##[group]Run bun run release:linux
+2026-11-10T09:59:31.2596219Z [36;1mbun run release:linux[0m
+2026-11-10T09:59:31.2634890Z shell: /usr/bin/bash -e {0}
+2026-11-10T09:59:31.2635329Z ##[endgroup]
+2026-11-10T09:59:31.2724003Z $ bun scripts/linux-release.ts
+2026-11-10T09:59:31.4838102Z glibc 2.35
+2026-11-10T09:59:31.4840407Z Release staging: /tmp/hhu-linux-release-lOkAo2
+2026-11-10T09:59:31.4870950Z bun install v1.4.4 (38afee6c8)
+2026-11-10T09:59:31.9685638Z
+2026-11-10T09:59:31.9686546Z + @agentclientprotocol/claude-agent-acp@0.99.1
+2026-11-10T09:59:31.9687524Z + @agentclientprotocol/codex-acp@2.5.0
+2026-11-10T09:59:31.9688209Z + @agentclientprotocol/sdk@2.2.0
+2026-11-10T09:59:31.9688584Z + @hono/node-server@2.1.5
+2026-11-10T09:59:31.9689180Z + @opentui/core@0.8.0
+2026-11-10T09:59:31.9689741Z + @opentui/solid@0.8.0
+2026-11-10T09:59:31.9690491Z + better-sqlite3@13.0.3
+2026-11-10T09:59:31.9691277Z + drizzle-orm@0.45.4
+2026-11-10T09:59:31.9691950Z + hono@4.13.14
+2026-11-10T09:59:31.9692655Z + solid-js@1.9.18
+2026-11-10T09:59:31.9693102Z + ws@8.21.0
+2026-11-10T09:59:31.9693451Z + zod@4.6.7
+2026-11-10T09:59:31.9693625Z
+2026-11-10T09:59:31.9693846Z 228 packages installed [482.00ms]
+2026-11-10T09:59:32.7551799Z Built HarnessHub CLI (Bun) and Daemon (Node)
+2026-11-10T09:59:35.7454214Z { version: '3.53.4' }
+2026-11-10T09:59:35.8372010Z OpenTUI native loaded
+2026-11-10T10:00:33.2231790Z Built /home/runner/work/HarnessHub/HarnessHub/dist/linux/releases/0.6.3/harnesshub-0.6.3-linux-x64.tar.gz
+2026-11-10T10:00:33.2233440Z Staging retained for inspection: /tmp/hhu-linux-release-lOkAo2
+2026-11-10T10:00:33.2236909Z Validate before publishing: bun run release:verify -- /home/runner/work/HarnessHub/HarnessHub/dist/linux/releases/0.6.3
+2026-11-10T10:00:33.2482941Z ##[group]Run node scripts/verify-linux-release.mjs "dist/linux/releases/$(node -p 'require("./package.json").version')"
+2026-11-10T10:00:33.2483805Z [36;1mnode scripts/verify-linux-release.mjs "dist/linux/releases/$(node -p 'require("./package.json").version')"[0m
+2026-11-10T10:00:33.2520738Z shell: /usr/bin/bash -e {0}
+2026-11-10T10:00:33.2522092Z ##[endgroup]
+2026-11-10T10:00:33.3540792Z PASS download checksum rejection leaves installation untouched
+2026-11-10T10:01:01.3483899Z PASS offline installation with no system Node/Bun or source dependency
+2026-11-10T10:01:11.6739620Z PASS payload tampering fails before launcher replacement
+2026-11-10T10:01:14.8981243Z PASS bundled Codex and Claude adapters perform real ACP initialize without login or prompts
+2026-11-10T10:01:14.9853682Z PASS a held daemon lock blocks installation even without instance metadata
+2026-11-10T10:01:15.9884080Z PASS Daemon and Desktop Bridge use bundled Node and preserve instance identity
+2026-11-10T10:01:16.0375294Z PASS running Daemon blocks install without touching launchers or SQLite
+2026-11-10T10:01:16.3584339Z PASS packaged ACP SDK handles workspace, permission, cancellation and deduplication
+2026-11-10T10:01:16.6625883Z PASS installed TUI opens in a real Linux PTY and exits without stopping Daemon
+2026-11-10T10:01:20.2480862Z PASS unrelated and dangling symlink launchers are never overwritten
+2026-11-10T10:01:46.3840244Z PASS reinstallation preserves old release, exact launcher backups and conversation history
+2026-11-10T10:01:46.3841170Z Verified 11 release checks. Evidence: /tmp/hhu-release-verification-IJWv7n
+2026-11-10T10:01:46.6172710Z ##[group]Run actions/upload-artifact@v4
+2026-11-10T10:01:46.6173093Z with:
+2026-11-10T10:01:46.6173399Z   name: HarnessHub-linux-x64
+2026-11-10T10:01:46.6173760Z   path: dist/linux/releases/0.6.3/*
+2026-11-10T10:01:46.6174149Z   if-no-files-found: error
+2026-11-10T10:01:46.6174523Z   retention-days: 14
+2026-11-10T10:01:46.6174825Z   compression-level: 6
+2026-11-10T10:01:46.6175130Z   overwrite: false
+2026-11-10T10:01:46.6175493Z   include-hidden-files: false
+2026-11-10T10:01:46.6175790Z ##[endgroup]
+2026-11-10T10:01:46.7861783Z (node:9712) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-10T10:01:46.7863145Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-10T10:01:46.8001769Z With the provided path, there will be 4 files uploaded
+2026-11-10T10:01:46.8184813Z Artifact name is valid!
+2026-11-10T10:01:46.8213046Z Root directory input is valid!
+2026-11-10T10:01:47.0487233Z Beginning upload of artifact content to blob storage
+2026-11-10T10:01:47.3322668Z (node:9712) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-10T10:01:47.7325288Z Uploaded bytes 8388608
+2026-11-10T10:01:48.0095347Z Uploaded bytes 16777216
+2026-11-10T10:01:48.0563022Z Uploaded bytes 25165824
+2026-11-10T10:01:48.3183293Z Uploaded bytes 33554432
+2026-11-10T10:01:48.6205219Z Uploaded bytes 41943040
+2026-11-10T10:01:48.8396085Z Uploaded bytes 50331648
+2026-11-10T10:01:49.1097905Z Uploaded bytes 58720256
+2026-11-10T10:01:49.4357464Z Uploaded bytes 67108864
+2026-11-10T10:01:49.5948771Z Uploaded bytes 75497472
+2026-11-10T10:01:50.0533522Z Uploaded bytes 83886080
+2026-11-10T10:01:50.2439564Z Uploaded bytes 92274688
+2026-11-10T10:01:50.4536644Z Uploaded bytes 100663296
+2026-11-10T10:01:50.7122188Z Uploaded bytes 109051904
+2026-11-10T10:01:51.0206148Z Uploaded bytes 117440512
+2026-11-10T10:01:51.2134585Z Uploaded bytes 125829120
+2026-11-10T10:01:51.4148988Z Uploaded bytes 134217728
+2026-11-10T10:01:51.6872105Z Uploaded bytes 142606336
+2026-11-10T10:01:51.9833928Z Uploaded bytes 150994944
+2026-11-10T10:01:52.2240150Z Uploaded bytes 159383552
+2026-11-10T10:01:52.4548809Z Uploaded bytes 167772160
+2026-11-10T10:01:52.7097809Z Uploaded bytes 176160768
+2026-11-10T10:01:53.0154085Z Uploaded bytes 184549376
+2026-11-10T10:01:53.3084679Z Uploaded bytes 192937984
+2026-11-10T10:01:53.5790117Z Uploaded bytes 201326592
+2026-11-10T10:01:53.8161677Z Uploaded bytes 209715200
+2026-11-10T10:01:54.1132082Z Uploaded bytes 218103808
+2026-11-10T10:01:54.3489869Z Uploaded bytes 226492416
+2026-11-10T10:01:54.6098375Z Uploaded bytes 234881024
+2026-11-10T10:01:54.8696879Z Uploaded bytes 243269632
+2026-11-10T10:01:55.2340382Z Uploaded bytes 251658240
+2026-11-10T10:01:55.6305466Z Uploaded bytes 260046848
+2026-11-10T10:01:55.6438107Z Uploaded bytes 268435456
+2026-11-10T10:01:55.8624435Z Uploaded bytes 276824064
+2026-11-10T10:01:56.1187436Z Uploaded bytes 285212672
+2026-11-10T10:01:56.4194933Z Uploaded bytes 293601280
+2026-11-10T10:01:56.7412506Z Uploaded bytes 301989888
+2026-11-10T10:01:56.9509986Z Uploaded bytes 310378496
+2026-11-10T10:01:57.2513843Z Uploaded bytes 318767104
+2026-11-10T10:01:57.4952398Z Uploaded bytes 327155712
+2026-11-10T10:01:57.7488307Z Uploaded bytes 335544320
+2026-11-10T10:01:58.0982860Z Uploaded bytes 343932928
+2026-11-10T10:01:58.3882272Z Uploaded bytes 352321536
+2026-11-10T10:01:58.7165605Z Uploaded bytes 360710144
+2026-11-10T10:01:58.8990612Z Uploaded bytes 369098752
+2026-11-10T10:01:59.2812381Z Uploaded bytes 377487360
+2026-11-10T10:01:59.4872651Z Uploaded bytes 385875968
+2026-11-10T10:01:59.7350218Z Uploaded bytes 394264576
+2026-11-10T10:02:00.1040775Z Uploaded bytes 402653184
+2026-11-10T10:02:00.3755895Z Uploaded bytes 411041792
+2026-11-10T10:02:00.6297150Z Uploaded bytes 419430400
+2026-11-10T10:02:00.9155589Z Uploaded bytes 427749705
+2026-11-10T10:02:00.9523164Z Finished uploading artifact content to blob storage!
+2026-11-10T10:02:00.9524304Z SHA256 digest of uploaded artifact zip is 8d1074422d16de8120f020a8b4e48a6a8505ff636ea6a3d13069c7ea3a81cf78
+2026-11-10T10:02:00.9526192Z Finalizing artifact upload
+2026-11-10T10:02:01.3525808Z Artifact HarnessHub-linux-x64.zip successfully finalized. Artifact ID 13753735506
+2026-11-10T10:02:01.3527072Z Artifact HarnessHub-linux-x64 has been successfully uploaded! Final size is 427749705 bytes. Artifact ID is 13753735506
+2026-11-10T10:02:01.3534655Z Artifact download URL: https://github.com/HalaRank/HarnessHub/actions/runs/42794539843/artifacts/13753735506
+2026-11-10T10:02:01.3709386Z Post job cleanup.
+2026-11-10T10:02:01.4941928Z (node:9727) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-10T10:02:01.4942655Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-10T10:02:01.5102682Z Post job cleanup.
+2026-11-10T10:02:01.6852683Z Post job cleanup.
+2026-11-10T10:02:01.7742404Z [command]/usr/bin/git version
+2026-11-10T10:02:01.7778200Z git version 2.56.0
+2026-11-10T10:02:01.7833054Z Temporarily overriding HOME='/home/runner/work/_temp/34f54e32-216f-49a9-a629-60f3da26270f' before making global git config changes
+2026-11-10T10:02:01.7835011Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-10T10:02:01.7836359Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/HarnessHub/HarnessHub
+2026-11-10T10:02:01.7867839Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-10T10:02:01.7901735Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-10T10:02:01.8118970Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-10T10:02:01.8142758Z http.https://github.com/.extraheader
+2026-11-10T10:02:01.8160986Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-10T10:02:01.8197509Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-10T10:02:01.8424311Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-10T10:02:01.8456156Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-10T10:02:01.8833788Z Cleaning up orphan processes
+2026-11-10T10:02:01.9199686Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

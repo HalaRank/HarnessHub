@@ -1,0 +1,2 @@
+4838eca0d3a4f4dfd6d6234285b79aec8330df2b43c8524e434b7f8f670ff537  HarnessHub-0.6.3-windows-x64-unsigned-setup.exe
+82c892bf2442f37196d48817902642ec63b30f3f40d7511f954b8238d49a0385  HarnessHub-0.6.3-windows-x64-unsigned.zip

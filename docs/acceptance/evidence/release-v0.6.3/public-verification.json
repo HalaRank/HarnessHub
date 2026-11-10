@@ -1,0 +1,38 @@
+{
+  "verifiedAt": "2026-11-10T10:04:15.862452+00:00",
+  "authenticated": false,
+  "latest": {
+    "status": 200,
+    "url": "https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.3"
+  },
+  "downloads": [
+    {
+      "name": "install.sh",
+      "status": 200,
+      "bytes": 2945,
+      "sha256": "57da5894f207f6965154aa6d43deb26be25757c5be22558dc5df05ff1e19f4da",
+      "url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/install.sh"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "status": 200,
+      "bytes": 265,
+      "sha256": "da4964aba2a6cd6b03286ae37138ef952206f1704436bdb44a976cfd291bb954",
+      "url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/SHA256SUMS.txt"
+    },
+    {
+      "name": "windows-x64-SHA256SUMS.txt",
+      "status": 200,
+      "bytes": 222,
+      "sha256": "cc7cbf5f2a4a7d5ca76d889fd4117573dc14eb2e971c45e5267f1f4a3a8bcef2",
+      "url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/windows-x64-SHA256SUMS.txt"
+    },
+    {
+      "name": "windows-x64-release-manifest.json",
+      "status": 200,
+      "bytes": 785,
+      "sha256": "e51d892a24835b28061f46acff39a381de5e6d108898315215bb327ce8491364",
+      "url": "https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/windows-x64-release-manifest.json"
+    }
+  ]
+}
