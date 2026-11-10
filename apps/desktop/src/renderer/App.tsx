@@ -1,6 +1,7 @@
 import type { Conversation, ConversationEvent, Project } from "@harnesshub/shared";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DesktopApi, DesktopRequest, DesktopState, Distribution } from "../contracts";
+import { ArchiveDialog } from "./ArchiveDialog";
 import { Changes } from "./Changes";
 import { Composer } from "./Composer";
 import { ConversationDialog, type ConversationDialogValue } from "./ConversationDialog";
@@ -107,13 +108,15 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
       const reply = await api.request(input);
       if (!reply.ok) {
         setError(reply.error);
-        return;
+        return false;
       }
       accept(reply.state);
       if (input.type === "select" || input.type === "connect") setNewConversation(null);
       if (reply.distributions) setDistros(reply.distributions);
+      return true;
     } catch (error) {
       setError(error instanceof Error ? error.message : "Desktop 连接服务不可用，请重新打开窗口。");
+      return false;
     }
   };
   useEffect(() => {
@@ -255,7 +258,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const conversations =
     state.snapshot?.conversations.filter(
       (c) =>
-        !!c.archivedAt === archived &&
+        c.archivedAt === null &&
         `${c.title} ${c.selectedHarnessId ?? ""}`.toLowerCase().includes(query.toLowerCase()),
     ) ?? [];
   const toggleProject = (id: string) =>
@@ -368,6 +371,18 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
         </button>
       </header>
       {dialog && <ConversationDialog value={dialog} api={api} close={() => setDialog(null)} />}
+      {archived && (
+        <ArchiveDialog
+          key={state.distribution}
+          state={state}
+          error={error}
+          close={() => setArchived(false)}
+          select={(conversationId) => request({ type: "select", conversationId })}
+          restore={(conversationId) =>
+            request({ type: "conversation.patch", conversationId, patch: { archived: false } })
+          }
+        />
+      )}
       <div className={`workspace ${sidebar ? "" : "sidebar-hidden"} ${panel ? "panel-open" : ""}`}>
         {sidebar && (
           <>
@@ -406,13 +421,17 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                 />
               </div>
               <div className="tree-toolbar">
-                <span>{archived ? "已归档" : "项目"}</span>
+                <span>项目</span>
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => setArchived(!archived)}
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    setError("");
+                    setArchived(true);
+                  }}
                 >
-                  {archived ? "返回会话" : "查看归档"}
+                  查看归档
                 </button>
               </div>
               <nav className="tree" aria-label="会话列表">

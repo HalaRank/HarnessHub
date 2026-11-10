@@ -88,21 +88,56 @@ export async function newConversationSmoke(
   await waitFor(
     () => connection.getState().snapshot?.conversations.find((c) => c.id === id)?.archivedAt,
   );
-  await js(
-    "Array.from(document.querySelectorAll('.tree-toolbar button')).find(b => b.textContent === '查看归档').click()",
-  );
   await waitFor(() =>
-    js(
-      "!!document.querySelector('.conversation-row .conversation-actions button[title=恢复归档]')",
-    ),
+    js("!document.querySelector('.tree').textContent.includes('手动重命名 smoke')"),
   );
-  await click(win, '.conversation-actions button[title="恢复归档"]');
+  const activeTree = await js("document.querySelector('.tree').textContent");
+  const openArchive = async () => {
+    await click(win, '.tree-toolbar button[aria-haspopup="dialog"]');
+    await waitFor(() => js("!!document.querySelector('.archive-dialog[open]')"));
+  };
+  await openArchive();
+  assert.equal(await js("document.querySelector('.tree').textContent"), activeTree);
+  assert.ok(
+    await js("document.querySelector('.archive-meta').textContent.includes('HarnessHub Desktop')"),
+  );
+  assert.equal(await js("!!document.querySelector('.archive-dialog .project-heading')"), false);
+  // Viewing history preserves archive state; the project tree stays active-only.
+  await click(win, '.archive-dialog button[aria-label="查看归档 手动重命名 smoke"]');
+  await waitFor(() => js("!document.querySelector('.archive-dialog')"));
+  assert.ok(connection.getState().snapshot?.conversations.find((c) => c.id === id)?.archivedAt);
+  await openArchive();
+  await click(win, 'input[aria-label="搜索归档会话"]');
+  await win.webContents.insertText("不匹配的归档搜索");
+  await waitFor(() =>
+    js("document.querySelector('.archive-dialog').textContent.includes('没有匹配')"),
+  );
+  assert.equal(await js("document.querySelector('.tree').textContent"), activeTree);
+  win.webContents.sendInputEvent({ type: "keyDown", keyCode: "A", modifiers: ["control"] });
+  win.webContents.sendInputEvent({ type: "keyUp", keyCode: "A", modifiers: ["control"] });
+  await win.webContents.insertText("HarnessHub Desktop");
+  await waitFor(() => js("document.querySelectorAll('.archive-list li').length === 1"));
+  writeFileSync(
+    join(output, "desktop-archive-window.png"),
+    (await win.webContents.capturePage()).toPNG(),
+  );
+  await click(win, '.archive-dialog button[title="恢复归档"]');
   await waitFor(
     () =>
       connection.getState().snapshot?.conversations.find((c) => c.id === id)?.archivedAt === null,
   );
-  await js(
-    "Array.from(document.querySelectorAll('.tree-toolbar button')).find(b => b.textContent === '返回会话').click()",
+  await waitFor(() => js("document.querySelectorAll('.archive-list li').length === 0"));
+  await click(win, '[aria-label="关闭归档窗口"]');
+  await waitFor(() => js("!document.querySelector('.archive-dialog')"));
+  await openArchive();
+  assert.ok(
+    await js("document.querySelector('.archive-dialog').textContent.includes('暂无归档会话')"),
+  );
+  win.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+  win.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
+  await waitFor(() => js("!document.querySelector('.archive-dialog')"));
+  await waitFor(() =>
+    js("document.querySelector('.tree').textContent.includes('手动重命名 smoke')"),
   );
   await js(`${targetRow}.querySelector('.conversation-actions button:first-child').focus()`);
   const standalone = (await connection.action({
@@ -121,6 +156,37 @@ export async function newConversationSmoke(
     await js("document.querySelector('.tree > section:last-child').className"),
     "standalone-conversations",
   );
+  await connection.action({
+    type: "conversation.patch",
+    conversationId: standalone.id,
+    patch: { archived: true },
+  });
+  await openArchive();
+  await waitFor(() =>
+    js("document.querySelector('.archive-meta')?.textContent.includes('独立会话')"),
+  );
+  assert.equal(
+    await js("document.querySelector('.tree').textContent.includes('独立底部 smoke')"),
+    false,
+  );
+  win.setSize(720, 780);
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.equal(
+    await js(
+      "document.querySelector('.archive-dialog').getBoundingClientRect().width <= innerWidth",
+    ),
+    true,
+  );
+  writeFileSync(
+    join(output, "desktop-archive-narrow.png"),
+    (await win.webContents.capturePage()).toPNG(),
+  );
+  await click(win, '.archive-dialog button[title="恢复归档"]');
+  await waitFor(() =>
+    js("document.querySelector('.archive-dialog').textContent.includes('暂无归档会话')"),
+  );
+  await click(win, '[aria-label="关闭归档窗口"]');
+  win.setSize(1440, 940);
   await new Promise((resolve) => setTimeout(resolve, 250));
   writeFileSync(
     join(output, "desktop-conversation-actions.png"),
@@ -138,6 +204,7 @@ export async function newConversationSmoke(
     "Unsent first-message draft survives leaving and reopening the new page through SQLite",
     "Double send creates one user Turn, automatic title and native cwd in the real managed Worktree",
     "Conversation row rename, archive and restore operate on the target conversation",
+    "Archived conversations stay out of projects; a separate searchable dialog shows project and standalone ownership, opens history without restoring, restores live and closes with Escape at wide/narrow sizes",
     "Standalone rows follow every project, use root indentation and row-level labels without a project heading",
   ];
 }
