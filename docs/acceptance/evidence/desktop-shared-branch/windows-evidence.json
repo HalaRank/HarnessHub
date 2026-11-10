@@ -1,0 +1,16 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "New page shows HarnessHub logo/project sentence and inline project, real branch and Worktree controls without a title dialog",
+    "Unsent first-message draft survives leaving and reopening the new page through SQLite",
+    "Double send creates one user Turn, automatic title and native cwd in the real managed Worktree",
+    "Conversation row rename, archive and restore operate on the target conversation",
+    "Standalone rows follow every project, use root indentation and row-level labels without a project heading",
+    "Shared mode selects a branch without Worktree; toggling preserves the selection, only sending switches Git, and the native cwd stays in the shared directory"
+  ],
+  "passed": true
+}
