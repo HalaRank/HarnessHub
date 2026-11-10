@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checks": [
+    "Selection commits only through connect and settles into a checked summary",
+    "Switch opens the selector and cancel preserves the current environment without reconnecting",
+    "Explicit second connection replaces the fixed environment",
+    "Disconnection, incompatible versions and failures retain identity with accurate status",
+    "220px sidebar truncates long names and keeps WSL2 and status visible"
+  ],
+  "fits": {
+    "noOverflow": true,
+    "truncated": true,
+    "title": "Ubuntu-26.04-Development-Long-Environment"
+  }
+}
