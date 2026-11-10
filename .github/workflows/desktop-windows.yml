@@ -1,6 +1,11 @@
 name: Windows Desktop candidate
 on:
   workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ""
   workflow_dispatch:
   pull_request:
     paths:
@@ -22,6 +27,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
@@ -31,7 +38,9 @@ jobs:
       - name: Install only Desktop dependencies
         run: bun install --filter '@harnesshub/desktop' --filter '!harnesshub' --frozen-lockfile --ignore-scripts
       - run: node apps/desktop/node_modules/electron/install.js
-      - run: bun run version:check
+      - name: Check versions without the Linux TUI preload
+        working-directory: apps/desktop
+        run: bun ../../scripts/version.ts --check
       - name: Read version and validate release tag
         id: version
         shell: pwsh
@@ -42,7 +51,9 @@ jobs:
       - name: Release boundary tests
         working-directory: apps/desktop
         run: bun test tests/release.test.ts
-      - run: bun run desktop:release
+      - name: Build Windows release without the Linux TUI preload
+        working-directory: apps/desktop
+        run: bun ../../scripts/desktop.ts package
       - name: Isolated install, upgrade, uninstall (no WSL on this runner)
         shell: pwsh
         run: |

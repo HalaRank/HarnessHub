@@ -35,3 +35,5 @@
 ## 上传发布授权
 
 用户随后明确要求“上传发布”，授权提交发布配置、推送版本 Tag、上传并公开发布 Release。重新检查发现现有 Git credential 可用于认证 GitHub API；先前匿名 API 的 HTTP 403 是共享出口未认证配额耗尽。已认证确认仓库有发布权限且尚无 Release。后续以最终提交的 Tag 运行构建/验证，不直接发布前述历史本地产物；实际远端结果另行补录。
+
+首轮远端运行 `42780279640` 暴露 Windows filtered install 后从仓库根执行 Bun 会加载 Linux TUI 的 `@opentui/solid/preload`，而该依赖刻意未安装。改为从已有 Desktop bunfig 所在目录执行版本检查和打包；本地同命令版本检查、Desktop build、4 项 release 边界测试通过。发布工作流增加显式已有 Tag 的手动重建输入，两个平台均 checkout 该 Tag，Linux 验证版本后才创建 draft；保留已推送 Tag，不移动或覆盖它。
