@@ -122,12 +122,84 @@ select {
   flex-direction: column;
   min-height: 0;
 }
-.environment {
-  padding: 18px 14px 6px;
+.wsl-environment {
+  padding: 16px 14px 12px;
+  flex-shrink: 0;
 }
-.environment label {
-  display: block;
-  margin-bottom: 8px;
+.wsl-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.wsl-heading :where(.text-button) {
+  padding: 4px 6px;
+  color: var(--accent);
+}
+.wsl-current {
+  --wsl-state-color: var(--muted);
+  padding: 11px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--raised);
+}
+.wsl-current.connected {
+  --wsl-state-color: var(--success);
+  border-color: #42634f;
+  background: #1b2922;
+}
+.wsl-current.error,
+.wsl-current.incompatible {
+  --wsl-state-color: var(--error);
+}
+.wsl-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wsl-identity svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: var(--wsl-state-color);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.wsl-identity strong {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+.wsl-version {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.wsl-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding-left: 26px;
+  color: var(--wsl-state-color);
+  font-size: 11px;
+}
+.wsl-state-mark {
+  font-size: 10px;
+}
+.wsl-editing-current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0 0 8px;
   color: var(--muted);
   font-size: 11px;
 }
@@ -139,6 +211,15 @@ select {
   flex: 1;
   width: 100px;
   font-size: 12px;
+}
+.distribution-row:where(.has-choice) select {
+  border-color: #69778b;
+  background: var(--raised);
+}
+.wsl-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
 }
 .text-button {
   font-size: 11px;

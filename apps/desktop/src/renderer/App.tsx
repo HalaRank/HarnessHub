@@ -11,6 +11,7 @@ import { DesktopTranscript } from "./history";
 import { TranscriptView } from "./Message";
 import { PathActions } from "./PathActions";
 import { Worktrees } from "./Worktrees";
+import { WslEnvironment } from "./WslEnvironment";
 
 declare global {
   interface Window {
@@ -49,7 +50,6 @@ const runtimeLabels: Record<string, string> = {
 export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const [state, setState] = useState(initial);
   const [distros, setDistros] = useState<Distribution[]>([]);
-  const [choice, setChoice] = useState("");
   const [error, setError] = useState("");
   const [discovering, setDiscovering] = useState(true);
   const [sidebar, setSidebar] = useState(true);
@@ -143,9 +143,6 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
       unsubscribe();
     };
   }, [api, accept]);
-  useEffect(() => {
-    if (state.distribution) setChoice(state.distribution);
-  }, [state.distribution]);
   const current = state.snapshot?.conversations.find((c) => c.id === state.conversationId);
   const projection = useMemo(
     () =>
@@ -355,41 +352,17 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
         {sidebar && (
           <>
             <aside className="sidebar" aria-label="项目与会话">
-              <div className="environment">
-                <label htmlFor="distribution">WSL 执行环境</label>
-                <div className="distribution-row">
-                  <select
-                    id="distribution"
-                    value={choice}
-                    onChange={(event) => setChoice(event.target.value)}
-                  >
-                    <option value="">{discovering ? "正在发现…" : "选择 WSL2 发行版"}</option>
-                    {distros.map((d) => (
-                      <option key={d.name} value={d.name} disabled={d.version !== 2}>
-                        {d.name} · WSL{d.version}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    disabled={!choice || state.status === "starting"}
-                    onClick={() => {
-                      void request({ type: "connect", distribution: choice });
-                    }}
-                  >
-                    连接
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => {
-                    void request({ type: "discover" });
-                  }}
-                >
-                  刷新发行版
-                </button>
-              </div>
+              <WslEnvironment
+                state={state}
+                distributions={distros}
+                discovering={discovering}
+                connect={(distribution) => {
+                  void request({ type: "connect", distribution });
+                }}
+                discover={() => {
+                  void request({ type: "discover" });
+                }}
+              />
               <div className="search">
                 <input
                   aria-label="搜索会话"
