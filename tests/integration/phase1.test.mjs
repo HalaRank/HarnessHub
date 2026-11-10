@@ -18,7 +18,7 @@ import { promisify } from "node:util";
 import Database from "better-sqlite3";
 import WebSocket from "ws";
 import { watchSnapshot } from "../../dist/client/client.js";
-import { openStore } from "../../dist/storage/index.js";
+import { HandoffStore, openStore } from "../../dist/storage/index.js";
 
 const run = promisify(execFile);
 const bun = process.env.HARNESSHUB_BUN;
@@ -37,6 +37,35 @@ const instanceFile = join(state, "instance.json");
 const cliRun = (...args) => run(bun, [cli, ...args], { env, cwd: tmpdir(), timeout: 15000 });
 const instance = () => JSON.parse(readFileSync(instanceFile, "utf8"));
 const sockets = [];
+test("new conversations inherit the last selected Harness across projects, standalone and store reopen", async () => {
+  const file = join(temp, "harness-default", "state.db");
+  let store = await openStore(file, migrations);
+  try {
+    const firstProject = store.addProject(temp, "First").value;
+    const secondRoot = join(temp, "second-project");
+    mkdirSync(secondRoot);
+    const secondProject = store.addProject(secondRoot, "Second").value;
+    const first = store.addConversation(firstProject.id).value;
+    assert.equal(first.selectedHarnessId, null);
+    new HandoffStore(store).bind(first.id, { selectedHarnessId: "mock-a" });
+    store.savePreferences({ lastConversationId: first.id });
+    const second = store.addConversation(secondProject.id).value;
+    assert.equal(second.selectedHarnessId, "mock-a");
+    assert.equal(second.activeNativeSessionId, null);
+    assert.equal(second.workspacePath, secondRoot);
+    new HandoffStore(store).bind(second.id, { selectedHarnessId: "mock-b" });
+    store.savePreferences({ lastConversationId: second.id });
+    store.close();
+    store = await openStore(file, migrations);
+    const standalone = store.addConversation(null, undefined, undefined, temp).value;
+    assert.equal(standalone.selectedHarnessId, "mock-b");
+    assert.equal(standalone.activeNativeSessionId, null);
+    store.savePreferences({ lastConversationId: null });
+    assert.equal(store.addConversation(firstProject.id).value.selectedHarnessId, "mock-b");
+  } finally {
+    store.close();
+  }
+});
 async function request(path, method = "GET", body, headers = {}) {
   const i = instance();
   return fetch(`http://127.0.0.1:${i.port}${path}`, {

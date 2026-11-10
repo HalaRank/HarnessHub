@@ -377,10 +377,14 @@ h2 {
 }
 .composer {
   background: var(--raised);
-  border-radius: 14px;
-  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
   max-width: 800px;
   margin: 0 auto;
+}
+.composer:focus-within {
+  border-color: #535b67;
 }
 .composer textarea {
   color: inherit;
@@ -396,8 +400,7 @@ h2 {
 .composer-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 10px;
+  font-size: 12px;
 }
 .composer-footer > span {
   overflow: hidden;
@@ -519,23 +522,68 @@ textarea:focus {
   overflow-y: auto;
   font-size: 14px;
 }
+.composer textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
 .composer-footer {
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 16px;
+  padding-top: 8px;
 }
 .composer-footer select {
-  max-width: 170px;
-  padding: 5px;
+  max-width: 180px;
+  min-height: 32px;
+  padding: 5px 8px;
   font-size: 12px;
+  text-overflow: ellipsis;
+  border-color: transparent;
+  background: transparent;
+}
+.composer-footer select:hover:not(:disabled) {
+  background: var(--hover);
+}
+.composer-footer select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.composer-footer option {
+  color: var(--text);
+  background: var(--raised);
 }
 .composer-footer label {
   display: flex;
   align-items: center;
-  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  gap: 4px;
+}
+.composer-footer label > span,
+.composer-model {
+  color: #abb0b8;
+}
+.composer-footer label > span {
+  flex-shrink: 0;
+}
+.composer-connection,
+.composer-connect {
+  color: var(--muted);
+  font-size: 12px;
 }
 .send {
   margin-left: auto;
+  min-height: 34px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+.send:hover:not(:disabled) {
+  background: #fff;
+}
+.send:disabled {
   background: var(--selected);
+  color: var(--muted);
 }
 .slash-menu {
   max-height: 240px;

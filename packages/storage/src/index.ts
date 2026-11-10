@@ -5,7 +5,7 @@ import type { Activity, ChangeEvent, Draft, Preferences } from "@harnesshub/shar
 import { AppError, activeStates, NEW_CONVERSATION_TITLE, problemStates } from "@harnesshub/shared";
 import { privateDir, secureFile } from "@harnesshub/shared/paths";
 import Database from "better-sqlite3";
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { RuntimeStore } from "./runtime";
@@ -192,6 +192,19 @@ export class Store {
     if (!workspacePath || (!projectId && workspace))
       throw new AppError(400, "Standalone Conversation requires a shared workspace path");
     this.assertWorkspaceAvailable(workspacePath);
+    const lastConversationId = this.preferences().lastConversationId;
+    const previousHarness = lastConversationId
+      ? this.getConversation(lastConversationId).selectedHarnessId
+      : null;
+    const selectedHarnessId =
+      previousHarness ??
+      this.db
+        .select({ harnessId: schema.conversations.selectedHarnessId })
+        .from(schema.conversations)
+        .where(isNotNull(schema.conversations.selectedHarnessId))
+        .orderBy(desc(schema.conversations.updatedAt), desc(schema.conversations.createdAt))
+        .get()?.harnessId ??
+      null;
     const now = Date.now();
     const value = {
       id: randomUUID(),
@@ -201,7 +214,7 @@ export class Store {
       workspaceMode: workspace ? ("worktree" as const) : ("shared" as const),
       worktreeId: workspace?.id ?? null,
       activeNativeSessionId: null,
-      selectedHarnessId: null,
+      selectedHarnessId,
       workspacePath,
       runtimeStatus: "IDLE" as const,
       createdAt: now,

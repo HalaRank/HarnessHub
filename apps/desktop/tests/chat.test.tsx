@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { ConversationEvent, Draft } from "@harnesshub/shared";
+import type { Conversation, ConversationEvent, Draft } from "@harnesshub/shared";
 import { renderToStaticMarkup } from "react-dom/server";
 import { type DesktopApi, type DesktopState, desktopRequest } from "../src/contracts";
 import { Composer, inputAction } from "../src/renderer/Composer";
@@ -91,6 +91,108 @@ test("Enter sends, Shift+Enter preserves newline, IME/229 and composition confir
     expect(inputAction({ key, shiftKey: false }, false, true)).toBe("complete");
   for (const key of ["c", "v", "a", "z", "y"])
     expect(inputAction({ key, shiftKey: false }, false, false)).toBe("none");
+});
+test("composer keeps one native model and approval selector, with legacy fallbacks and Chinese labels", async () => {
+  const backend = editorBackend();
+  const draft = new DesktopDraft(backend.api, id);
+  await draft.load();
+  const conversation: Conversation = {
+    id,
+    title: "Composer",
+    projectId: null,
+    archivedAt: null,
+    workspaceMode: "shared",
+    workspacePath: "/tmp/test",
+    runtimeStatus: "IDLE",
+    activeNativeSessionId: id,
+    selectedHarnessId: "mock",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+  const render = (native: unknown, selectedHarnessId = "mock") =>
+    renderToStaticMarkup(
+      <Composer
+        api={backend.api}
+        draft={draft}
+        conversation={{ ...conversation, selectedHarnessId }}
+        state={{
+          ...state,
+          profiles: [{ id: "mock", name: "Mock Harness" }],
+          interaction: {
+            conversationId: id,
+            approvals: [],
+            handoffs: [],
+            sessions: [
+              {
+                id,
+                conversationId: id,
+                harnessId: "mock",
+                agentSessionId: "native",
+                workerId: id,
+                epoch: id,
+                status: "READY",
+                cwd: conversation.workspacePath,
+                capabilities: { session: native },
+                createdAt: 0,
+                endedAt: null,
+                exitConfirmed: false,
+              },
+            ],
+          },
+        }}
+      />,
+    );
+  const modes = {
+    currentModeId: "full",
+    availableModes: [{ id: "full", name: "Full access" }],
+  };
+  const models = { currentModelId: "native-model[high]" };
+  const configOptions = [
+    {
+      id: "native-model-id",
+      category: "model",
+      type: "select",
+      name: "Model",
+      currentValue: "native-model",
+      options: [{ group: "native", options: [{ value: "native-model", name: "Native Model" }] }],
+    },
+    {
+      id: "mode",
+      type: "select",
+      name: "Mode",
+      currentValue: "full",
+      options: [{ value: "full", name: "Full access" }],
+    },
+    {
+      id: "collaboration_mode",
+      type: "select",
+      name: "Collaboration mode",
+      currentValue: "default",
+      options: [{ value: "default", name: "Default" }],
+    },
+    { id: "fast", type: "boolean", name: "Fast mode", currentValue: true },
+  ];
+  const html = render({ configOptions: [...configOptions, ...configOptions], modes, models });
+  expect(html.match(/<select\b/g)).toHaveLength(3);
+  expect(html.match(/>模型<\/span>/g)).toHaveLength(1);
+  expect(html.match(/>审批模式<\/span>/g)).toHaveLength(1);
+  expect(html).toContain('value="native-model" selected=""');
+  expect(html).toContain("Native Model");
+  expect(html.match(/Full access/g)).toHaveLength(1);
+  expect(html).not.toContain("native-model[high]");
+  expect(html).not.toContain("Collaboration mode");
+  expect(html).not.toContain("Fast mode");
+  expect(html).not.toContain('type="checkbox"');
+
+  const legacy = render({ modes, models });
+  expect(legacy.match(/<select\b/g)).toHaveLength(2);
+  expect(legacy).toContain("模型 · native-model[high]");
+  expect(legacy).toContain("审批模式");
+  expect(render({}).match(/<select\b/g)).toHaveLength(1);
+  const switching = render({ configOptions, modes, models }, "target");
+  expect(switching.match(/<select\b/g)).toHaveLength(1);
+  expect(switching).not.toContain("Native Model");
+  expect(backend.count()).toBe(0);
 });
 test("independent drafts persist across editors and rapid conversation switches", async () => {
   const backend = editorBackend();

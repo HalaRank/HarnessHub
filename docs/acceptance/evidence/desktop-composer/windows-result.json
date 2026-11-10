@@ -1,0 +1,143 @@
+{
+  "platform": "win32",
+  "electron": "45.2.3",
+  "wide": {
+    "selects": 3,
+    "labels": [
+      "模型6 Astrafeature/gpt-5.6-solbaizhi-cloud/gpt-6-solbaizhi-cloud/gpt-6-astra",
+      "审批模式Read-onlyWorkspace accessAuto reviewFull access"
+    ],
+    "overflow": false,
+    "controls": [
+      {
+        "left": 135.5,
+        "right": 246,
+        "top": 279.5
+      },
+      {
+        "left": 290,
+        "right": 453.5,
+        "top": 279.5
+      },
+      {
+        "left": 521.5,
+        "right": 660,
+        "top": 279.5
+      },
+      {
+        "left": 844.46875,
+        "right": 901.5,
+        "top": 278.5
+      }
+    ],
+    "viewport": 1037
+  },
+  "narrow": {
+    "selects": 3,
+    "labels": [
+      "模型6 Astrafeature/gpt-5.6-solbaizhi-cloud/gpt-6-solbaizhi-cloud/gpt-6-astra",
+      "审批模式Read-onlyWorkspace accessAuto reviewFull access"
+    ],
+    "overflow": false,
+    "controls": [
+      {
+        "left": 33,
+        "right": 143.5,
+        "top": 298.5
+      },
+      {
+        "left": 187.5,
+        "right": 351,
+        "top": 298.5
+      },
+      {
+        "left": 85,
+        "right": 223.5,
+        "top": 339.5
+      },
+      {
+        "left": 376.96875,
+        "right": 434,
+        "top": 338.5
+      }
+    ],
+    "viewport": 467
+  },
+  "requests": [
+    {
+      "type": "draft.load",
+      "conversationId": "7ad657ec-2001-405b-801a-3d86b092f1b0"
+    },
+    {
+      "type": "session.settings",
+      "conversationId": "7ad657ec-2001-405b-801a-3d86b092f1b0",
+      "setting": {
+        "kind": "config",
+        "configId": "model",
+        "value": "baizhi-cloud/feature/gpt-5.6-sol"
+      }
+    },
+    {
+      "type": "session.settings",
+      "conversationId": "7ad657ec-2001-405b-801a-3d86b092f1b0",
+      "setting": {
+        "kind": "config",
+        "configId": "mode",
+        "value": "read-only"
+      }
+    },
+    {
+      "type": "draft.load",
+      "conversationId": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "type": "harness.select",
+      "conversationId": "11111111-1111-4111-8111-111111111111",
+      "harnessId": "grok"
+    },
+    {
+      "type": "session.prepare",
+      "conversationId": "11111111-1111-4111-8111-111111111111",
+      "harnessId": "grok"
+    },
+    {
+      "type": "draft.load",
+      "conversationId": "22222222-2222-4222-8222-222222222222"
+    },
+    {
+      "type": "session.prepare",
+      "conversationId": "22222222-2222-4222-8222-222222222222",
+      "harnessId": "codex"
+    },
+    {
+      "type": "draft.load",
+      "conversationId": "33333333-3333-4333-8333-333333333333"
+    },
+    {
+      "type": "session.prepare",
+      "conversationId": "33333333-3333-4333-8333-333333333333",
+      "harnessId": "codex"
+    },
+    {
+      "type": "session.prepare",
+      "conversationId": "33333333-3333-4333-8333-333333333333",
+      "harnessId": "codex"
+    },
+    {
+      "type": "draft.load",
+      "conversationId": "44444444-4444-4444-8444-444444444444"
+    },
+    {
+      "type": "draft.load",
+      "conversationId": "55555555-5555-4555-8555-555555555555"
+    }
+  ],
+  "autoChecks": [
+    "explicit Harness selection connects once and refreshes native options",
+    "inherited Harness connects automatically for a new conversation",
+    "connection failure preserves explicit retry without a render retry loop",
+    "UNCERTAIN blocks automatic connection",
+    "cross-Harness source context waits for the first-message handoff"
+  ],
+  "passed": true
+}

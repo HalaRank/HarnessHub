@@ -5,7 +5,7 @@ import {
   sessionCommands,
 } from "@harnesshub/shared";
 import { object } from "@harnesshub/shared/event-projection";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DesktopApi, DesktopRequest, DesktopState } from "../contracts";
 import { Confirm } from "./Confirm";
 import { call, type DesktopDraft } from "./drafts";
@@ -39,6 +39,7 @@ export function Composer({
   const [plain, setPlain] = useState<{ text: string; harness: string } | null>(null);
   const [recover, setRecover] = useState(false);
   const actionLock = useRef(false);
+  const prepareAttempt = useRef("");
   const [error, setError] = useState("");
   const [acting, setActing] = useState(false);
   const [menuDismissed, setMenuDismissed] = useState(false);
@@ -102,20 +103,42 @@ export function Composer({
     !!handoff ||
     inputDelivery.length > 0 ||
     (!switching && source?.status === "INTERRUPTED");
-  const act = async (request: DesktopRequest) => {
-    if (actionLock.current) return;
-    actionLock.current = true;
-    setActing(true);
-    setError("");
-    try {
-      await call(api, request);
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      actionLock.current = false;
-      setActing(false);
+  const act = useCallback(
+    async (request: DesktopRequest) => {
+      if (actionLock.current) return;
+      actionLock.current = true;
+      setActing(true);
+      setError("");
+      try {
+        await call(api, request);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        actionLock.current = false;
+        setActing(false);
+      }
+    },
+    [api],
+  );
+  useEffect(() => {
+    if (!connected) {
+      prepareAttempt.current = "";
+      return;
     }
-  };
+    if (!context || !harness || conversation.activeNativeSessionId || disabled) return;
+    const key = `${conversation.id}:${harness}`;
+    if (prepareAttempt.current === key) return;
+    prepareAttempt.current = key;
+    void act({ type: "session.prepare", conversationId: conversation.id, harnessId: harness });
+  }, [
+    act,
+    connected,
+    context,
+    harness,
+    disabled,
+    conversation.id,
+    conversation.activeNativeSessionId,
+  ]);
   const choose = (command: NativeCommand) => {
     draft.update(`/${command.name} ${draft.text.replace(/^\/\S*\s*/, "")}`);
     setMenuDismissed(true);
@@ -134,6 +157,13 @@ export function Composer({
   };
   const native = object(object(session?.capabilities).session);
   const config = Array.isArray(native.configOptions) ? native.configOptions.map(object) : [];
+  const modelOption = config.find(
+    (option) => option.type === "select" && (option.category === "model" || option.id === "model"),
+  );
+  const modeOption = config.find(
+    (option) => option.type === "select" && (option.category === "mode" || option.id === "mode"),
+  );
+  const settings = [modelOption, modeOption].filter((option) => option !== undefined);
   const modes = object(native.modes);
   const currentModel = object(native.models).currentModelId;
   const activeTurn = state.snapshot?.activity.items.find(
@@ -442,9 +472,15 @@ export function Composer({
               </option>
             ))}
           </select>
-          {!session && !switching && (
+          {!session && !switching && harness && acting && (
+            <span className="composer-connection" role="status">
+              正在连接…
+            </span>
+          )}
+          {!session && !switching && harness && !acting && (
             <button
               type="button"
+              className="composer-connect"
               disabled={busy || !connected || !harness || uncertain}
               onClick={() =>
                 void act({
@@ -454,89 +490,74 @@ export function Composer({
                 })
               }
             >
-              连接 Agent 获取选项
+              重试连接
             </button>
           )}
-          {currentModel != null && <span>模型：{String(currentModel)}</span>}
-          {config.map((option) => (
+          {!modelOption && currentModel != null && (
+            <span className="composer-model" title={String(currentModel)}>
+              模型 · {String(currentModel)}
+            </span>
+          )}
+          {settings.map((option) => (
             <label key={String(option.id)} htmlFor={`config-${String(option.id)}`}>
-              {String(option.name ?? option.id)}
-              {option.type === "boolean" ? (
-                <input
-                  id={`config-${String(option.id)}`}
-                  type="checkbox"
-                  checked={option.currentValue === true}
-                  disabled={busy || !connected || switching}
-                  onChange={(e) =>
-                    void act({
-                      type: "session.settings",
-                      conversationId: conversation.id,
-                      setting: {
-                        kind: "config",
-                        configId: String(option.id),
-                        value: e.target.checked,
-                      },
-                    })
-                  }
-                />
-              ) : (
-                <select
-                  id={`config-${String(option.id)}`}
-                  aria-label={String(option.name)}
-                  value={String(option.currentValue)}
-                  disabled={busy || !connected || switching}
-                  onChange={(e) =>
-                    void act({
-                      type: "session.settings",
-                      conversationId: conversation.id,
-                      setting: {
-                        kind: "config",
-                        configId: String(option.id),
-                        value: e.target.value,
-                      },
-                    })
-                  }
-                >
-                  {(Array.isArray(option.options) ? option.options : [])
-                    .flatMap((entry) => {
-                      const o = object(entry);
-                      return Array.isArray(o.options) ? o.options.map(object) : [o];
-                    })
-                    .map((o) => (
-                      <option key={String(o.value)} value={String(o.value)}>
-                        {String(o.name ?? o.value)}
-                      </option>
-                    ))}
-                </select>
-              )}
-            </label>
-          ))}
-          {Array.isArray(modes.availableModes) && (
-            <label>
-              模式
+              <span>{option === modelOption ? "模型" : "审批模式"}</span>
               <select
-                value={String(modes.currentModeId)}
+                id={`config-${String(option.id)}`}
+                title={typeof option.description === "string" ? option.description : undefined}
+                value={String(option.currentValue)}
                 disabled={busy || !connected || switching}
                 onChange={(e) =>
                   void act({
                     type: "session.settings",
                     conversationId: conversation.id,
-                    setting: { kind: "mode", modeId: e.target.value },
+                    setting: {
+                      kind: "config",
+                      configId: String(option.id),
+                      value: e.target.value,
+                    },
                   })
                 }
               >
-                {modes.availableModes.map((m) => {
-                  const mode = object(m);
-                  return (
-                    <option key={String(mode.id)} value={String(mode.id)}>
-                      {String(mode.name)}
+                {(Array.isArray(option.options) ? option.options : [])
+                  .flatMap((entry) => {
+                    const o = object(entry);
+                    return Array.isArray(o.options) ? o.options.map(object) : [o];
+                  })
+                  .map((o) => (
+                    <option key={String(o.value)} value={String(o.value)}>
+                      {String(o.name ?? o.value)}
                     </option>
-                  );
-                })}
+                  ))}
               </select>
             </label>
-          )}
-          {session && !config.length && currentModel == null && <span>ACP 未发布模型选项</span>}
+          ))}
+          {!modeOption &&
+            Array.isArray(modes.availableModes) &&
+            modes.availableModes.length > 0 && (
+              <label>
+                <span>审批模式</span>
+                <select
+                  value={String(modes.currentModeId)}
+                  disabled={busy || !connected || switching}
+                  onChange={(e) =>
+                    void act({
+                      type: "session.settings",
+                      conversationId: conversation.id,
+                      setting: { kind: "mode", modeId: e.target.value },
+                    })
+                  }
+                >
+                  {modes.availableModes.map((m) => {
+                    const mode = object(m);
+                    return (
+                      <option key={String(mode.id)} value={String(mode.id)}>
+                        {String(mode.name)}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            )}
           {activeTurn && (
             <button
               type="button"
@@ -558,6 +579,7 @@ export function Composer({
             type="button"
             className="send"
             aria-label="发送"
+            title="发送 · Enter"
             disabled={disabled || !draft.text.trim() || !harness}
             onClick={send}
           >
