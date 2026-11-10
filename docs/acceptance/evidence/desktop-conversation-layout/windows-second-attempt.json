@@ -1,0 +1,44 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Real Chromium conversation controls, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+    "Project expand/collapse",
+    "Empty conversation switching",
+    "Top-left application settings preserve the permanent sidebar",
+    "Empty conversation switching, application settings and mouse resize",
+    "Real WSL hhu TUI running concurrently in a PTY against the same Daemon",
+    "Native Windows editor and SQLite per-conversation draft restore",
+    "IME confirmation does not send, real timed streaming, manual scrolling suspends follow",
+    "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    "Native approval UI displays actual options and explicit reject resolves once",
+    "Project expand/collapse, details panel, resize/110% zoom without horizontal overflow",
+    "Closing the real Windows window preserves Daemon and active Mock ACP Worker",
+    "Reopened Electron restores WSL distro and SQLite conversation selection",
+    "Closing/reopening Electron persists SQLite drafts while active Agent survives",
+    "New page creates and auto-names on first send without requesting a title",
+    "Windows create/rename/archive/restore/delete dialogs and explicit delete confirmation",
+    "600 native tools / 1200 updates: bounded DOM mounts, history paging, full SQLite events retained"
+  ],
+  "dom": {
+    "sidebar": 260,
+    "text": "",
+    "body": "⚙\nHarnessHub\nDesktop\n已连接\n重新连接\n＋\n新建会话\n项目\n查看归档\n⌄\nHarnessHub Desktop\n3\n＋\nWindows 与 WSL 的同一段对话\ndesktop-smoke\nBridge 架构与安全检查\n未选择 Harness\nCoding Workspace Phase 3\ndesktop-smoke\nLong tool history\n独立会话desktop-smoke\nAgent 与历史保留在 WSL\n新建会话\n◫\n你想在 HarnessHub Desktop 中构建什么？\n项目\nHarnessHub Desktop\n独立会话\n起始分支\nfeature/shared\nmain\n创建工作树\nCodex\nClaude Code\nGrok Build\nOpenCode\nDesktop smoke\nGrok (Mock ACP)\n↑\n\n在所选分支的独立工作树中开始 · Enter 发送，Shift+Enter 换行",
+    "divider": {
+      "x": 260,
+      "y": 48,
+      "width": 6,
+      "height": 743,
+      "top": 48,
+      "right": 266,
+      "bottom": 791,
+      "left": 260
+    }
+  },
+  "passed": false,
+  "error": "const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true}));: Error: Script failed to execute, this normally means an error was thrown. Check the renderer console for the error.",
+  "stack": "Error: const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true}));: Error: Script failed to execute, this normally means an error was thrown. Check the renderer console for the error.\n    at C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-AT95wd\\app\\main\\smoke.cjs:10224:11\n    at async workspaceSmoke (C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-AT95wd\\app\\main\\smoke.cjs:10345:3)\n    at async C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-AT95wd\\app\\main\\smoke.cjs:10657:21"
+}

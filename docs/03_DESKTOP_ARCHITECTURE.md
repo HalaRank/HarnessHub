@@ -125,3 +125,9 @@ WSL install:local 继续持同一 flock、完整 release staging、原子 launch
 ### Desktop Phase 4 补充：GitHub 安装包分发
 
 用户追加要求 Windows App 也可从 GitHub 直接下载安装包。统一发布工作流调用既有 Windows NSIS/ZIP 验证管线，与 Linux 独立后端一起按同一版本 Tag 构建；两个平台成功后创建单个 draft Release。Windows 校验/manifest 上传时增加 `windows-x64-` 前缀，避免与 Linux 资产冲突。Windows 用户直接下载 exe 或 ZIP，所选 WSL2 发行版安装同 Release 的后端包，无需源码 checkout。保持 unsigned、手动发布和无自动更新；本地配置不代表远端发布或平台验收通过。实施、真实本地验证及远端未验证项见 [GitHub 分发补充验收](acceptance/desktop-phase-4-github-distribution.md)。
+
+### Desktop Phase 4 补充：会话侧栏与全局设置（2026-11-10）
+
+用户修正 Desktop 的内容分区：右侧工作面板仅显示当前 Conversation 的详情、真实 Changes/Diff、原始事件和 Handoff。环境诊断、版本信息、安装/升级指南、WSL 发行版选择及全部托管 Worktree 管理统一进入左上角“应用设置”模态窗口。没有选中会话或处于新建会话页时不展示工作面板；连接故障通过独立帮助入口打开相同设置。
+
+取消 Desktop 左侧栏隐藏按钮，左栏始终显示 Project → Conversation 树，通过分隔条拖动在 220–420px 调宽，保留键盘微调。拖动按鼠标初始位置计算增量并捕获指针；窄窗口右栏浮层展示，不覆盖用户选定的左栏宽度。上述规则取代本文早期 Phase 1 关于 Desktop 可隐藏侧栏、Details 内全局环境信息的说明，TUI 沿用自身交互。本次只调整 Desktop 视图，不新增后端、IPC、数据库或 Agent 行为。专项验收见 [会话侧栏与设置](acceptance/desktop-phase-4-conversation-layout.md)。

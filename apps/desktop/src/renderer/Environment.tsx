@@ -4,7 +4,7 @@ import type { DesktopState } from "../contracts";
 export function Environment({ state }: { state: DesktopState }) {
   const backend = state.backend;
   return (
-    <details className="environment" open={state.status !== "connected"}>
+    <details className="environment" open>
       <summary>环境与安装指南 · Desktop {VERSION}</summary>
       <dl>
         <dt>Desktop / 协议</dt>
@@ -13,7 +13,7 @@ export function Environment({ state }: { state: DesktopState }) {
         </dd>
         <dt>WSL 发行版 / 连接状态</dt>
         <dd>
-          {state.distribution ?? "请选择左侧发行版"} / {state.status}
+          {state.distribution ?? "请在上方选择发行版"} / {state.status}
         </dd>
         <dt>Linux Bridge / 协议</dt>
         <dd>{backend ? `${backend.bridgeVersion} / ${backend.bridgeProtocol}` : "尚未确认"}</dd>
@@ -63,7 +63,7 @@ export function Environment({ state }: { state: DesktopState }) {
             WSL2；没有 WSL 时请自行按 Microsoft WSL 安装指南准备。应用不会安装系统组件。
           </li>
           <li>
-            在左侧选择已用于开发的 WSL2 发行版并连接。已有 Codex、Claude、Grok、OpenCode
+            在上方选择已用于开发的 WSL2 发行版并连接。已有 Codex、Claude、Grok、OpenCode
             登录和配置继续使用。
           </li>
           <li>

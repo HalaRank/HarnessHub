@@ -1,0 +1,32 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Real Chromium conversation controls, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+    "Project expand/collapse",
+    "Empty conversation switching",
+    "Top-left application settings preserve the permanent sidebar",
+    "Empty conversation switching, application settings and mouse resize",
+    "Real WSL hhu TUI running concurrently in a PTY against the same Daemon",
+    "Native Windows editor and SQLite per-conversation draft restore",
+    "IME confirmation does not send, real timed streaming, manual scrolling suspends follow",
+    "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    "Native approval UI displays actual options and explicit reject resolves once",
+    "Project expand/collapse, details panel, resize/110% zoom without horizontal overflow",
+    "Closing the real Windows window preserves Daemon and active Mock ACP Worker",
+    "Reopened Electron restores WSL distro and SQLite conversation selection",
+    "Closing/reopening Electron persists SQLite drafts while active Agent survives",
+    "New page creates and auto-names on first send without requesting a title",
+    "Windows create/rename/archive/restore/delete dialogs and explicit delete confirmation",
+    "600 native tools / 1200 updates: bounded DOM mounts, history paging, full SQLite events retained",
+    "Unpublished /path: cancel preserves draft, explicit plain-text confirmation and rapid double click produce exactly one Prompt",
+    "Real Git statuses, file Diff, 1200-line paging/scroll/highlight/copy, separate native ACP Diff and controlled Explorer folder navigation",
+    "Windows cross-Harness roundtrip uses fresh target sessions, visible COMMITTED reports/source boundaries; selection alone starts no Handoff",
+    "Windows Worktree creation, workspace-specific Changes, delete preserves worktree; cleanup cancel is inert and explicit confirm retains directory/branch",
+    "125/150/200 percent Chromium zoom layout; minimize/restore/maximize/fullscreen (not physical monitor DPI)"
+  ],
+  "passed": true
+}

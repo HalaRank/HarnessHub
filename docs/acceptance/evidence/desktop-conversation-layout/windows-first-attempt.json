@@ -1,0 +1,41 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Real Chromium conversation controls, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+    "Project expand/collapse",
+    "Empty conversation switching",
+    "Top-left application settings preserve the permanent sidebar",
+    "Empty conversation switching, application settings and mouse resize",
+    "Real WSL hhu TUI running concurrently in a PTY against the same Daemon",
+    "Native Windows editor and SQLite per-conversation draft restore",
+    "IME confirmation does not send, real timed streaming, manual scrolling suspends follow",
+    "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    "Native approval UI displays actual options and explicit reject resolves once",
+    "Project expand/collapse, details panel, resize/110% zoom without horizontal overflow",
+    "Closing the real Windows window preserves Daemon and active Mock ACP Worker",
+    "Reopened Electron restores WSL distro and SQLite conversation selection",
+    "Closing/reopening Electron persists SQLite drafts while active Agent survives",
+    "New page creates and auto-names on first send without requesting a title"
+  ],
+  "dom": {
+    "sidebar": 260,
+    "body": "⚙\nHarnessHub\nDesktop\n已连接\n重新连接\n＋\n新建会话\n项目\n查看归档\n⌄\nHarnessHub Desktop\n2\n＋\nWindows 与 WSL 的同一段对话\ndesktop-smoke\nBridge 架构与安全检查\n未选择 Harness\nAgent 与历史保留在 WSL\n你的工作，从这里继续\n选择一个会话，查看已有消息\n◫\n继续你的项目\n\n通过左上角设置连接 WSL2 环境，再从左侧选择会话。\n这里显示与 TUI 相同的消息历史。\n\n选择或新建会话开始聊天 · 关闭窗口不会停止后台任务",
+    "divider": {
+      "x": 260,
+      "y": 48,
+      "width": 6,
+      "height": 743,
+      "top": 48,
+      "right": 266,
+      "bottom": 791,
+      "left": 260
+    }
+  },
+  "passed": false,
+  "error": "Windows smoke state timeout",
+  "stack": "Error: Windows smoke state timeout\n    at waitFor (C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-lVLpUG\\app\\main\\smoke.cjs:10422:9)\n    at async click (C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-lVLpUG\\app\\main\\smoke.cjs:10425:3)\n    at async C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-lVLpUG\\app\\main\\smoke.cjs:10627:5"
+}

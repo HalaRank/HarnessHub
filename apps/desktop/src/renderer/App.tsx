@@ -1,19 +1,17 @@
 import type { Conversation, ConversationEvent, Project } from "@harnesshub/shared";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DesktopApi, DesktopRequest, DesktopState, Distribution } from "../contracts";
+import { AppSettings } from "./AppSettings";
 import { ArchiveDialog } from "./ArchiveDialog";
 import { Changes } from "./Changes";
 import { Composer } from "./Composer";
 import { ConversationDialog, type ConversationDialogValue } from "./ConversationDialog";
 import { call, DesktopDraft, newConversationDraft } from "./drafts";
-import { Environment } from "./Environment";
 import { Handoffs } from "./Handoffs";
 import { DesktopTranscript } from "./history";
 import { TranscriptView } from "./Message";
 import { NewConversation, type NewConversationValue } from "./NewConversation";
 import { PathActions } from "./PathActions";
-import { Worktrees } from "./Worktrees";
-import { WslEnvironment } from "./WslEnvironment";
 
 declare global {
   interface Window {
@@ -54,8 +52,9 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const [distros, setDistros] = useState<Distribution[]>([]);
   const [error, setError] = useState("");
   const [discovering, setDiscovering] = useState(true);
-  const [sidebar, setSidebar] = useState(true);
+  const [settings, setSettings] = useState(false);
   const [width, setWidth] = useState(260);
+  const sidebarDrag = useRef<{ pointerId: number; x: number; width: number } | null>(null);
   const [panel, setPanel] = useState<"changes" | "diff" | "details" | "debug" | null>(null);
   const [panelWidth, setPanelWidth] = useState(400);
   const [query, setQuery] = useState("");
@@ -348,10 +347,12 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
         <button
           type="button"
           className="icon"
-          onClick={() => setSidebar(!sidebar)}
-          aria-label={sidebar ? "隐藏侧边栏" : "显示侧边栏"}
+          onClick={() => setSettings(true)}
+          aria-label="应用设置"
+          aria-haspopup="dialog"
+          title="应用设置"
         >
-          ☰
+          ⚙
         </button>
         <img className="brand-logo" src="../assets/logo.png" alt="" />
         <strong>HarnessHub</strong>
@@ -383,103 +384,112 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
           }
         />
       )}
-      <div className={`workspace ${sidebar ? "" : "sidebar-hidden"} ${panel ? "panel-open" : ""}`}>
-        {sidebar && (
-          <>
-            <aside className="sidebar" aria-label="项目与会话">
-              <WslEnvironment
-                state={state}
-                distributions={distros}
-                discovering={discovering}
-                connect={(distribution) => {
-                  void request({ type: "connect", distribution });
-                }}
-                discover={() => {
-                  void request({ type: "discover" });
-                }}
-              />
-              <div className="search">
-                <button
-                  type="button"
-                  className="new-chat-button"
-                  disabled={state.status !== "connected"}
-                  onClick={() => {
-                    if (!creating.current)
-                      setNewConversation({
-                        projectId: current?.projectId ?? state.snapshot?.projects[0]?.id ?? "",
-                        workspace: current?.workspacePath ?? "",
-                      });
-                  }}
-                >
-                  <span aria-hidden="true">＋</span> 新建会话
-                </button>
-                <input
-                  aria-label="搜索会话"
-                  placeholder="搜索会话…"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </div>
-              <div className="tree-toolbar">
-                <span>项目</span>
-                <button
-                  type="button"
-                  className="text-button"
-                  aria-haspopup="dialog"
-                  onClick={() => {
-                    setError("");
-                    setArchived(true);
-                  }}
-                >
-                  查看归档
-                </button>
-              </div>
-              <nav className="tree" aria-label="会话列表">
-                {!state.snapshot ? (
-                  <p className="subtle">
-                    {state.status === "starting" ? "正在加载项目…" : "连接 WSL 后显示项目"}
-                  </p>
-                ) : (
-                  <>
-                    {state.snapshot.projects.map(group)}
-                    {group(null)}
-                    {!state.snapshot.projects.length && !conversations.length && (
-                      <p className="subtle">暂无项目或会话。可先在 WSL TUI 中创建。</p>
-                    )}
-                    {query && !conversations.length && <p className="subtle">没有匹配的会话</p>}
-                  </>
-                )}
-              </nav>
-              <footer className="sidebar-footer">Agent 与历史保留在 WSL</footer>
-            </aside>
-            <hr
-              aria-label="调整侧边栏宽度"
-              aria-orientation="vertical"
-              aria-valuemin={220}
-              aria-valuemax={420}
-              aria-valuenow={width}
-              tabIndex={0}
-              className="resize-handle"
-              onKeyDown={(event) => {
-                if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-                  event.preventDefault();
-                  setWidth((value) =>
-                    Math.min(420, Math.max(220, value + (event.key === "ArrowLeft" ? -10 : 10))),
-                  );
-                }
+      {settings && (
+        <AppSettings
+          api={api}
+          state={state}
+          distributions={distros}
+          discovering={discovering}
+          error={error}
+          connect={(distribution) => void request({ type: "connect", distribution })}
+          discover={() => void request({ type: "discover" })}
+          close={() => setSettings(false)}
+        />
+      )}
+      <div className={`workspace ${panel && current && !newConversation ? "panel-open" : ""}`}>
+        <aside className="sidebar" aria-label="项目与会话">
+          <div className="search">
+            <button
+              type="button"
+              className="new-chat-button"
+              disabled={state.status !== "connected"}
+              onClick={() => {
+                if (!creating.current)
+                  setNewConversation({
+                    projectId: current?.projectId ?? state.snapshot?.projects[0]?.id ?? "",
+                    workspace: current?.workspacePath ?? "",
+                  });
               }}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                event.currentTarget.setPointerCapture(event.pointerId);
-              }}
-              onPointerMove={(event) => {
-                if (event.currentTarget.hasPointerCapture(event.pointerId))
-                  setWidth(Math.max(220, Math.min(420, event.clientX)));
-              }}
-              onPointerUp={(event) => event.currentTarget.releasePointerCapture(event.pointerId)}
+            >
+              <span aria-hidden="true">＋</span> 新建会话
+            </button>
+            <input
+              aria-label="搜索会话"
+              placeholder="搜索会话…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
             />
-          </>
-        )}
+          </div>
+          <div className="tree-toolbar">
+            <span>项目</span>
+            <button
+              type="button"
+              className="text-button"
+              aria-haspopup="dialog"
+              onClick={() => {
+                setError("");
+                setArchived(true);
+              }}
+            >
+              查看归档
+            </button>
+          </div>
+          <nav className="tree" aria-label="会话列表">
+            {!state.snapshot ? (
+              <p className="subtle">
+                {state.status === "starting" ? "正在加载项目…" : "从左上角设置连接 WSL 后显示项目"}
+              </p>
+            ) : (
+              <>
+                {state.snapshot.projects.map(group)}
+                {group(null)}
+                {!state.snapshot.projects.length && !conversations.length && (
+                  <p className="subtle">暂无项目或会话。可先在 WSL TUI 中创建。</p>
+                )}
+                {query && !conversations.length && <p className="subtle">没有匹配的会话</p>}
+              </>
+            )}
+          </nav>
+          <footer className="sidebar-footer">Agent 与历史保留在 WSL</footer>
+        </aside>
+        <hr
+          aria-label="调整侧边栏宽度"
+          aria-orientation="vertical"
+          aria-valuemin={220}
+          aria-valuemax={420}
+          aria-valuenow={width}
+          tabIndex={0}
+          className="resize-handle"
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+              event.preventDefault();
+              setWidth((value) =>
+                Math.min(420, Math.max(220, value + (event.key === "ArrowLeft" ? -10 : 10))),
+              );
+            }
+          }}
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            sidebarDrag.current = { pointerId: event.pointerId, x: event.clientX, width };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            const drag = sidebarDrag.current;
+            if (
+              drag?.pointerId === event.pointerId &&
+              event.currentTarget.hasPointerCapture(event.pointerId)
+            )
+              setWidth(Math.max(220, Math.min(420, drag.width + event.clientX - drag.x)));
+          }}
+          onPointerUp={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId))
+              event.currentTarget.releasePointerCapture(event.pointerId);
+          }}
+          onLostPointerCapture={() => {
+            sidebarDrag.current = null;
+          }}
+        />
         <main className={`chat ${newConversation ? "chat-new" : ""}`}>
           <header className="conversation-header">
             <div>
@@ -502,7 +512,8 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               type="button"
               className="icon"
               aria-label="切换工作面板"
-              aria-expanded={!!panel}
+              aria-expanded={!!panel && !!current && !newConversation}
+              disabled={!current || !!newConversation}
               onClick={() => setPanel(panel ? null : "details")}
             >
               ◫
@@ -516,7 +527,11 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               {error || state.detail}
             </div>
           )}
-          {state.status !== "connected" && <Environment state={state} />}
+          {state.status !== "connected" && (
+            <button type="button" className="environment-help" onClick={() => setSettings(true)}>
+              打开环境与安装指南
+            </button>
+          )}
           {newConversation && newDraft ? (
             <NewConversation
               key={state.distribution}
@@ -556,7 +571,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                     <img className="welcome-mark" src="../assets/logo.png" alt="HarnessHub Logo" />
                     <h2>继续你的项目</h2>
                     <p>
-                      在左侧选择 WSL2 环境和会话。
+                      通过左上角设置连接 WSL2 环境，再从左侧选择会话。
                       <br />
                       这里显示与 TUI 相同的消息历史。
                     </p>
@@ -637,7 +652,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
             </>
           )}
         </main>
-        {panel && (
+        {panel && current && !newConversation && (
           <aside className="work-panel" aria-label="工作面板">
             <hr
               className="panel-resize"
@@ -717,10 +732,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               ) : panel === "details" ? (
                 <>
                   <h2>会话详情</h2>
-                  <Environment state={state} />
                   <dl>
-                    <dt>WSL 发行版</dt>
-                    <dd>{state.distribution ?? "未选择"}</dd>
                     <dt>Linux Workspace</dt>
                     <dd>{current?.workspacePath ?? "未选择会话"}</dd>
                     <dt>工作区模式</dt>
@@ -792,12 +804,6 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                       }
                     />
                   )}
-                  <Worktrees
-                    key={state.distribution}
-                    api={api}
-                    conversations={state.snapshot?.conversations ?? []}
-                    connected={state.status === "connected"}
-                  />
                 </>
               ) : (
                 <>

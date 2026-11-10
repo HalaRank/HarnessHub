@@ -109,14 +109,14 @@ export async function workspaceSmoke(
   };
   await send("desktop-native-diff");
   await waitFor(() => js("!!document.querySelector('.tool-activity')"));
-  await js(
-    "document.querySelectorAll('.activity-heading[aria-expanded=\"false\"]').forEach(b => b.click())",
-  );
-  await waitFor(() =>
-    js(
+  await waitFor(async () => {
+    await js(
+      "document.querySelectorAll('.activity-heading[aria-expanded=\"false\"]').forEach(b => b.click())",
+    );
+    return js(
       "Array.from(document.querySelectorAll('.tool-heading')).some(b => b.textContent.includes('Mock native Diff'))",
-    ),
-  );
+    );
+  });
   await js(
     "Array.from(document.querySelectorAll('.tool-heading')).find(b => b.textContent.includes('Mock native Diff')).click()",
   );
@@ -223,7 +223,7 @@ export async function workspaceSmoke(
   await click(win, 'input[aria-label="创建工作树"]');
   await waitFor(() => js("!document.querySelector('select[aria-label=分支]').disabled"));
   await js(
-    "const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true}));",
+    "(() => { const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true})); })()",
   );
   await fill(win, "独立工作树首条任务");
   await js("const b = document.querySelector('[aria-label=发送消息]'); b.click(); b.click();");
@@ -250,10 +250,18 @@ export async function workspaceSmoke(
   await waitFor(() => !connection.getState().snapshot?.conversations.some((v) => v.id === work.id));
   await connection.select(c.id);
   await waitFor(() => js("document.querySelectorAll('.handoff-record').length === 2"));
+  await click(win, '[aria-label="应用设置"]');
+  await js(
+    "[...document.querySelectorAll('.settings-nav button')].find(b => b.textContent === '工作区管理').click()",
+  );
   await waitFor(() => js("!!document.querySelector('.worktree-record button:not([disabled])')"));
   await click(win, ".worktree-record > button:last-of-type");
-  await waitFor(() => js("document.querySelector('dialog')?.textContent.includes('保留式清理')"));
-  assert.ok(await js("document.querySelector('dialog').textContent.includes('/retained/')"));
+  await waitFor(() =>
+    js("document.querySelector('dialog:last-of-type')?.textContent.includes('保留式清理')"),
+  );
+  assert.ok(
+    await js("document.querySelector('dialog:last-of-type').textContent.includes('/retained/')"),
+  );
   await click(win, "dialog footer button:first-child");
   assert.equal(
     ((await connection.action({ type: "worktrees.list" })) as ManagedWorktree[]).find(
@@ -270,6 +278,7 @@ export async function workspaceSmoke(
     "Windows Worktree creation, workspace-specific Changes, delete preserves worktree; cleanup cancel is inert and explicit confirm retains directory/branch",
   );
   await capture("desktop-phase3-worktree.png");
+  await click(win, '[aria-label="关闭应用设置"]');
   win.setSize(860, 640);
   await tab("Changes");
   await waitFor(() => js("!!document.querySelector('.changes')"));

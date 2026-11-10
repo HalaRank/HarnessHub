@@ -130,3 +130,7 @@ Windows Node 构建成功，最终文件复制到仓库 `dist/desktop/releases/0
 ## 2026-11-10 工具活动区优化
 
 依据用户提供的 HarnessHub 与 Codex 截图，聊天工具区增加连续调用分组、成功摘要折叠、紧凑单行标题、状态提示和手动展开保持。实际 Windows 界面、测试结果、截图与人工验收步骤见 [工具活动区验收](desktop-tool-activity.md)。
+
+## 2026-11-10 会话侧栏与全局设置
+
+右栏只展示当前会话信息，全局环境、安装指南、WSL 选择和托管 Worktree 管理移到左上角设置。左栏常驻并可拖动调宽。实现文件、实测证据及人工验收见 [专项记录](desktop-phase-4-conversation-layout.md)。

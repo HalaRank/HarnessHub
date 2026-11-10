@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "checks": [
+    "DOM controls: top-left settings contain WSL, installation and global worktrees; nested cancel preserves settings and draft",
+    "Right panel follows selected conversation, hides on new conversation and overlays at narrow widths without resetting sidebar width",
+    "Version mismatch help opens global settings; no prompt, approval, handoff or cleanup submitted"
+  ],
+  "errors": []
+}

@@ -1,0 +1,45 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Real Chromium conversation controls, Linux cwd preserved, HTML inert, renderer Node/token/HTTP denied",
+    "Project expand/collapse",
+    "Empty conversation switching",
+    "Top-left application settings preserve the permanent sidebar",
+    "Empty conversation switching, application settings and mouse resize",
+    "Real WSL hhu TUI running concurrently in a PTY against the same Daemon",
+    "Native Windows editor and SQLite per-conversation draft restore",
+    "IME confirmation does not send, real timed streaming, manual scrolling suspends follow",
+    "Windows Shift+Enter newline and native ACP Slash Enter completes before explicit second Enter sends",
+    "Native approval UI displays actual options and explicit reject resolves once",
+    "Project expand/collapse, details panel, resize/110% zoom without horizontal overflow",
+    "Closing the real Windows window preserves Daemon and active Mock ACP Worker",
+    "Reopened Electron restores WSL distro and SQLite conversation selection",
+    "Closing/reopening Electron persists SQLite drafts while active Agent survives",
+    "New page creates and auto-names on first send without requesting a title",
+    "Windows create/rename/archive/restore/delete dialogs and explicit delete confirmation",
+    "600 native tools / 1200 updates: bounded DOM mounts, history paging, full SQLite events retained"
+  ],
+  "dom": {
+    "sidebar": 260,
+    "selected": "Coding Workspace Phase 3desktop-smoke",
+    "text": "",
+    "body": "⚙\nHarnessHub\nDesktop\n已连接\n重新连接\n＋\n新建会话\n项目\n查看归档\n⌄\nHarnessHub Desktop\n3\n＋\nWindows 与 WSL 的同一段对话\ndesktop-smoke\nBridge 架构与安全检查\n未选择 Harness\nCoding Workspace Phase 3\ndesktop-smoke\nLong tool history\n独立会话desktop-smoke\nAgent 与历史保留在 WSL\nCoding Workspace Phase 3\ndesktop-smoke\n空闲\nShared Workspace\n◫\nYou\n复制\n/path ordinary text\nAgent\n复制\n\ncwd=/tmp/hhu-windows-smoke-zFfdMW/project;prompts=1 native-0 native-1 native-2 native-3 native-4 native-5 native-6 native-7 native-8 native-9 native-10 native-11 native-12 native-13 native-14 native-15 native-16 native-17 native-18 native-19 native-20 native-21 native-22 native-23 native-24 native-25 native-26 native-27 native-28 native-29 native-30 native-31 native-32 native-33 native-34 native-35 native-36 native-37 native-38 native-39\n\n已完成 1 项工具调用\n⌄\nExact Native Tool Name\n已完成\n›\nYou\n复制\ndesktop-native-diff\n已完成 1 项工具调用\n›\nAgent\n复制\n\nNative Diff fixture; no files were written\n\n已发送 · 请求已记录\n选择 Harness\nCodex\nClaude Code\nGrok Build\nOpenCode\nDesktop smoke\nGrok (Mock ACP)\n模型\nMock\nOther\n审批模式\nNative ask\n↑ 发送\n\n/tmp/hhu-windows-smoke-zFfdMW/project · 关闭窗口不会停止后台任务\n\nDetails\nChanges\nDiff\nDebug\n×\n会话详情\nLinux Workspace\n/tmp/hhu-windows-smoke-zFfdMW/project\n工作区模式\nshared\n执行状态\nIDLE\n复制\n打开文件夹\n\n共享目录允许并行 Agent 修改，注意文件冲突。Git 变更不推断归属。\n\n会话管理\nContext Handoff\n\n当前 NativeSession · desktop-smoke · ee9d8fb9-9e19-439c-aecf-438b34e4e9a4\n\n暂无已提交交接。",
+    "divider": {
+      "x": 260,
+      "y": 48,
+      "width": 6,
+      "height": 743,
+      "top": 48,
+      "right": 266,
+      "bottom": 791,
+      "left": 260
+    }
+  },
+  "passed": false,
+  "error": "Windows smoke state timeout",
+  "stack": "Error: Windows smoke state timeout\n    at waitFor (C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-30ZVNh\\app\\main\\smoke.cjs:10422:9)\n    at async workspaceSmoke (C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-30ZVNh\\app\\main\\smoke.cjs:10279:3)\n    at async C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-desktop-smoke-30ZVNh\\app\\main\\smoke.cjs:10657:21"
+}

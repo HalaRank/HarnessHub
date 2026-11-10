@@ -403,12 +403,13 @@ select {
   align-self: stretch;
   margin: 0;
   border: 0;
-  flex: 0 0 4px;
-  cursor: col-resize;
+  flex: 0 0 6px;
+  cursor: ew-resize;
   background: var(--sidebar);
   touch-action: none;
 }
-.resize-handle:hover {
+.resize-handle:hover,
+.resize-handle:focus-visible {
   background: var(--line);
 }
 .chat {
@@ -568,7 +569,7 @@ h2 {
   margin: 9px 0;
 }
 .work-panel {
-  flex: 0 0 min(var(--panel-width), 45vw);
+  flex: 0 0 min(var(--panel-width), 45vw, calc(100vw - var(--sidebar-width) - 326px));
   position: relative;
   min-width: 0;
   display: flex;
@@ -626,18 +627,11 @@ summary {
   justify-content: space-between;
 }
 @media (max-width: 1120px) {
-  .panel-open .sidebar {
-    flex-basis: 220px;
-    width: 220px;
-  }
-  .work-panel {
-    flex-basis: min(var(--panel-width), 40vw);
-  }
   .history {
     padding: 16px 20px;
   }
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .work-panel {
     position: absolute;
     right: 0;
@@ -958,7 +952,6 @@ dialog footer {
   justify-content: flex-end;
   gap: 10px;
 }
-
 .archive-dialog {
   width: min(640px, calc(100vw - 32px));
   max-width: 640px;
@@ -1136,14 +1129,56 @@ dialog :where(pre) {
 }
 
 .environment {
-  margin: 8px 16px;
+  margin: 8px 0;
   padding: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 12px;
-  overflow: auto;
-  max-height: 42vh;
   flex-shrink: 0;
+}
+.app-settings {
+  width: min(680px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  overflow: hidden;
+}
+.app-settings[open] {
+  display: flex;
+  flex-direction: column;
+}
+.settings-header,
+.settings-nav {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-header {
+  justify-content: space-between;
+}
+.settings-header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.settings-nav button[aria-pressed="true"] {
+  background: var(--selected);
+}
+.settings-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+  overflow-wrap: anywhere;
+}
+.settings-content .wsl-environment {
+  padding: 0 0 12px;
+}
+.environment-help {
+  align-self: flex-start;
+  margin: 4px 18px;
+  color: var(--accent);
 }
 .environment summary {
   cursor: pointer;

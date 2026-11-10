@@ -233,13 +233,19 @@ void app.whenReady().then(async () => {
         !opened.connection.getState().historyLoading,
     );
     checks.push("Empty conversation switching");
-    await click(first, '[aria-label="隐藏侧边栏"]');
-    await waitFor(() => first.webContents.executeJavaScript("!document.querySelector('.sidebar')"));
-    await click(first, '[aria-label="显示侧边栏"]');
+    await click(first, '[aria-label="应用设置"]');
     await waitFor(() =>
-      first.webContents.executeJavaScript("!!document.querySelector('.sidebar')"),
+      first.webContents.executeJavaScript(
+        "!!document.querySelector('.app-settings[open] .environment')",
+      ),
     );
-    checks.push("Sidebar hide/restore");
+    assert.ok(
+      await first.webContents.executeJavaScript(
+        "!!document.querySelector('.sidebar') && !document.querySelector('[aria-label=隐藏侧边栏]')",
+      ),
+    );
+    await click(first, '[aria-label="关闭应用设置"]');
+    checks.push("Top-left application settings preserve the permanent sidebar");
     await first.webContents.executeJavaScript(
       "window.pointerTrace = []; for (const t of ['pointerdown','pointermove','pointerup']) document.querySelector('.resize-handle').addEventListener(t,e => window.pointerTrace.push({type:t,x:e.clientX, capture:e.target.hasPointerCapture(e.pointerId)}))",
     );
@@ -272,7 +278,7 @@ void app.whenReady().then(async () => {
         "document.querySelector('.sidebar').getBoundingClientRect().width > 280",
       ),
     );
-    checks.push("Empty conversation switching, sidebar hide/restore and mouse resize");
+    checks.push("Empty conversation switching, application settings and mouse resize");
 
     writeFileSync(join(config.output, "start-tui"), "start");
     await waitFor(() => existsSync(join(config.output, "tui-ready")));
@@ -467,7 +473,7 @@ void app.whenReady().then(async () => {
       false,
     );
     await reopened.window.webContents.executeJavaScript(
-      "const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true}));",
+      "(() => { const h = document.querySelector('select[aria-label=Harness]'); h.value = 'desktop-smoke'; h.dispatchEvent(new Event('change', {bubbles:true})); })()",
     );
     await fill(reopened.window, "Desktop 自动命名任务");
     await click(reopened.window, '[aria-label="发送消息"]');
@@ -514,7 +520,12 @@ void app.whenReady().then(async () => {
         "!document.querySelector('dialog') && !!document.querySelector('.welcome')",
       ),
     );
-    await click(reopened.window, '[aria-label="关闭工作面板"]');
+    assert.equal(
+      await reopened.window.webContents.executeJavaScript(
+        "!!document.querySelector('.work-panel')",
+      ),
+      false,
+    );
     checks.push(
       "Windows create/rename/archive/restore/delete dialogs and explicit delete confirmation",
     );
