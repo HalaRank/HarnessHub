@@ -136,6 +136,8 @@
 
 ## Desktop Phase 2 实施记录
 
+2026-11-10 用户授权阶段 6 安装能力扩展为 GitHub 独立发行包，交付 Linux x64 / WSL2 打包、下载安装、发布工作流及隔离验收，不自动扩展平台。专项证据见 [独立发行安装验收](acceptance/phase-6-github-distribution.md)。
+
 2026-11-09 用户授权正式聊天、草稿 CAS/提交幂等、原生审批/取消/工具、ACP 设置/Slash Commands、Conversation 管理和增量流式性能。仍复用 WSL 后端，不进入 Desktop Phase 3/4。代码、测试、Windows 与真实 Harness 证据及限制见 [desktop-phase-2.md](acceptance/desktop-phase-2.md)。等待本阶段验收。
 
 
