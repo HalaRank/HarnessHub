@@ -1,0 +1,15 @@
+.github/workflows/desktop-windows.yml: schema valid
+.github/workflows/linux-release.yml: schema valid
+linux-release.yml: Bash syntax valid: bun install --frozen-lockfile
+linux-release.yml: Bash syntax valid: bun run version:check
+linux-release.yml: Bash syntax valid: Read release version
+linux-release.yml: Bash syntax valid: Validate tag
+linux-release.yml: Bash syntax valid: bun run typecheck
+linux-release.yml: Bash syntax valid: bun run lint
+linux-release.yml: Bash syntax valid: bun run test
+linux-release.yml: Bash syntax valid: bun run release:linux
+linux-release.yml: Bash syntax valid: Verify installed release without development dependencies
+linux-release.yml: Bash syntax valid: Assemble and verify both platforms
+linux-release.yml: Bash syntax valid: Create draft for maintainer review
+Windows PowerShell version step: v0.6.2: accepted
+Windows PowerShell version step: v0.6.3: rejected as expected

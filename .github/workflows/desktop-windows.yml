@@ -1,5 +1,6 @@
 name: Windows Desktop candidate
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     paths:
@@ -31,6 +32,13 @@ jobs:
         run: bun install --filter '@harnesshub/desktop' --filter '!harnesshub' --frozen-lockfile --ignore-scripts
       - run: node apps/desktop/node_modules/electron/install.js
       - run: bun run version:check
+      - name: Read version and validate release tag
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF.StartsWith('refs/tags/') -and $env:GITHUB_REF_NAME -ne "v$version") { throw "Tag must match package version v$version" }
+          "version=$version" >> $env:GITHUB_OUTPUT
       - name: Release boundary tests
         working-directory: apps/desktop
         run: bun test tests/release.test.ts
@@ -44,8 +52,9 @@ jobs:
         with:
           name: HarnessHub-windows-x64-unsigned
           path: |
-            dist/desktop/releases/*-unsigned/*.exe
-            dist/desktop/releases/*-unsigned/*.zip
-            dist/desktop/releases/*-unsigned/SHA256SUMS.txt
-            dist/desktop/releases/*-unsigned/release-manifest.json
+            dist/desktop/releases/${{ steps.version.outputs.version }}-unsigned/*.exe
+            dist/desktop/releases/${{ steps.version.outputs.version }}-unsigned/*.zip
+            dist/desktop/releases/${{ steps.version.outputs.version }}-unsigned/SHA256SUMS.txt
+            dist/desktop/releases/${{ steps.version.outputs.version }}-unsigned/release-manifest.json
+          if-no-files-found: error
           retention-days: 14

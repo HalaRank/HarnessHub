@@ -10,6 +10,8 @@ HarnessHub 是 Linux x64 / WSL2 的本地 TUI。全局命令是 **`hhu`**。
 
 Linux x64 / WSL2 现提供独立发行包构建和安装流程，随包携带 Node、Bun 及运行依赖，无需保留源码仓库。GitHub 发布资产后的安装命令、离线安装、升级与维护者打包方法见 [GitHub 发行安装指南](docs/DISTRIBUTION.md)。本地构建不代表 GitHub Release 已发布。
 
+Windows 用户可从 [GitHub Releases](https://github.com/HalaRank/HarnessHub/releases) 下载同版本的 `HarnessHub-<版本>-windows-x64-unsigned-setup.exe` 安装，或下载 ZIP 解压运行。所选 WSL2 发行版仍需安装该 Release 的 Linux 后端包，无需源码或系统 Node/Bun；完整步骤见 [Windows 下载与安装](docs/DESKTOP.md#从-github-下载)。匹配版本的 Tag 会在两个平台验证通过后生成含全部安装包的 draft Release，维护者发布后下载才可用。当前 Windows 包未签名。
+
 以下为开发者源码安装：
 
 使用 Node **24.18.0** 和 Bun **1.4.4**；需要 Linux `flock`、Git。版本与官方参考见 [兼容性记录](docs/COMPATIBILITY.md)。

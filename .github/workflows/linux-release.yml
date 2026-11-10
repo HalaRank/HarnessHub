@@ -1,4 +1,4 @@
-name: Linux release
+name: HarnessHub release
 on:
   workflow_dispatch:
   push:
@@ -6,6 +6,8 @@ on:
 permissions:
   contents: read
 jobs:
+  windows-x64:
+    uses: ./.github/workflows/desktop-windows.yml
   linux-x64:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
@@ -19,6 +21,9 @@ jobs:
           node-version: 24.18.0
       - run: bun install --frozen-lockfile
       - run: bun run version:check
+      - name: Read release version
+        id: version
+        run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
       - name: Validate tag
         if: startsWith(github.ref, 'refs/tags/')
         run: test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
@@ -31,12 +36,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: HarnessHub-linux-x64
-          path: dist/linux/releases/*/*
+          path: dist/linux/releases/${{ steps.version.outputs.version }}/*
           if-no-files-found: error
           retention-days: 14
   draft:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: linux-x64
+    needs: [linux-x64, windows-x64]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -44,11 +49,36 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: HarnessHub-linux-x64
-          path: release
+          path: artifacts/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: HarnessHub-windows-x64-unsigned
+          path: artifacts/windows
+      - name: Assemble and verify both platforms
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir release
+          cp "artifacts/linux/harnesshub-$version-linux-x64.tar.gz" artifacts/linux/install.sh artifacts/linux/SHA256SUMS.txt artifacts/linux/release-manifest.json release/
+          cp "artifacts/windows/HarnessHub-$version-windows-x64-unsigned-setup.exe" "artifacts/windows/HarnessHub-$version-windows-x64-unsigned.zip" release/
+          cp artifacts/windows/SHA256SUMS.txt release/windows-x64-SHA256SUMS.txt
+          cp artifacts/windows/release-manifest.json release/windows-x64-release-manifest.json
+          cd release
+          sha256sum --check SHA256SUMS.txt
+          sha256sum --check windows-x64-SHA256SUMS.txt
       - name: Create draft for maintainer review
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "HarnessHub $GITHUB_REF_NAME" --notes "Linux x64 / WSL2 package. Includes Node, Bun and runtime dependencies. Verify platform acceptance before publishing. See docs/DISTRIBUTION.md."
-          find release -type f -exec gh release upload "$GITHUB_REF_NAME" {} +
+          version="${GITHUB_REF_NAME#v}"
+          cat > "$RUNNER_TEMP/release-notes.md" <<NOTES
+          Windows x64: [Download installer](https://github.com/$GH_REPO/releases/download/$GITHUB_REF_NAME/HarnessHub-$version-windows-x64-unsigned-setup.exe) or [portable ZIP](https://github.com/$GH_REPO/releases/download/$GITHUB_REF_NAME/HarnessHub-$version-windows-x64-unsigned.zip). Extract the entire ZIP for portable use. Verify against windows-x64-SHA256SUMS.txt. These packages are unsigned.
+
+          Windows Desktop also requires the matching Linux backend installed in your selected WSL2 distribution. Download install.sh, harnesshub-$version-linux-x64.tar.gz and SHA256SUMS.txt, then run sh ./install.sh --archive ./harnesshub-$version-linux-x64.tar.gz inside that distribution. The backend includes Node, Bun and runtime dependencies; no source checkout is needed.
+
+          Windows installation does not install WSL or the backend. Close the Windows client before upgrading it; safely stop the backend with hhu daemon stop --for-upgrade before upgrading the WSL package. User data is retained. No automatic updates.
+
+          Maintainer: review platform acceptance before publishing this draft. See docs/DESKTOP.md and docs/DISTRIBUTION.md at this tag for installation, checksums and remaining acceptance limits.
+          NOTES
+          gh release create "$GITHUB_REF_NAME" release/* --verify-tag --draft --title "HarnessHub $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"

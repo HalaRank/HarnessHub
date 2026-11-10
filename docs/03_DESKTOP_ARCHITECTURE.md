@@ -119,3 +119,7 @@ WSL install:local 继续持同一 flock、完整 release staging、原子 launch
 - 锁定 electron-builder 26.18.0 的 winOptions/nsisOptions 类型和安装模板同时核对；在线资料不能替代真实产物验收。
 
 实际 Windows、签名、真实 Harness、回滚/重启和物理 DPI 的通过与未验证边界统一记录在 `acceptance/desktop-phase-4.md`。完成后只等待人工验收，不上传正式 Release。
+
+### Desktop Phase 4 补充：GitHub 安装包分发
+
+用户追加要求 Windows App 也可从 GitHub 直接下载安装包。统一发布工作流调用既有 Windows NSIS/ZIP 验证管线，与 Linux 独立后端一起按同一版本 Tag 构建；两个平台成功后创建单个 draft Release。Windows 校验/manifest 上传时增加 `windows-x64-` 前缀，避免与 Linux 资产冲突。Windows 用户直接下载 exe 或 ZIP，所选 WSL2 发行版安装同 Release 的后端包，无需源码 checkout。保持 unsigned、手动发布和无自动更新；本地配置不代表远端发布或平台验收通过。实施、真实本地验证及远端未验证项见 [GitHub 分发补充验收](acceptance/desktop-phase-4-github-distribution.md)。

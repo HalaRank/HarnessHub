@@ -144,3 +144,7 @@
 ## Desktop Phase 3：Coding Workspace Integration
 
 用户已授权本阶段。交付 Changes/Diff、原生工具 Diff、Context Handoff 报告与追溯、Shared/Worktree 创建及保留式清理、受控 WSL Explorer 定位，并修复未发布 Slash 文本的明确普通发送确认。复用既有 Daemon Git、Handoff 状态机、Worktree Manager 与 SQLite；仅增加只读来源路径解析。实际检查、Windows/真实 Harness 证据与限制见 [Desktop Phase 3 验收](acceptance/desktop-phase-3.md)。不自动进入 Desktop Phase 4。
+
+## Desktop Phase 4 补充：GitHub 安装包
+
+用户授权 Windows App 与 Linux 后端一同通过 GitHub Releases 下载安装。复用既有 Windows 构建/安装器验证，统一工作流在两个平台成功后汇总资产并创建 draft；文档提供 exe/ZIP、校验及同版本 WSL 后端安装步骤。没有新增自动更新或改变 Agent 审批。验证与远端发布边界见 [专项验收](acceptance/desktop-phase-4-github-distribution.md)。

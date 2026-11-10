@@ -4,7 +4,7 @@ Windows x64 Electron + React 客户端，连接用户选择的 WSL2 Linux 环境
 
 ## 首次安装（Windows 用户）
 
-1. 从可信构建来源获得 `HarnessHub-0.6.2-windows-x64-unsigned-setup.exe` 或 `HarnessHub-0.6.2-windows-x64-unsigned.zip`，同时取得独立可信渠道提供的 `SHA256SUMS.txt`。当前是 **unsigned 测试包**，不是可信签名正式发行。
+1. 从下节 [GitHub Releases](https://github.com/HalaRank/HarnessHub/releases) 获取同版本的 `HarnessHub-0.6.2-windows-x64-unsigned-setup.exe` 或 `HarnessHub-0.6.2-windows-x64-unsigned.zip`，以及 `windows-x64-SHA256SUMS.txt`。本地/Actions 构建目录中的校验文件仍名为 `SHA256SUMS.txt`。当前是 **unsigned 测试包**。
 2. 校验 SHA256 后运行安装器。默认当前用户安装，可选择安装目录，创建开始菜单/桌面快捷方式及 Windows“已安装的应用”卸载入口。不需要管理员权限；Windows App 安装不安装 WSL、Bun、Node 或原生 Harness。
 3. ZIP 用户将**整个目录**解压到独立目录，运行 `HarnessHub.exe`，不能只复制 exe。ZIP 不创建卸载项；关闭客户端后可手动移除该 ZIP 解压目录。不要把项目或数据存入安装目录。
 4. 双击 HarnessHub，应用自动检查 WSL 并显示发行版。第一次需显式选择 WSL2 开发发行版（不要选 docker-desktop）；WSL1 不可选。以后恢复所选发行版；连接成功进入 Project → Conversation 界面。
@@ -13,9 +13,46 @@ Windows x64 Electron + React 客户端，连接用户选择的 WSL2 Linux 环境
 
 **SmartScreen**：unsigned 包可能触发未知发布者/下载信誉提示，企业策略也可能阻止执行。SHA256 只验证内容一致，不能证明发布者身份；不建议关闭 SmartScreen 或绕过企业策略。需要可信签名分发时，本候选包不满足条件，应等待获准签名的版本。
 
+## 从 GitHub 下载
+
+打开 [HarnessHub Releases](https://github.com/HalaRank/HarnessHub/releases)，选择版本并展开 **Assets**：
+
+| 文件 | 用途 |
+| --- | --- |
+| `HarnessHub-<版本>-windows-x64-unsigned-setup.exe` | Windows 安装器，下载安装 |
+| `HarnessHub-<版本>-windows-x64-unsigned.zip` | 免安装目录包，完整解压后运行 `HarnessHub.exe` |
+| `windows-x64-SHA256SUMS.txt` | Windows 两个包的 SHA256 |
+| `windows-x64-release-manifest.json` | Windows 版本、协议、签名状态及产物清单 |
+| `install.sh`、`harnesshub-<版本>-linux-x64.tar.gz`、`SHA256SUMS.txt` | 在所选 WSL2 发行版中安装同版本后端 |
+
+维护者发布后，0.6.2 的 [安装器直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned-setup.exe) 和 [ZIP 直链](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.2/HarnessHub-0.6.2-windows-x64-unsigned.zip) 才生效。draft Release 仅维护者可见，Actions artifact 是临时构建下载；配置好工作流不代表已经公开发布。
+
+例如将安装器和 `windows-x64-SHA256SUMS.txt` 下载至同一个目录，在 PowerShell 进入该目录后校验并启动：
+
+```powershell
+$file = 'HarnessHub-0.6.2-windows-x64-unsigned-setup.exe'
+$line = @(Get-Content .\windows-x64-SHA256SUMS.txt | Where-Object { $_.EndsWith("  $file") })
+if ($line.Count -ne 1) { throw 'Missing or ambiguous installer checksum' }
+$expected = ($line[0] -split '\s+')[0]
+if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ine $expected) { throw 'Checksum mismatch' }
+Start-Process -FilePath ".\$file" -Wait
+```
+
+首次使用还需准备下节 WSL 后端。Windows 包和 Linux 包从**同一个 Release**下载；安装器不会自动安装 WSL 或修改原生 Harness 配置。
+
 ## WSL 后端准备
 
-使用可信、与 Windows 版本完全相同的 Linux checkout，安装 Bun **1.4.4**、Node **24.18+ 且 <25**、Git、flock。首次安装：
+推荐使用同一个 GitHub Release 的 Linux 独立包，无需源码、系统 Node/Bun。先准备 WSL2 x64/glibc、Git、flock 等系统工具（完整要求见 [发行安装指南](DISTRIBUTION.md)）。在**所选发行版默认 Linux 用户**中，进入已下载 `install.sh`、Linux tar.gz、`SHA256SUMS.txt` 的目录，以 0.6.2 为例：
+
+```bash
+sh ./install.sh --archive ./harnesshub-0.6.2-linux-x64.tar.gz
+export PATH="$HOME/.local/bin:$PATH"
+hhu doctor
+```
+
+也可按 [发行安装指南](DISTRIBUTION.md#从-github-安装) 在线安装；Windows 客户端必须与所选后端版本一致。安装器不修改 Shell 配置，后续终端是否包含 `~/.local/bin` 由用户管理。Windows 通过 `~/.local/lib/harnesshub/desktop-bridge` 自动连接/冷启动，不必每次先启动 TUI。安装后的独立包不依赖源码或下载目录。
+
+开发者仍可使用可信、与 Windows 版本完全相同的 Linux checkout，安装 Bun **1.4.4**、Node **24.18+ 且 <25**、Git、flock 后执行：
 
 ```bash
 cd /path/to/HarnessHub
@@ -26,7 +63,7 @@ bun run install:local
 
 如果已有 Daemon，先按安全升级流程处理；不要强行停止正在工作的 Agent。将 `~/.local/bin` 加入自己的 PATH（安装器不改 shell 配置）。Windows 通过 `~/.local/lib/harnesshub/desktop-bridge` 自动连接/冷启动，不必每次先启动 TUI。
 
-Bridge 固定安装时的 Linux Bun、PATH、XDG，指向完整不可变 release。保留该 checkout 和 node_modules；移动源码、Node/Bun 或更改 XDG 后要重新安全安装。安装操作仅创建 HarnessHub launcher，不修改原生 Harness 配置。不要分享 `hhu desktop-bridge` stdout，其中含 Main 专用 Token；排障用 `hhu doctor` / `hhu daemon logs`。
+源码安装的 Bridge 固定安装时的 Linux Bun、PATH、XDG，指向完整不可变 release；此方式须保留 checkout 和 node_modules。移动源码、Node/Bun 或更改 XDG 后要重新安全安装。安装操作仅创建 HarnessHub launcher，不修改原生 Harness 配置。不要分享 `hhu desktop-bridge` stdout，其中含 Main 专用 Token；排障用 `hhu doctor` / `hhu daemon logs`。
 
 ## Windows 安装位置、用户数据、升级和卸载
 
@@ -53,6 +90,8 @@ Details/启动指引显示 Desktop/Bridge/Daemon/协议、instanceId、发行版
 ## WSL 安全升级与恢复
 
 Windows 不自动下载 Linux 依赖或停止 Agent。手动流程：
+
+使用 GitHub 独立包时，先执行步骤 2–3 的安全检查与停止，再按 [发行安装指南](DISTRIBUTION.md#升级与恢复) 安装同版本后端；安装器会保留旧 release 和入口备份。以下 checkout 路径及 `install:local` 步骤适用于源码安装。
 
 1. 保留当前完整 checkout/node_modules/release。准备可信目标版本独立 checkout；不要原地覆盖旧 release。正常关闭 TUI/Desktop 或避免其他客户端提交新任务，完成 Turn、人工审批和 Handoff；UNCERTAIN 必须先检查真实文件和执行结果。
 2. 用**当前运行版本**的 `hhu daemon upgrade-check` 只读检查活动 Turn、审批、未解决 Handoff、输入投递、Session/Git/删除操作。未知/不可达/不支持时不得假定安全；旧版需在匹配 TUI 核对所有会话和任务。
@@ -95,7 +134,7 @@ bun run desktop:dev
 bun run desktop:release
 ```
 
-产物目录 `dist/desktop/releases/0.6.2-unsigned/`：NSIS、ZIP、`SHA256SUMS.txt`、`release-manifest.json`。只在可信网络/源码上构建；WSL 交叉构建可能还需 Wine/NSIS 下载，官方构建工具链：https://www.electron.build/docs/nsis 。本脚本明确 `publish: never`；不上传 GitHub Release。不使用签名密钥，本轮明确 unsigned。依赖下载失败时不跳过校验，Electron 镜像仅按官方下载器配置；不从未知来源安装依赖。
+产物目录 `dist/desktop/releases/0.6.2-unsigned/`：NSIS、ZIP、`SHA256SUMS.txt`、`release-manifest.json`。只在可信网络/源码上构建；WSL 交叉构建可能还需 Wine/NSIS 下载，官方构建工具链：https://www.electron.build/docs/nsis 。本脚本明确 `publish: never`，打包本身不上传。GitHub Release 由下述工作流单独处理；不使用签名密钥，本轮明确 unsigned。依赖下载失败时不跳过校验，Electron 镜像仅按官方下载器配置；不从未知来源安装依赖。
 
 版本以根 package.json 为准，`bun scripts/version.ts <version>` 同步全部 workspace 与 shared VERSION，然后 `bun install --ignore-scripts` 更新 lockfile；`bun run version:check` 验证一致。Protocol 仍单独按契约管理。构建在仓库外新 staging，asar 白名单拒绝 Linux SQLite/OpenTUI/ACP Worker/node_modules/.node/链接/额外执行文件；Windows 自带 Electron DLL 属于运行时。包内不包含 Harness 登录配置或业务数据库。
 
@@ -107,9 +146,11 @@ Get-FileHash .\HarnessHub-0.6.2-windows-x64-unsigned.zip -Algorithm SHA256
 Get-AuthenticodeSignature .\HarnessHub-0.6.2-windows-x64-unsigned-setup.exe | Select-Object Status
 ```
 
-SHA256 应与独立可信 `SHA256SUMS.txt` 一致；签名预期为 `NotSigned`。校验不等同安全审计或发布者认证。
+SHA256 应与 Release 的 `windows-x64-SHA256SUMS.txt`（本地构建为 `SHA256SUMS.txt`）一致；签名预期为 `NotSigned`。校验不等同安全审计或发布者认证。
 
-Linux 全部检查：`bun run typecheck`、`bun run lint`、`bun run test`、`bun run desktop:test`。Windows UI/WSL/TUI 隔离验证：`bun scripts/verify-desktop-windows.ts`；真实模型使用显式环境开关（见脚本），不自动审批。安装器验收脚本在未安装 HarnessHub 的 Windows 测试账户中运行，遇已有注册/快捷方式即拒绝；不要在用户日常库或项目做破坏性验证。CI 仅构建/测试/保存候选产物，不自动正式发布。
+Linux 全部检查：`bun run typecheck`、`bun run lint`、`bun run test`、`bun run desktop:test`。Windows UI/WSL/TUI 隔离验证：`bun scripts/verify-desktop-windows.ts`；真实模型使用显式环境开关（见脚本），不自动审批。安装器验收脚本在未安装 HarnessHub 的 Windows 测试账户中运行，遇已有注册/快捷方式即拒绝；不要在用户日常库或项目做破坏性验证。
+
+`.github/workflows/desktop-windows.yml` 可手动构建，也供统一发布工作流调用；PR 继续执行 Windows 候选验证。`.github/workflows/linux-release.yml`（显示名 **HarnessHub release**）手动运行时保存两个平台的 artifact，推送与 package.json 一致的 `v<版本>` Tag 后，等待 Linux 构建/安装验收与 Windows 构建/安装器验收全部成功，校验两个平台资产后创建一个 **draft Release**。Windows 校验和 manifest 在上传前增加 `windows-x64-` 前缀，Linux 文件名保持下载脚本所需名称。维护者检查 draft 资产及验收限制后手动发布，无自动更新；远端执行与公开下载结果须单独验收。
 
 Windows 安装专项（仅隔离测试账户/目录）可在 WSL 执行：
 

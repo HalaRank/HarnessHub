@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "staging": "/tmp/hhu-github-assets-9e8aoykr",
+  "source": "Existing local 0.6.2 packages; not rebuilt by remote Actions",
+  "files": [
+    "HarnessHub-0.6.2-windows-x64-unsigned-setup.exe",
+    "HarnessHub-0.6.2-windows-x64-unsigned.zip",
+    "SHA256SUMS.txt",
+    "harnesshub-0.6.2-linux-x64.tar.gz",
+    "install.sh",
+    "release-manifest.json",
+    "windows-x64-SHA256SUMS.txt",
+    "windows-x64-release-manifest.json"
+  ]
+}

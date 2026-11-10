@@ -1,0 +1,114 @@
+$ bun scripts/desktop-test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+$ bun run --cwd apps/desktop build
+$ bun ../../scripts/desktop.ts build
+Built Windows Desktop assets: /tmp/hhu-desktop-build-Yy7xfi
+bun test v1.4.4 (38afee6c8)
+
+tests/tool-activity.test.tsx:
+(pass) adjacent tools group within one native turn without crossing messages, sessions or pages [0.39ms]
+(pass) completed activity collapses to one summary with no mounted outputs [7.70ms]
+(pass) expanding a group shows original titles and keeps successful tool bodies folded [3.91ms]
+(pass) running, failed, pending and waiting tools reveal details by default [8.22ms]
+(pass) manual group and individual preferences survive streaming status changes [3.49ms]
+(pass) unknown native titles remain inert and complete when expanded [0.58ms]
+
+tests/workspace.test.tsx:
+(pass) unpublished /path and ordinary slash-prefix text require explicit plain text confirmation [0.24ms]
+(pass) controlled navigation rejects arbitrary paths, force, missing confirmation and extra IPC fields [5.83ms]
+(pass) WSL UNC conversion preserves spaces, unicode and literal shell characters, rejects ambiguous Windows names [0.94ms]
+(pass) WSL realpath boundary rejects tool traversal and symlink escape, locates deleted files safely [2.88ms]
+(pass) Git status labels and source separation preserve native old/new text [12.32ms]
+(pass) large multi-hunk and single-hunk diffs have bounded highlighted DOM [46.56ms]
+(pass) handoff roundtrip reports and real states are traceable, UNCERTAIN has no replay action [35.49ms]
+(pass) native tool location provenance survives content-only and status-only updates [1.08ms]
+
+tests/release.test.ts:
+(pass) Windows archive rejects unexpected native modules, workers and linked payloads [0.72ms]
+(pass) release configuration preserves app identity, data and explicit unsigned manual distribution [0.70ms]
+(pass) mismatch diagnostics expose validated versions and blockers without token or stop calls [2.73ms]
+(pass) real Harness evidence reader follows the server cursor beyond 1000 events [2.43ms]
+
+tests/bridge.test.ts:
+(pass) WSL discovery and bootstrap boundary > UTF-16LE/BOM/UTF-8 and localized state, names containing spaces [0.43ms]
+(pass) WSL discovery and bootstrap boundary > missing WSL and empty discovery give actionable errors [0.33ms]
+(pass) WSL discovery and bootstrap boundary > WSL1 and unknown names cannot execute bootstrap [0.42ms]
+(pass) WSL discovery and bootstrap boundary > known distro and untrusted-looking names are argv, not shell interpolation [2.00ms]
+(pass) WSL discovery and bootstrap boundary > missing installation, incompatible and broken startup do not expose stdout/stderr [0.70ms]
+(pass) WSL discovery and bootstrap boundary > dynamic ports, identity schema, protocol and version validated [1.40ms]
+(pass) WSL discovery and bootstrap boundary > fixed bootstrap finds Linux HOME with no interactive shell or Windows PATH [7.30ms]
+(pass) WSL discovery and bootstrap boundary > installed launcher restores PATH/XDG, quoted absolute executable/release from foreign cwd [2.98ms]
+(pass) Electron boundary > IPC exact allowlist rejects arbitrary HTTP, shell, file paths and extra fields [1.38ms]
+(pass) Electron boundary > only the exact window main frame and document can invoke IPC [0.14ms]
+(pass) Electron boundary > local settings persist only selected distro and reject malformed data [1.37ms]
+(pass) Electron boundary > renderer bundle excludes Node/native modules and preload exposes no token [2.97ms]
+
+tests/new-conversation.test.tsx:
+(pass) new conversation uses the product logo, project sentence and inline workspace controls without a title form [2.80ms]
+(pass) conversation row has only rename and archive actions tied to the row title [1.57ms]
+(pass) standalone conversation marks its ownership within the row [1.36ms]
+(pass) Desktop creates unnamed project and standalone conversations and forwards the worktree starting branch [3.25ms]
+(pass) new-page draft survives a new editor and rejects a stale window without losing local text [1.10ms]
+
+tests/wsl-environment.test.tsx:
+(pass) unselected WSL environment offers a selector and disables WSL1 and connect [1.26ms]
+(pass) connected WSL environment is a fixed summary with a checkmark and explicit switch [1.08ms]
+(pass) WSL summary retains the bound environment and reports actual connection failures [0.75ms]
+
+tests/chat.test.tsx:
+(pass) Enter sends, Shift+Enter preserves newline, IME/229 and composition confirmation never send [0.12ms]
+(pass) composer keeps one native model and approval selector, with legacy fallbacks and Chinese labels [3.36ms]
+(pass) independent drafts persist across editors and rapid conversation switches [0.25ms]
+(pass) new conversation picker prefers the previous Harness and falls back when its profile is unavailable [0.74ms]
+(pass) two clients obey CAS; failed save and send preserve local text without silent overwrite [0.58ms]
+(pass) a competing reserved draft never replaces different unsaved local text [0.38ms]
+(pass) double send dispatches one turn and clears only an accepted draft [0.17ms]
+(pass) lost ACK keeps request ID locked; explicit lookup recovers without another prompt [0.44ms]
+(pass) confirmed unpublished slash text uses one plain Prompt and lost ACK never repeats it [0.32ms]
+(pass) reopening a durable unconfirmed request never automatically sends or releases it on 404 [0.31ms]
+(pass) 10k events append incrementally, merge native tools by session, preserve old rows and reject gaps [20.58ms]
+(pass) successful tools collapse, failed/waiting expand, manual preference wins [1.56ms]
+(pass) Markdown supports GFM/code highlights while HTML, event handlers and unsafe URLs stay inert [23.86ms]
+(pass) typed write actions reject arbitrary methods, paths, native configs, unconfirmed deletion [6.09ms]
+(pass) handoff records merge by ID and keep the expandable native report without internal prompt [2.43ms]
+(pass) RC-05 reload cannot erase edits while a save succeeds [2.22ms]
+(pass) RC-05 reload cannot erase edits while a save fails [0.53ms]
+(pass) RC-05 latest reload wins; invalidated component loads cannot overwrite cached editor [0.45ms]
+(pass) RC-02/03 Desktop shows explicit context recovery and independently blocks uncertain delivery [1.35ms]
+(pass) RC-04 expired approval replay clears waiting without rewriting native tool status [0.58ms]
+
+tests/history.test.tsx:
+(pass) basic history preserves user/Agent text and concatenates chunks without diagnostics [0.48ms]
+(pass) native tool titles and status retained, protocol body stays out of chat [0.13ms]
+(pass) React renders safe layout with navigation, composer and empty states [2.11ms]
+
+ 61 pass
+ 0 fail
+ 363 expect() calls
+Ran 61 tests across 8 files. [477.00ms]
+✔ Bridge starts absent Daemon, concurrent/repeated starts reuse existing pid and token (1422.461677ms)
+✔ Bridge incompatible client/version refuses without signalling or replacing Daemon (240.615318ms)
+✔ Desktop and TUI clients share real SQLite/WS history and exact Linux workspace (634.297969ms)
+✔ Daemon restart rediscovers token/port/identity and catches up by seq without duplicate turns (1635.388653ms)
+✔ rapid selection cannot mix histories or persist stale preference (120.356802ms)
+✔ closing Desktop during active turn leaves Daemon/Worker alive; reopening restores selection (516.492601ms)
+✔ forwarded wrong identity/version is rejected without lifecycle writes or renderer token (19.411242ms)
+✔ WSL Bridge refuses a live incompatible Daemon without stop, spawn, or metadata replacement (491.07149ms)
+✔ Desktop Phase 2 typed actions: draft CAS, duplicate submit, native settings/slash, approvals, cancellation and management (1170.84669ms)
+✔ Desktop HTTP ACK loss retains one SQLite request and hash; reopening and lookup never replay (1534.88035ms)
+✔ large streaming history uses bounded Main memory and incremental IPC, paginated replay stays continuous (3210.915409ms)
+✔ Desktop Harness selection is inert; failed Handoff is visible; stale native command is refused (733.917744ms)
+✔ Desktop Changes/Diff match real Git, provenance navigation and RETAINED Worktree cleanup preserve user data (2041.787829ms)
+✔ Desktop normal roundtrip and failed retry/confirm/UNCERTAIN never replay target prompts (2324.640329ms)
+✔ release readiness refuses active Turns and stale prechecks without stopping the Worker (481.026373ms)
+✔ Desktop new conversations auto-name and managed worktrees start from the selected local branch (1858.818323ms)
+Desktop integration evidence: /tmp/hhu-desktop-integration-6ZysjC
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18994.129856
