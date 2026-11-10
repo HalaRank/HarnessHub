@@ -1,0 +1,2 @@
+$ bun scripts/version.ts --check
+Unified version: 0.6.2

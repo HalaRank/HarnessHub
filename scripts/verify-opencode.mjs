@@ -208,7 +208,10 @@ async function acpProbe() {
         "initialize",
         {
           protocolVersion: 1,
-          clientInfo: { name: "HarnessHub", version: "0.6.1" },
+          clientInfo: {
+            name: "HarnessHub",
+            version: JSON.parse(readFileSync("package.json", "utf8")).version,
+          },
           clientCapabilities: {
             fs: { readTextFile: false, writeTextFile: false },
             terminal: false,

@@ -914,7 +914,34 @@ export class Runtime {
     }
   }
 
-  async shutdown(cancelActive = false) {
+  upgradeReadiness() {
+    const blockers: string[] = [];
+    const conversations = this.store.listConversations();
+    if (this.closing) blockers.push("Daemon is stopping");
+    if (this.data.active().length) blockers.push("Active Turns");
+    if (this.pending.size || conversations.some((c) => this.data.pending(c.id).length))
+      blockers.push("Pending approvals");
+    if (this.handoffs.operations.size || conversations.some((c) => this.handoffs.data.open(c.id)))
+      blockers.push("Unresolved Handoff");
+    if (
+      conversations.some(
+        (c) =>
+          c.runtimeStatus === "UNCERTAIN" ||
+          this.inputs.list(c.id).some((i) => ["SENDING", "UNCERTAIN"].includes(i.state)),
+      )
+    )
+      blockers.push("Uncertain execution or input delivery");
+    if ([...this.live.values()].some((l) => !l.session || l.configuring) || this.operations.size)
+      blockers.push("Session operation in progress");
+    if (
+      this.deleting.size ||
+      this.store.workspaceOperations.size ||
+      this.store.projectOperations.size
+    )
+      blockers.push("Project, Worktree or Conversation operation in progress");
+    return { safeToStop: blockers.length === 0, checkedAt: Date.now(), blockers };
+  }
+  async shutdown(cancelActive = false, forUpgrade = false) {
     if (this.closing) throw new AppError(409, "Runtime is already stopping");
     if (this.deleting.size)
       throw new AppError(409, "Wait for Conversation deletion before stopping Daemon");
@@ -925,6 +952,11 @@ export class Runtime {
         409,
         "Active Turns prevent daemon stop; cancel them and wait, or use hhu daemon stop --cancel-active",
       );
+    // Recheck synchronously before reserving shutdown: a read-only readiness response
+    // is advisory and can become stale as another Desktop/TUI starts a Turn.
+    const readiness = this.upgradeReadiness();
+    if (forUpgrade && !readiness.safeToStop)
+      throw new AppError(409, `Unsafe upgrade/stop: ${readiness.blockers.join(", ")}`);
     this.closing = true;
     try {
       for (const turn of this.data.active()) await this.cancel(turn.id);

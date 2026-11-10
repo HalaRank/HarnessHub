@@ -6,6 +6,7 @@ import { Client } from "@harnesshub/shared/client";
 import { app, type BrowserWindow } from "electron";
 import { openDesktopWindow } from "../src/main/window";
 import { runWsl, WslBridge } from "../src/main/wsl";
+import { realHandoffSmoke } from "./windows-handoff";
 import { workspaceSmoke } from "./windows-workspace";
 
 const config = JSON.parse(readFileSync(join(app.getAppPath(), "smoke-config.json"), "utf8")) as {
@@ -16,6 +17,7 @@ const config = JSON.parse(readFileSync(join(app.getAppPath(), "smoke-config.json
   workspace: string;
   output: string;
   realHarnesses?: string[];
+  realHandoff?: boolean;
 };
 mkdirSync(join(config.output, "electron-user-data"), { recursive: true });
 app.setPath("userData", join(config.output, "electron-user-data"));
@@ -40,6 +42,11 @@ const evidence: Record<string, unknown> = {
   checks: [],
 };
 const checks = evidence.checks as string[];
+const pushCheck = checks.push.bind(checks);
+checks.push = (...values: string[]) => {
+  console.log(values.join("\n"));
+  return pushCheck(...values);
+};
 let win: BrowserWindow | undefined;
 const deadline = setTimeout(
   () => {
@@ -53,7 +60,7 @@ const deadline = setTimeout(
     );
     app.exit(1);
   },
-  config.realHarnesses?.length ? 480000 : 120000,
+  config.realHandoff ? 1200000 : config.realHarnesses?.length ? 780000 : 180000,
 );
 const waitFor = async (check: () => unknown | Promise<unknown>) => {
   const end = Date.now() + 20000;
@@ -73,7 +80,7 @@ const click = async (window: BrowserWindow, selector: string) => {
     `document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center', behavior:'instant'})`,
   );
   await window.webContents.executeJavaScript(
-    "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+    "Promise.race([new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))), new Promise((_, reject) => setTimeout(() => reject(new Error('Compositor frames unavailable')), 8000))])",
   );
   // Invoke the actual DOM control once. Physical pointer resize is tested separately;
   // click coordinates can race Windows compositor/layout after async panel updates.
@@ -81,7 +88,7 @@ const click = async (window: BrowserWindow, selector: string) => {
     `(() => { const e = document.querySelector(${JSON.stringify(selector)}); e.focus(); e.click(); })()`,
   );
   await window.webContents.executeJavaScript(
-    "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+    "Promise.race([new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))), new Promise((_, reject) => setTimeout(() => reject(new Error('Compositor frames unavailable')), 8000))])",
   );
 };
 
@@ -117,6 +124,7 @@ void app.whenReady().then(async () => {
     const opened = await openDesktopWindow(bridge);
     win = opened.window;
     const first = win;
+    first.webContents.setBackgroundThrottling(false);
     await waitFor(() =>
       first.webContents.executeJavaScript("!!document.querySelector('.welcome')"),
     );
@@ -414,6 +422,7 @@ void app.whenReady().then(async () => {
     checks.push("Closing the real Windows window preserves Daemon and active Mock ACP Worker");
     const reopened = await openDesktopWindow(bridge);
     win = reopened.window;
+    win.webContents.setBackgroundThrottling(false);
     await waitFor(
       () =>
         reopened.connection.getState().status === "connected" &&
@@ -557,6 +566,37 @@ void app.whenReady().then(async () => {
         waitFor,
       })),
     );
+    for (const scale of [1.25, 1.5, 2]) {
+      reopened.window.webContents.setZoomFactor(scale);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      assert.equal(
+        await reopened.window.webContents.executeJavaScript(
+          "document.documentElement.scrollWidth <= innerWidth",
+        ),
+        true,
+      );
+    }
+    reopened.window.webContents.setZoomFactor(1);
+    reopened.window.minimize();
+    await waitFor(() => reopened.window.isMinimized());
+    reopened.window.restore();
+    reopened.window.maximize();
+    await waitFor(() => reopened.window.isMaximized());
+    reopened.window.unmaximize();
+    reopened.window.setFullScreen(true);
+    await waitFor(() => reopened.window.isFullScreen());
+    reopened.window.setFullScreen(false);
+    checks.push(
+      "125/150/200 percent Chromium zoom layout; minimize/restore/maximize/fullscreen (not physical monitor DPI)",
+    );
+    if (config.realHandoff)
+      evidence.realHandoff = await realHandoffSmoke(
+        reopened.window,
+        client,
+        config.workspace,
+        config.output,
+        { click, fill, waitFor },
+      );
     if (config.realHarnesses?.length) {
       const results: Record<string, unknown>[] = [];
       evidence.realHarnesses = results;

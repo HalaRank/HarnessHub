@@ -77,7 +77,7 @@ export async function ensureDaemon(): Promise<Client> {
     `Daemon did not start. Run hhu daemon logs; check Node/native SQLite, flock and schema compatibility (${p.logs}).`,
   );
 }
-export async function stopDaemon(cancelActive = false) {
+export async function stopDaemon(cancelActive = false, forUpgrade = false) {
   const instance = readInstance();
   if (!instance) return false;
   const client = new Client(instance);
@@ -91,7 +91,12 @@ export async function stopDaemon(cancelActive = false) {
   } catch {
     throw new Error("Daemon is unreachable or incompatible; no PID was signalled. Run hhu doctor.");
   }
-  await client.request("/v1/daemon/stop", "POST", { cancelActive }, 15000);
+  await client.request(
+    "/v1/daemon/stop",
+    "POST",
+    { cancelActive, ...(forUpgrade ? { forUpgrade: true } : {}) },
+    15000,
+  );
   for (let attempt = 0; attempt < 200; attempt++) {
     const remaining = readInstance();
     if (remaining && remaining.instanceId !== instance.instanceId) return true;

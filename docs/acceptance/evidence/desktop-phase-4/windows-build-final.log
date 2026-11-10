@@ -1,0 +1,51 @@
+  • electron-builder  version=26.18.0 os=10.0.26200
+  • Specified application directory equals to project dir — superfluous or wrong configuration  appDirectory=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app-0.6.2
+  • packageManager not detected by file, falling back to environment detection  resolvedPackageManager=npm detected=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=45.2.3 appOutDir=release-0.6.2\win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\release-0.6.2\win-unpacked
+  • searching for node modules  pm=npm searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app-0.6.2
+  • no node modules found in collection, trying next search directory  pm=npm searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app-0.6.2
+  • searching for node modules  pm=traversal searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app-0.6.2
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=traversal searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app-0.6.2
+  • no node modules returned while searching directories  searchDirectories=["app-0.6.2"]
+  • updating asar integrity executable resource  executablePath=release-0.6.2\win-unpacked\HarnessHub.exe
+  • file signing skipped via signExecutable configuration  file=release-0.6.2\win-unpacked\HarnessHub.exe
+  • building        target=zip arch=x64 file=release-0.6.2\HarnessHub-0.6.2-windows-x64-unsigned.zip
+  • building        target=nsis file=release-0.6.2\HarnessHub-0.6.2-windows-x64-unsigned-setup.exe archs=x64 oneClick=false perMachine=false
+  • file signing skipped via signExecutable configuration  file=release-0.6.2\HarnessHub-0.6.2-windows-x64-unsigned-setup.__uninstaller.exe
+  • file signing skipped via signExecutable configuration  file=release-0.6.2\HarnessHub-0.6.2-windows-x64-unsigned-setup.exe
+{
+  "product": "HarnessHub",
+  "version": "0.6.2",
+  "protocolVersion": 1,
+  "platform": "win32",
+  "arch": "x64",
+  "signing": "unsigned",
+  "autoUpdate": false,
+  "payload": [
+    "assets/icon.ico",
+    "assets/icon.png",
+    "assets/logo.png",
+    "main/index.cjs",
+    "main/preload.cjs",
+    "package.json",
+    "renderer/index.css",
+    "renderer/index.html",
+    "renderer/index.js"
+  ],
+  "artifacts": [
+    {
+      "file": "HarnessHub-0.6.2-windows-x64-unsigned-setup.exe",
+      "bytes": 110726338,
+      "sha256": "4c44190660c30a91bfa66720e64c615345781a99cfc0f7c43d2586c89925d46f"
+    },
+    {
+      "file": "HarnessHub-0.6.2-windows-x64-unsigned.zip",
+      "bytes": 153510243,
+      "sha256": "825e118937fcb2687e861c420f92f4f67645102c946b5c14409312322ef17d08"
+    }
+  ]
+}

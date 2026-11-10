@@ -5,6 +5,7 @@ import { Changes } from "./Changes";
 import { Composer } from "./Composer";
 import { ConversationDialog, type ConversationDialogValue } from "./ConversationDialog";
 import { call, DesktopDraft } from "./drafts";
+import { Environment } from "./Environment";
 import { Handoffs } from "./Handoffs";
 import { DesktopTranscript } from "./history";
 import { MessageView } from "./Message";
@@ -489,6 +490,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               {error || state.detail}
             </div>
           )}
+          {state.status !== "connected" && <Environment state={state} />}
           <div
             className="history"
             ref={history}
@@ -659,6 +661,7 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
               ) : panel === "details" ? (
                 <>
                   <h2>会话详情</h2>
+                  <Environment state={state} />
                   <dl>
                     <dt>WSL 发行版</dt>
                     <dd>{state.distribution ?? "未选择"}</dd>

@@ -246,7 +246,10 @@ test("doctor reports real runtime and native binding; CLI errors are explicit", 
     /Stop the running HarnessHub Daemon/,
   );
   assert.equal(statSync(cli).mtimeMs, buildTime, "installation guard must run before build");
-  assert.equal((await cliRun("--version")).stdout.trim(), "HarnessHub 0.6.1");
+  assert.equal(
+    (await cliRun("--version")).stdout.trim(),
+    `HarnessHub ${JSON.parse(readFileSync("package.json", "utf8")).version}`,
+  );
   await assert.rejects(cliRun("daemon", "bogus"), /Usage/);
   await assert.rejects(cliRun(), /interactive terminal/);
 });

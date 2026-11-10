@@ -132,6 +132,7 @@ async function main() {
       nodeVersion: process.versions.node,
     }),
   );
+  app.get("/v1/daemon/upgrade-readiness", (c) => c.json(runtime.upgradeReadiness()));
   app.get("/v1/capabilities", (c) =>
     c.json({
       projects: true,
@@ -254,10 +255,10 @@ async function main() {
   app.post("/v1/daemon/stop", async (c) => {
     const text = await c.req.text();
     const input = z
-      .object({ cancelActive: z.boolean().default(false) })
+      .object({ cancelActive: z.boolean().default(false), forUpgrade: z.boolean().default(false) })
       .strict()
       .parse(text ? JSON.parse(text) : {});
-    await runtime.shutdown(input.cancelActive);
+    await runtime.shutdown(input.cancelActive, input.forUpgrade);
     stopping = true;
     setTimeout(() => {
       void shutdown(true);

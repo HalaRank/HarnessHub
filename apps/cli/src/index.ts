@@ -32,7 +32,7 @@ async function main(args: string[]) {
   }
   if (command === "--help" || command === "-h") {
     console.log(
-      "HarnessHub\n  hhu [project-path]\n  hhu doctor [--acp <conversationId> <harnessId>]\n  hhu daemon start|stop [--cancel-active]|status|logs\n  hhu agent --help\n  hhu --version",
+      "HarnessHub\n  hhu [project-path]\n  hhu doctor [--acp <conversationId> <harnessId>]\n  hhu daemon start|stop [--cancel-active|--for-upgrade]|status|upgrade-check|logs\n  hhu agent --help\n  hhu --version",
     );
     return;
   }
@@ -56,9 +56,13 @@ async function main(args: string[]) {
   if (command === "daemon") {
     if (
       args.length !== 2 &&
-      !(action === "stop" && args.length === 3 && args[2] === "--cancel-active")
+      !(
+        action === "stop" &&
+        args.length === 3 &&
+        ["--cancel-active", "--for-upgrade"].includes(args[2] ?? "")
+      )
     )
-      throw new Error("Usage: hhu daemon start|stop|status|logs");
+      throw new Error("Usage: hhu daemon start|stop|status|upgrade-check|logs");
     switch (action) {
       case "start": {
         const client = await ensureDaemon();
@@ -69,11 +73,24 @@ async function main(args: string[]) {
       }
       case "stop":
         console.log(
-          (await stopDaemon(args.includes("--cancel-active")))
+          (await stopDaemon(args.includes("--cancel-active"), args.includes("--for-upgrade")))
             ? "HarnessHub Daemon stopped"
             : "HarnessHub Daemon is not running",
         );
         return;
+      case "upgrade-check": {
+        const client = await connect();
+        if (!client)
+          throw new Error(
+            "Daemon unreachable/incompatible; use its matching hhu. No process was stopped.",
+          );
+        const readiness = await client.request<{ safeToStop: boolean }>(
+          "/v1/daemon/upgrade-readiness",
+        );
+        console.log(JSON.stringify(readiness, null, 2));
+        if (!readiness.safeToStop) process.exitCode = 1;
+        return;
+      }
       case "status": {
         const client = await connect();
         console.log(
@@ -93,7 +110,7 @@ async function main(args: string[]) {
         }
         return;
       default:
-        throw new Error("Usage: hhu daemon start|stop|status|logs");
+        throw new Error("Usage: hhu daemon start|stop|status|upgrade-check|logs");
     }
   }
   if (args.length > 1 || command?.startsWith("-")) throw new Error("Usage: hhu [project-path]");

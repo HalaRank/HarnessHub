@@ -1,0 +1,65 @@
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+
+added 276 packages in 19s
+npm notice
+npm notice New minor version of npm available! 12.0.2 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice
+  • electron-builder  version=26.18.0 os=10.0.26200
+  • Specified application directory equals to project dir — superfluous or wrong configuration  appDirectory=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app
+  • packageManager not detected by file, falling back to environment detection  resolvedPackageManager=npm detected=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=45.2.3 appOutDir=release\win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\release\win-unpacked
+  • searching for node modules  pm=npm searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app
+  • no node modules found in collection, trying next search directory  pm=npm searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app
+  • searching for node modules  pm=traversal searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=traversal searchDir=C:\Users\31970\AppData\Local\Temp\hhu-phase4-builder-n3qllvf9\app
+  • no node modules returned while searching directories  searchDirectories=["app"]
+  • updating asar integrity executable resource  executablePath=release\win-unpacked\HarnessHub.exe
+  • file signing skipped via signExecutable configuration  file=release\win-unpacked\HarnessHub.exe
+  • building        target=zip arch=x64 file=release\HarnessHub-0.6.1-windows-x64-unsigned.zip
+  • downloaded      label=7zip-win-x64.tar.gz progress=100%
+  • building        target=nsis file=release\HarnessHub-0.6.1-windows-x64-unsigned-setup.exe archs=x64 oneClick=false perMachine=false
+  • downloaded      label=nsis-3.0.4.1.7z progress=100%
+  • downloaded      label=nsis-resources-3.4.1.7z progress=100%
+  • file signing skipped via signExecutable configuration  file=release\HarnessHub-0.6.1-windows-x64-unsigned-setup.__uninstaller.exe
+  • file signing skipped via signExecutable configuration  file=release\HarnessHub-0.6.1-windows-x64-unsigned-setup.exe
+{
+  "product": "HarnessHub",
+  "version": "0.6.1",
+  "protocolVersion": 1,
+  "platform": "win32",
+  "arch": "x64",
+  "signing": "unsigned",
+  "autoUpdate": false,
+  "payload": [
+    "assets/icon.ico",
+    "assets/icon.png",
+    "assets/logo.png",
+    "main/index.cjs",
+    "main/preload.cjs",
+    "package.json",
+    "renderer/index.css",
+    "renderer/index.html",
+    "renderer/index.js"
+  ],
+  "artifacts": [
+    {
+      "file": "HarnessHub-0.6.1-windows-x64-unsigned-setup.exe",
+      "bytes": 110735724,
+      "sha256": "85811e8fafe76f79fc78f8180e32ba16276b486b6878adc1a21f2cb515d14193"
+    },
+    {
+      "file": "HarnessHub-0.6.1-windows-x64-unsigned.zip",
+      "bytes": 153510246,
+      "sha256": "aff4591219036af9294fb19d41c1246945a2bda6049d23dd6bd898da5240c208"
+    }
+  ]
+}

@@ -818,3 +818,24 @@ dialog :where(pre) {
   max-height: 40vh;
   overflow: auto;
 }
+
+.environment {
+  margin: 8px 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  overflow: auto;
+  max-height: 42vh;
+  flex-shrink: 0;
+}
+.environment summary {
+  cursor: pointer;
+}
+.environment dd,
+.environment code {
+  overflow-wrap: anywhere;
+}
+.environment li {
+  margin: 8px 0;
+}

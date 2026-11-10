@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "asarSha256": "80dc4847cd8c48b115f00dd766a550c87ac4fb597d925f685957bb79d6bbba3d",
+  "zipAndStagingMatch": true,
+  "installedAsarObservedSha256": "80dc4847cd8c48b115f00dd766a550c87ac4fb597d925f685957bb79d6bbba3d",
+  "installedEvidence": "Read during lifecycle test before successful uninstall; isolated hhu-release-test-7800a7e8e0e747218b52e7fdda805f8c"
+}

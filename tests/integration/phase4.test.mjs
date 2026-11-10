@@ -222,7 +222,7 @@ test("Bun and Node clients reach only the local Daemon even with proxy environme
           timeout: 10000,
         },
       );
-      assert.equal(result.stdout.trim(), "0.6.1");
+      assert.equal(result.stdout.trim(), JSON.parse(readFileSync("package.json", "utf8")).version);
     }
     assert.equal(hits, 0);
   } finally {

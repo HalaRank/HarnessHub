@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "eventCount": 2246,
+  "conversationId": "acbc4ac0-aa3c-4aa2-ae2b-6cfb024498be",
+  "source": "Original Windows UI requests; read-only revalidation of complete SQLite events; no Prompt replay",
+  "reason": "Original verifier incorrectly joined JSON chunks and read only the first 1000 events"
+}

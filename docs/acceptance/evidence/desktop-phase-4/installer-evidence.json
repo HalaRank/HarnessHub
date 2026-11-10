@@ -1,0 +1,17 @@
+{
+    "passed":  true,
+    "testRoot":  "C:\\Users\\31970\\AppData\\Local\\Temp\\hhu-release-test-7800a7e8e0e747218b52e7fdda805f8c",
+    "signing":  "unsigned",
+    "arch":  "x64",
+    "checks":  [
+                   "Portable ZIP starts real Windows window and closes normally using isolated client data",
+                   "Installed previous version fixture 0.6.1",
+                   "Abnormal exit of verified test-owned Windows client followed by successful relaunch",
+                   "Fresh per-user NSIS install, Start menu shortcut, uninstall registration and actual application launch",
+                   "Portable to NSIS transition uses the same explicit client data directory",
+                   "Reinstall/upgrade installation preserves client settings and starts normally (different version when PreviousReleaseDirectory is supplied)",
+                   "Normal uninstall removes app and Start menu shortcut; independent client data preserved",
+                   "Reinstall after uninstall starts normally and retains client data"
+               ],
+    "platform":  "win32"
+}

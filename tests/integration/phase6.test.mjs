@@ -578,7 +578,10 @@ test("user-level installation is atomic, runnable from Home and refuses an activ
       timeout: 30000,
       stdio: ["ignore", "pipe", "pipe"],
     });
-  assert.equal(run("--version").trim(), "HarnessHub 0.6.1");
+  assert.equal(
+    run("--version").trim(),
+    `HarnessHub ${JSON.parse(readFileSync("package.json", "utf8")).version}`,
+  );
   run("daemon", "start");
   try {
     const file = join(isolated.XDG_STATE_HOME, "harnesshub/instance.json");
@@ -592,8 +595,22 @@ test("user-level installation is atomic, runnable from Home and refuses an activ
   } finally {
     run("daemon", "stop");
   }
-  assert.match(install(), /Installed/);
-  assert.equal(run("--version").trim(), "HarnessHub 0.6.1");
+  const oldLauncher = readFileSync(launcher, "utf8");
+  const oldBridge = readFileSync(
+    join(isolated.HOME, ".local/lib/harnesshub/desktop-bridge"),
+    "utf8",
+  );
+  const installed = install();
+  assert.match(installed, /Installed/);
+  const recovery = /Recovery launchers: (.+)/.exec(installed)?.[1];
+  assert.ok(recovery);
+  assert.equal(readFileSync(join(recovery, "hhu"), "utf8"), oldLauncher);
+  assert.equal(readFileSync(join(recovery, "desktop-bridge"), "utf8"), oldBridge);
+  assert.equal(statSync(join(recovery, "hhu")).mode & 0o777, 0o700);
+  assert.equal(
+    run("--version").trim(),
+    `HarnessHub ${JSON.parse(readFileSync("package.json", "utf8")).version}`,
+  );
 });
 
 test("unborn repositories and locked Worktrees fail safely without deleting files or branches", async () => {

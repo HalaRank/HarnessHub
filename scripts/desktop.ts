@@ -1,10 +1,20 @@
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { VERSION } from "../packages/shared/src/index";
+import { inspectArchive, windowsConfig, writeReleaseManifest } from "./desktop-release";
+import { checkVersions } from "./version";
 
 process.chdir(fileURLToPath(new URL("../", import.meta.url)));
 const action = process.argv[2] ?? "build";
@@ -14,7 +24,8 @@ if (action === "dev" && process.platform !== "win32")
   throw new Error(
     "Run desktop:dev using Windows Bun in PowerShell. The WSL backend is built separately.",
   );
-const output = resolve("dist/desktop/app");
+checkVersions(process.cwd());
+const output = mkdtempSync(join(tmpdir(), "hhu-desktop-build-"));
 mkdirSync(output, { recursive: true });
 for (const name of ["index", "preload"]) {
   const result = await Bun.build({
@@ -57,6 +68,7 @@ writeFileSync(
     2,
   ),
 );
+cpSync(output, resolve("dist/desktop/app"), { recursive: true });
 console.log(`Built Windows Desktop assets: ${output}`);
 if (action === "dev") {
   const electron = resolve("apps/desktop/node_modules/electron/cli.js");
@@ -71,31 +83,21 @@ if (action === "package") {
   // Stage outside the monorepo so electron-builder cannot infer Linux workspace dependencies.
   const staging = mkdtempSync(join(tmpdir(), "hhu-windows-package-"));
   cpSync(output, staging, { recursive: true });
+  cpSync("docs/DESKTOP.md", join(staging, "DESKTOP.md"));
+  const releaseOutput = resolve(`dist/desktop/releases/${VERSION}-unsigned`);
+  // A failed rebuild must never leave an old success manifest beside new partial artifacts.
+  if (existsSync(releaseOutput))
+    renameSync(releaseOutput, `${releaseOutput}-previous-${Date.now()}`);
+  const desktopPackage = JSON.parse(readFileSync("apps/desktop/package.json", "utf8"));
+  // Always explicit: no CI environment variable can publish or sign this build.
+  process.env.CSC_IDENTITY_AUTO_DISCOVERY = "false";
   await build({
     projectDir: staging,
-    targets: Platform.WINDOWS.createTarget(["dir"], Arch.x64),
-    config: {
-      appId: "org.harnesshub.desktop",
-      productName: "HarnessHub",
-      electronVersion: "45.2.3",
-      directories: { app: staging, output: resolve("dist/desktop/windows") },
-      files: [
-        "main/**",
-        "renderer/**",
-        "assets/logo.png",
-        "assets/icon.png",
-        "assets/icon.ico",
-        "package.json",
-        "!node_modules/**",
-      ],
-      asar: true,
-      npmRebuild: false,
-      win: { icon: join(staging, "assets/icon.ico"), signExecutable: false },
-    },
+    targets: Platform.WINDOWS.createTarget(["nsis", "zip"], Arch.x64),
+    publish: "never",
+    config: windowsConfig(staging, releaseOutput, desktopPackage.devDependencies.electron),
   });
-  const archive = readFileSync(resolve("dist/desktop/windows/win-unpacked/resources/app.asar"));
-  const header = archive.subarray(16, 16 + archive.readUInt32LE(12)).toString("utf8");
-  if (/node_modules|better-sqlite3|opentui|\.node"/.test(header))
-    throw new Error("Unexpected native/workspace dependency in Windows archive");
-  console.log("Verified Windows archive: bundled main/preload/renderer only");
+  const archive = readFileSync(join(releaseOutput, "win-unpacked/resources/app.asar"));
+  const payload = inspectArchive(archive);
+  console.log(JSON.stringify(writeReleaseManifest(releaseOutput, payload), null, 2));
 }

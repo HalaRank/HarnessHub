@@ -2,7 +2,9 @@
 
 HarnessHub 是 Linux x64 / WSL2 的本地 TUI。全局命令是 **`hhu`**。
 
-当前为 Phase 6 审计修复版 **0.6.1（SQLite schema 6）**：修复最终独立审计的 Worktree 文件安全、Worker 后代管理、上下文/设置状态、安装一致性及测试断言。Worktree 清理改为保留式移动，不自动物理删除文件；安装采用完整独立发布目录。原审计与修复验证分别见 [独立审计报告](docs/acceptance/official-final-audit.md) 和 [审计修复记录](docs/acceptance/phase-6-audit-remediation.md)。Windows 双终端人工验收及真实 Harness 未验证项仍须单独完成，**尚未宣布 MVP 全部通过**。
+当前开发版本 **0.6.2（Desktop Phase 4，协议 1；SQLite migrations 7）**。Windows NSIS/ZIP、安装升级与数据保留指南见 [Desktop 指南](docs/DESKTOP.md)，本阶段验收见 [Desktop Phase 4](docs/acceptance/desktop-phase-4.md)。
+
+原 Phase 6 审计修复版 0.6.1：修复最终独立审计的 Worktree 文件安全、Worker 后代管理、上下文/设置状态、安装一致性及测试断言。Worktree 清理改为保留式移动，不自动物理删除文件；安装采用完整独立发布目录。原审计与修复验证分别见 [独立审计报告](docs/acceptance/official-final-audit.md) 和 [审计修复记录](docs/acceptance/phase-6-audit-remediation.md)。Windows 双终端人工验收及真实 Harness 未验证项仍须单独完成，**尚未宣布 MVP 全部通过**。
 
 ## 安装与运行
 

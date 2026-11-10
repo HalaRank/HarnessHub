@@ -94,7 +94,12 @@ test("Bridge starts absent Daemon, concurrent/repeated starts reuse existing pid
 test("Bridge incompatible client/version refuses without signalling or replacing Daemon", async () => {
   const before = instance();
   await assert.rejects(cli("desktop-bridge", "incompatible", "99"), (error) => {
-    assert.equal(JSON.parse(error.stdout).error, "INCOMPATIBLE");
+    const envelope = JSON.parse(error.stdout);
+    assert.equal(envelope.error, "INCOMPATIBLE");
+    assert.equal(envelope.diagnostics.bridgeVersion, version);
+    assert.equal(envelope.diagnostics.daemonVersion, version);
+    assert.equal(envelope.diagnostics.instanceId, before.instanceId);
+    assert.equal(envelope.diagnostics.readiness.safeToStop, true);
     assert.ok(!error.stdout.includes(before.token));
     return true;
   });
@@ -145,7 +150,7 @@ test("Desktop and TUI clients share real SQLite/WS history and exact Linux works
   const safeState = JSON.stringify(states);
   assert.ok(!safeState.includes(instance().token));
   assert.ok(!safeState.includes('"port":'));
-  assert.ok(!safeState.includes('"instanceId":'));
+  assert.equal(desktop.getState().backend.instanceId, instance().instanceId);
 });
 test("Daemon restart rediscovers token/port/identity and catches up by seq without duplicate turns", async () => {
   const before = instance();
@@ -249,7 +254,8 @@ test("WSL Bridge refuses a live incompatible Daemon without stop, spawn, or meta
   let stopRequests = 0;
   const incompatible = { ...instance(), instanceId: randomUUID(), version: "0.0.0" };
   const server = createServer((req, res) => {
-    if (req.url !== "/v1/health") stopRequests++;
+    if (req.method !== "GET" || !["/v1/health", "/v1/daemon/upgrade-readiness"].includes(req.url))
+      stopRequests++;
     res.setHeader("content-type", "application/json");
     res.end(
       JSON.stringify({ ...incompatible, token: undefined, product: "HarnessHub", runtime: "node" }),
@@ -268,7 +274,12 @@ test("WSL Bridge refuses a live incompatible Daemon without stop, spawn, or meta
         { env: { ...env, XDG_STATE_HOME: isolated }, timeout: 5000 },
       ),
       (error) => {
-        assert.equal(JSON.parse(error.stdout).error, "INCOMPATIBLE");
+        const envelope = JSON.parse(error.stdout);
+        assert.equal(envelope.error, "INCOMPATIBLE");
+        assert.equal(envelope.diagnostics.bridgeVersion, version);
+        assert.equal(envelope.diagnostics.daemonVersion, "0.0.0");
+        assert.equal(envelope.diagnostics.instanceId, incompatible.instanceId);
+        assert.equal(envelope.diagnostics.readiness, null);
         return true;
       },
     );
@@ -380,6 +391,12 @@ test("Desktop Phase 2 typed actions: draft CAS, duplicate submit, native setting
     const permission = await submit("permission");
     const approval = await waitFor(
       async () => (await client.request(`/v1/conversations/${id}/approvals`))[0],
+    );
+    const readiness = await client.request("/v1/daemon/upgrade-readiness");
+    assert.ok(readiness.blockers.includes("Pending approvals"));
+    await assert.rejects(
+      client.request("/v1/daemon/stop", "POST", { forUpgrade: true }),
+      (e) => e.status === 409,
     );
     const decisions = await Promise.allSettled([
       connection.action({
@@ -559,6 +576,15 @@ test("Desktop Harness selection is inert; failed Handoff is visible; stale nativ
       connection.getState().interaction?.handoffs.some((h) => h.status === "FAILED"),
     );
     assert.ok(connection.getState().interaction.handoffs[0].error);
+    assert.ok(
+      (await client.request("/v1/daemon/upgrade-readiness")).blockers.includes(
+        "Unresolved Handoff",
+      ),
+    );
+    await assert.rejects(
+      client.request("/v1/daemon/stop", "POST", { forUpgrade: true }),
+      (e) => e.status === 409,
+    );
     assert.equal((await client.request(`/v1/conversations/${c.id}/sessions`)).length, 1);
     const handoff = connection.getState().interaction.handoffs[0];
     await connection.action({
@@ -854,4 +880,31 @@ test("Desktop normal roundtrip and failed retry/confirm/UNCERTAIN never replay t
   } finally {
     connection.dispose();
   }
+});
+
+test("release readiness refuses active Turns and stale prechecks without stopping the Worker", async () => {
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {
+    title: "Upgrade guard",
+  });
+  const before = instance();
+  const idle = await client.request("/v1/daemon/upgrade-readiness");
+  assert.equal(typeof idle.safeToStop, "boolean");
+  const turn = await client.request(`/v1/conversations/${c.id}/turns`, "POST", {
+    requestId: randomUUID(),
+    harnessId: "desktop-mock",
+    message: "wait",
+  });
+  await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).state === "RUNNING");
+  const readiness = await client.request("/v1/daemon/upgrade-readiness");
+  assert.equal(readiness.safeToStop, false);
+  assert.ok(readiness.blockers.includes("Active Turns"));
+  await assert.rejects(cli("daemon", "upgrade-check"));
+  await assert.rejects(
+    client.request("/v1/daemon/stop", "POST", { cancelActive: false, forUpgrade: true }),
+    (e) => e.status === 409,
+  );
+  assert.equal((await client.health()).instanceId, before.instanceId);
+  assert.equal((await client.request(`/v1/turns/${turn.id}`)).state, "RUNNING");
+  await client.request(`/v1/turns/${turn.id}/cancel`, "POST", {});
+  await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
 });

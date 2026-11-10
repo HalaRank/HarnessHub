@@ -24,6 +24,7 @@ export type ConnectionStatus =
   | "incompatible"
   | "error";
 export type DesktopState = {
+  backend?: import("../../../packages/shared/src/desktop-release").BridgeDiagnostics | null;
   revision: number;
   status: ConnectionStatus;
   detail: string;

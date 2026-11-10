@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -110,8 +111,36 @@ writeFileSync(
   { mode: 0o700, flag: "wx" },
 );
 chmodSync(bridgeStaged, 0o700);
+// Keep the exact previous launcher pair beside this immutable release for recovery.
+// Never infer a prior version from mtime or overwrite/delete SQLite during rollback.
+const previous = join(release, "previous-launchers");
+privateDir(previous);
+for (const [source, name] of [
+  [target, "hhu"],
+  [bridgeTarget, "desktop-bridge"],
+] as const) {
+  if (existsSync(source)) {
+    copyFileSync(source, join(previous, name));
+    chmodSync(join(previous, name), 0o700);
+  }
+}
+writeFileSync(
+  join(release, "install-receipt.json"),
+  JSON.stringify({ release, previous, installedAt: new Date().toISOString() }, null, 2),
+  { mode: 0o600 },
+);
 renameSync(bridgeStaged, bridgeTarget);
-renameSync(staged, target);
+try {
+  renameSync(staged, target);
+} catch (error) {
+  // If replacing the second launcher fails, restore the prior Bridge atomically.
+  // First installation has no prior Bridge; its complete new release remains usable.
+  if (existsSync(join(previous, "desktop-bridge"))) {
+    copyFileSync(join(previous, "desktop-bridge"), bridgeStaged);
+    renameSync(bridgeStaged, bridgeTarget);
+  }
+  throw error;
+}
 console.log(
-  `Installed ${target}\nKeep this source checkout and node_modules in place.\nEnsure ${bin} is on PATH. No shell configuration was changed.`,
+  `Installed ${target}\nRecovery launchers: ${previous}\nKeep this source checkout and node_modules in place.\nEnsure ${bin} is on PATH. No shell configuration was changed.`,
 );

@@ -360,7 +360,13 @@ test("failed partial installation preserves the entire previous runnable release
   const hash = (p) => createHash("sha256").update(readFileSync(p)).digest("hex");
   const old = { cli: hash(cliFile), daemon: hash(daemonFile) };
   const shared = join(copy, "packages/shared/src/index.ts");
-  writeFileSync(shared, readFileSync(shared, "utf8").replace('"0.6.1"', '"0.6.2"'));
+  writeFileSync(
+    shared,
+    readFileSync(shared, "utf8").replace(
+      /export const VERSION = "[^"]+";/,
+      'export const VERSION = "999.0.0";',
+    ),
+  );
   const entry = join(copy, "apps/cli/src/index.ts");
   writeFileSync(entry, `${readFileSync(entry, "utf8")}\nconst invalid = ;\n`);
   assert.throws(install, /Build failed; previous launcher and release were not changed/);
@@ -374,7 +380,10 @@ test("failed partial installation preserves the entire previous runnable release
       encoding: "utf8",
       timeout: 30000,
     });
-  assert.equal(run("--version").trim(), "HarnessHub 0.6.1");
+  assert.equal(
+    run("--version").trim(),
+    `HarnessHub ${JSON.parse(readFileSync("package.json", "utf8")).version}`,
+  );
   run("daemon", "start");
   run("daemon", "stop");
 });

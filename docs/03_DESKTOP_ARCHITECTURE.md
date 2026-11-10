@@ -102,3 +102,18 @@ Harness 选择不启动 Agent；显式“连接 Agent 获取选项”只准备�
 - 右侧默认隐藏，Changes/Diff/Details/Debug 共用可拖动面板；窄屏浮层，关闭不卸载 Composer。仅本地视图状态，不保存完整 UI 快照。
 
 核对依据：[Electron shell.openPath](https://www.electronjs.org/docs/latest/api/shell#shellopenpathpath)、[Electron Clipboard](https://www.electronjs.org/docs/latest/api/clipboard)、[Microsoft WSL 文件系统](https://learn.microsoft.com/en-us/windows/wsl/filesystems)。实现依据锁定 Electron 45.2.3 的类型定义，剪贴板读写等待 Promise 完成。实际 Windows/Agent 结果见 `acceptance/desktop-phase-3.md`；不进入安装、签名、更新或发布阶段。
+
+## Desktop Phase 4：Windows Distribution（2026-11-09）
+
+客户端与后端统一为 0.6.2，协议 1；0.6.1 仍是历史验收版本。构建保持 Electron 45.2.3 / electron-builder 26.18.0。仓库外全新 staging 只打包 Main/Preload/React/品牌资源，NSIS 当前用户安装、ZIP 目录包，显式 unsigned、无发布/自动更新。固定 appId `org.harnesshub.desktop` 及 HarnessHub userData，安装/升级/卸载不调用 WSL，不删除用户数据。随包 DESKTOP.md、release-manifest、SHA256SUMS；asar 内容用严格文件白名单检查。
+
+启动/Details 展示 Desktop/Bridge/Daemon/协议/instanceId/发行版/连接状态。Bridge 返回经过 schema 过滤的非秘密诊断；未知版本/旧 Bridge 不推断为空闲。Token/端口仍留在 Main。新增 `GET /v1/daemon/upgrade-readiness` 只读检查；`hhu daemon upgrade-check` 手动预检，`hhu daemon stop --for-upgrade` 在实际关闭前同步重查并设置 closing，阻止竞态新提交。活动 Turn、审批、未解决 Handoff、UNCERTAIN/输入投递、Session/Git/删除操作均拒绝升级停止。普通 stop 保留旧恢复语义，升级引导明确要求专用标志；旧后端不支持时拒绝或人工核对，不能自动升级。
+
+WSL install:local 继续持同一 flock、完整 release staging、原子 launcher 替换；新 release 下保存上次精确 launcher 对及 receipt。迁移前备份、迁移错误事务回滚、拒绝未来 schema 保持不变。两份 launcher 不是跨文件原子事务：第二次替换失败恢复旧 Bridge；断电中间态按诊断拒绝连接，提供人工恢复，不覆盖唯一 DB 原件。没有原生 Agent 配置操作或 Windows Agent Runtime。
+
+官方依据：
+- https://www.electron.build/docs/nsis ：assisted/per-user、目录选择、快捷方式、卸载数据策略、稳定 appId/GUID。
+- https://www.electron.build/docs/win ：`signExecutable: false` 保留资源编辑但跳过签名；Windows x64 targets。
+- 锁定 electron-builder 26.18.0 的 winOptions/nsisOptions 类型和安装模板同时核对；在线资料不能替代真实产物验收。
+
+实际 Windows、签名、真实 Harness、回滚/重启和物理 DPI 的通过与未验证边界统一记录在 `acceptance/desktop-phase-4.md`。完成后只等待人工验收，不上传正式 Release。

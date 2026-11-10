@@ -148,7 +148,13 @@ try {
       otherId: other.id,
       workspace,
       output: windowsPath(output),
-      ...(process.env.HHU_DESKTOP_REAL === "1" ? { realHarnesses: ["codex", "grok"] } : {}),
+      ...(process.env.HHU_DESKTOP_REAL === "1"
+        ? {
+            realHarnesses:
+              process.env.HHU_DESKTOP_HANDOFF === "1" ? ["claude", "opencode"] : ["codex", "grok"],
+          }
+        : {}),
+      realHandoff: process.env.HHU_DESKTOP_HANDOFF === "1",
     }),
   );
   // Run official Electron executable from a separately extracted, checksum-verified archive.

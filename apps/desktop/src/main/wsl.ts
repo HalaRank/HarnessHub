@@ -2,6 +2,10 @@ import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { type Instance, PROTOCOL_VERSION, VERSION } from "@harnesshub/shared";
 import { instanceSchema } from "@harnesshub/shared/client";
+import {
+  type BridgeDiagnostics,
+  bridgeDiagnosticsSchema,
+} from "../../../../packages/shared/src/desktop-release";
 import type { Distribution } from "../contracts";
 
 export class BridgeError extends Error {
@@ -15,6 +19,7 @@ export class BridgeError extends Error {
       | "NETWORK"
       | "IDENTITY",
     message: string,
+    readonly diagnostics: BridgeDiagnostics | null = null,
   ) {
     super(message);
   }
@@ -105,7 +110,12 @@ export class WslBridge {
       VERSION,
       String(PROTOCOL_VERSION),
     ]);
-    let envelope: { bridgeVersion?: number; error?: string; instance?: unknown };
+    let envelope: {
+      bridgeVersion?: number;
+      error?: string;
+      instance?: unknown;
+      diagnostics?: unknown;
+    };
     try {
       envelope = JSON.parse(decodeWsl(result.stdout));
     } catch {
@@ -114,6 +124,8 @@ export class WslBridge {
         "WSL Bridge 返回无效响应。请在选中发行版运行 hhu doctor，检查安装版本及启动日志。",
       );
     }
+    const parsedDiagnostics = bridgeDiagnosticsSchema.safeParse(envelope.diagnostics);
+    const diagnostics = parsedDiagnostics.success ? parsedDiagnostics.data : null;
     if (envelope.error === "NOT_INSTALLED")
       throw new BridgeError(
         "NOT_INSTALLED",
@@ -122,7 +134,8 @@ export class WslBridge {
     if (envelope.error === "INCOMPATIBLE")
       throw new BridgeError(
         "INCOMPATIBLE",
-        "HarnessHub 或 Daemon 版本不兼容。任务未停止。请等待任务结束，再按升级指南使用匹配版本安全停止并更新。",
+        `HarnessHub 或 Daemon 版本不兼容。任务未停止。Desktop 目标 ${VERSION} / 协议 ${PROTOCOL_VERSION}；Bridge ${diagnostics?.bridgeVersion ?? "未知（旧 Bridge 未报告）"}；Daemon ${diagnostics?.daemonVersion ?? "未知"}。请按安全升级指引处理。`,
+        diagnostics,
       );
     if (result.code !== 0 || envelope.bridgeVersion !== 1 || envelope.error)
       throw new BridgeError(
@@ -134,7 +147,15 @@ export class WslBridge {
     if (parsed.data.version !== VERSION || parsed.data.protocolVersion !== PROTOCOL_VERSION)
       throw new BridgeError(
         "INCOMPATIBLE",
-        "Desktop 与 WSL Daemon 版本不匹配；请完成任务后安全更新到相同版本。",
+        `Desktop ${VERSION} / 协议 ${PROTOCOL_VERSION} 与 Daemon ${parsed.data.version} / 协议 ${parsed.data.protocolVersion} 版本不匹配；任务未停止。`,
+        diagnostics ?? {
+          bridgeVersion: "未知",
+          bridgeProtocol: PROTOCOL_VERSION,
+          daemonVersion: parsed.data.version,
+          daemonProtocol: parsed.data.protocolVersion,
+          instanceId: parsed.data.instanceId,
+          readiness: null,
+        },
       );
     return parsed.data;
   }

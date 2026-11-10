@@ -1,0 +1,43 @@
+$ bun scripts/desktop.ts package
+Built Windows Desktop assets: /tmp/hhu-desktop-build-vSAMeo
+  • electron-builder  version=26.18.0 os=6.18.33.2-microsoft-standard-WSL2
+  • Specified application directory equals to project dir — superfluous or wrong configuration  appDirectory=/tmp/hhu-windows-package-esF8HL
+  • packageManager not detected by file, falling back to environment detection  resolvedPackageManager=bun detected=/home/clj/HarnessHub/HarnessHub
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=45.2.3 appOutDir=dist/desktop/releases/0.6.1-unsigned/win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=/home/clj/HarnessHub/HarnessHub/dist/desktop/releases/0.6.1-unsigned/win-unpacked
+  • searching for node modules  pm=bun searchDir=/tmp/hhu-windows-package-esF8HL
+  • note: bun does not support any CLI for dependency tree extraction, utilizing file traversal collector instead
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=bun searchDir=/tmp/hhu-windows-package-esF8HL
+  • searching for node modules  pm=traversal searchDir=/tmp/hhu-windows-package-esF8HL
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=traversal searchDir=/tmp/hhu-windows-package-esF8HL
+  • no node modules returned while searching directories  searchDirectories=["/tmp/hhu-windows-package-esF8HL"]
+  • updating asar integrity executable resource  executablePath=dist/desktop/releases/0.6.1-unsigned/win-unpacked/HarnessHub.exe
+  • file signing skipped via signExecutable configuration  file=dist/desktop/releases/0.6.1-unsigned/win-unpacked/HarnessHub.exe
+  • building        target=zip arch=x64 file=dist/desktop/releases/0.6.1-unsigned/HarnessHub-0.6.1-windows-x64-unsigned.zip
+  • downloaded      label=7zip-linux-x64.tar.gz progress=100%
+  • building        target=nsis file=dist/desktop/releases/0.6.1-unsigned/HarnessHub-0.6.1-windows-x64-unsigned-setup.exe archs=x64 oneClick=false perMachine=false
+  • downloaded      label=nsis-3.0.4.1.7z progress=100%
+  • downloaded      label=nsis-resources-3.4.1.7z progress=100%
+RequestError: socket hang up
+ timings: {
+  start: 1794275175575,
+  socket: 1794275175578,
+  lookup: 1794275175578,
+  connect: 1794275175578,
+  secureConnect: 1794275175655,
+  upload: 1794275175655,
+  response: undefined,
+  end: undefined,
+  error: 1794275190773,
+  abort: undefined,
+  phases: [Object ...],
+},
+    code: "ECONNRESET"
+
+
+Bun v1.4.4 (Linux x64)
+error: script "desktop:release" exited with code 1

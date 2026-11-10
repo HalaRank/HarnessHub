@@ -71,6 +71,7 @@ export class DesktopConnection {
     this.clearTransport(); // Discard every old token before rediscovery, even on manual reconnect.
     this.update({
       distribution,
+      backend: null,
       status: "starting",
       detail: "正在检查 WSL 与 Daemon…",
       ...(changed
@@ -115,6 +116,16 @@ export class DesktopConnection {
           "Daemon 健康检查版本不匹配；任务未停止，请安全更新匹配版本。",
         );
       if (epoch !== this.epoch || this.disposed) return;
+      this.update({
+        backend: {
+          bridgeVersion: instance.version,
+          bridgeProtocol: instance.protocolVersion,
+          daemonVersion: health.version,
+          daemonProtocol: health.protocolVersion,
+          instanceId: health.instanceId,
+          readiness: null,
+        },
+      });
       this.client = client;
       if (!this.state.conversationId) {
         const prefs = await client.request<{ lastConversationId: string | null }>(
@@ -241,6 +252,7 @@ export class DesktopConnection {
             ? "error"
             : "disconnected",
       historyLoading: false,
+      backend: error instanceof BridgeError ? error.diagnostics : (this.state.backend ?? null),
       detail:
         error instanceof BridgeError
           ? error.message
