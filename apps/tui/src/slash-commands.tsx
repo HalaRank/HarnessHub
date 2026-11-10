@@ -44,6 +44,7 @@ export function SlashCommands(props: {
       height={props.height}
       zIndex={20}
       border
+      borderStyle="rounded"
       borderColor={ui.border}
       backgroundColor={ui.panel}
       flexDirection="column"

@@ -1,14 +1,15 @@
-import type { BoxOptions } from "@opentui/core";
-import { createMemo, createSignal, For, type JSX, Show } from "solid-js";
+import type { BoxOptions, BoxRenderable } from "@opentui/core";
+import { useRenderer, useTerminalDimensions } from "@opentui/solid";
+import { createMemo, createSignal, For, type JSX, onCleanup, onMount, Show } from "solid-js";
 
 // Terminal chrome shares a restrained palette. Native transcript styling is independent.
 export const ui = {
-  canvas: "#14181d",
-  panel: "#1b222a",
-  input: "#202931",
+  canvas: "#10151c",
+  panel: "#18212b",
+  input: "#1c2733",
   hover: "#233342",
   selection: "#294456",
-  border: "#394651",
+  border: "#3b4b5b",
   text: "#edf2f7",
   secondary: "#b8c4d0",
   muted: "#94a4b5",
@@ -92,20 +93,55 @@ export function KeyHints(props: { items: [string, string][] }) {
 }
 
 export function Panel(props: {
+  id?: string;
   title: string;
   hint?: string;
   height?: BoxOptions["height"];
   width?: BoxOptions["width"];
   children: JSX.Element;
 }) {
+  const dimensions = useTerminalDimensions();
+  const renderer = useRenderer();
+  const [bounds, setBounds] = createSignal<{ width: number; height: number }>();
+  let panel: BoxRenderable | undefined;
+  const measure = () => {
+    const parent = panel?.parent;
+    if (parent)
+      setBounds((previous) =>
+        previous?.width === parent.width && previous?.height === parent.height
+          ? previous
+          : { width: parent.width, height: parent.height },
+      );
+  };
+  onMount(() => {
+    measure();
+    renderer.on("frame", measure);
+    onCleanup(() => renderer.off("frame", measure));
+  });
+  const availableWidth = () => Math.min(dimensions().width, bounds()?.width ?? dimensions().width);
+  const availableHeight = () =>
+    Math.min(dimensions().height, bounds()?.height ?? dimensions().height);
+  const width = () =>
+    typeof props.width === "string"
+      ? props.width
+      : Math.max(1, Math.min(props.width ?? 96, availableWidth() - 2));
   return (
     <box
+      {...(props.id ? { id: props.id } : {})}
+      ref={(element) => {
+        panel = element;
+      }}
+      onSizeChange={measure}
       position="absolute"
       top={1}
-      left={1}
-      width={props.width ?? "96%"}
+      left={
+        typeof width() === "number"
+          ? Math.max(0, Math.floor((availableWidth() - Number(width())) / 2))
+          : 1
+      }
+      width={width()}
       {...(props.height ? { height: props.height } : {})}
-      maxHeight="94%"
+      maxHeight={Math.max(1, availableHeight() - 2)}
       border
       borderStyle="rounded"
       borderColor={ui.border}
@@ -114,11 +150,11 @@ export function Panel(props: {
       flexDirection="column"
       zIndex={30}
     >
-      <text height={1} flexShrink={0} fg={ui.text} wrapMode="none">
+      <text height={1} flexShrink={0} fg={ui.text} wrapMode="none" truncate>
         <b>{props.title}</b>
       </text>
       <Show when={props.hint}>
-        <text fg={ui.muted} flexShrink={0}>
+        <text fg={ui.muted} height={1} wrapMode="none" truncate flexShrink={0}>
           {props.hint}
         </text>
       </Show>

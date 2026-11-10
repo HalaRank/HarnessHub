@@ -128,7 +128,11 @@ try:
     until(first, lambda: api("/v1/preferences")["lastConversationId"] == conversations()[-1]["id"], "new project conversation not selected")
     quit_tui(first)
     second = launch(launch_paths[1], [])
-    until(second, lambda: "codex" in visible(second) and "not initialized" in visible(second), "saved selection not restored")
+    # PTY frames are incremental: stripping cursor escapes can turn an unchanged
+    # letter in "codex" into "codx". Check rendered state and persisted identity.
+    until(second, lambda: "not initialized" in visible(second)
+          and api("/v1/preferences")["lastConversationId"] == conversations()[-1]["id"],
+          "saved selection not restored")
     assert api("/v1/conversations/" + conversations()[-1]["id"])["workspacePath"] == workspace
     os.write(second["fd"], b"\x0e")
     until(second, lambda: len(conversations()) == 5, "second TUI Ctrl+N failed")

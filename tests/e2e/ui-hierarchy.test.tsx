@@ -1,15 +1,9 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { RGBA, TextAttributes } from "@opentui/core";
+import { type BoxRenderable, RGBA, TextAttributes } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { CommandPalette } from "../../apps/tui/src/command-palette";
 import { SlashCommands } from "../../apps/tui/src/slash-commands";
 import { chat, inputStyle, listStyle, ui } from "../../apps/tui/src/ui";
-import { WorkspaceOverview } from "../../apps/tui/src/workspace-overview";
-import type { Conversation } from "../../packages/shared/src/index";
-import { clickControl } from "./ui-actions";
 
 test("slash commands distinguish names, native hints and descriptions in both selection states", async () => {
   for (const width of [100, 35]) {
@@ -133,89 +127,167 @@ test("chrome text, descriptions and placeholders meet normal-text contrast", () 
   }
 });
 
-test("workspace overview adapts to resize, opens real directories and keeps actions behind modal ownership", async () => {
-  const root = mkdtempSync(join(tmpdir(), "hhu-workspace-layout-"));
-  mkdirSync(join(root, "src"));
-  writeFileSync(join(root, "src", "index.ts"), "// directory fixture\n");
-  writeFileSync(join(root, "README.md"), "Workspace fixture\n");
-  const conversations: Conversation[] = Array.from({ length: 20 }, (_, index) => ({
-    id: `conversation-${index}`,
-    projectId: "project",
-    title: index === 0 ? "优化工作区 · Workspace layout" : `Conversation ${index}`,
-    archivedAt: index === 19 ? 1 : null,
-    workspaceMode: "shared",
-    selectedHarnessId: "codex",
-    workspacePath: root,
-    runtimeStatus: index === 0 ? "WAITING_APPROVAL" : "IDLE",
-    createdAt: 0,
-    updatedAt: 20 - index,
-  }));
-  for (const disabled of [false, true]) {
-    const created: string[] = [];
-    const selected: string[] = [];
-    const screen = await testRender(
-      () => (
-        <WorkspaceOverview
-          rootPath={root}
-          conversations={conversations}
-          disabled={disabled}
-          onCreate={(mode) => created.push(mode)}
-          onSelect={(c) => selected.push(c.id)}
-        />
-      ),
-      { width: 120, height: 32 },
-    );
-    try {
-      for (const [width, height] of [
-        [120, 32],
-        [70, 24],
-        [35, 12],
-        [120, 32],
-      ] as const) {
-        screen.resize(width, height);
-        for (let i = 0; i < 5; i++) {
-          await screen.renderOnce();
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
-        const frame = screen.captureCharFrame();
-        if (height >= 14) expect(frame).toContain("19 conversations");
-        expect(frame).toContain("WAITING_APPROVAL");
-        expect(frame).not.toContain("Conversation 19");
-        const list = screen.renderer.root.findDescendantById("workspace-conversations");
-        const directory = screen.renderer.root.findDescendantById("project-directory");
-        expect(list).toBeDefined();
-        expect(directory).toBeDefined();
-        if (!directory || !list) throw new Error("Missing workspace panels");
-        expect(directory.height).toBeGreaterThanOrEqual(3);
-        expect(directory.y + directory.height).toBeLessThanOrEqual(height);
-        if (width >= 92) expect(directory.x).toBeGreaterThan(list.x + list.width);
-        else expect(directory.y).toBeGreaterThanOrEqual(list.y + list.height);
-        for (const id of ["project-new-conversation", "project-new-worktree"]) {
-          const button = screen.renderer.root.findDescendantById(id);
-          if (!button) throw new Error(`Missing ${id}`);
-          expect(button.x + button.width).toBeLessThanOrEqual(width);
-          await clickControl(screen, id);
-        }
-        await clickControl(screen, "recent-conversation-0");
-        if (!disabled) {
-          writeFileSync(join(root, `overview-${width}.txt`), frame);
-          writeFileSync(
-            join(root, `overview-${width}.json`),
-            JSON.stringify(screen.captureSpans()),
-          );
-        }
-      }
-      expect(created).toEqual(disabled ? [] : Array(4).fill(["shared", "worktree"]).flat());
-      expect(selected).toEqual(disabled ? [] : Array(4).fill("conversation-0"));
-      await clickControl(screen, "directory-src");
-      for (let i = 0; i < 5; i++) {
-        await screen.renderOnce();
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-      expect(!!screen.renderer.root.findDescendantById("directory-src/index.ts")).toBe(!disabled);
-    } finally {
-      await screen.dispose();
+test("command menu groups actions, stays bounded on resize, and preserves exact execution targets", async () => {
+  const { mkdirSync, mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { clickControl } = await import("./ui-actions");
+  const { createSignal } = await import("solid-js");
+  const evidence = mkdtempSync(join(tmpdir(), "hhu-command-ui-"));
+  mkdirSync(join(evidence, "frames"));
+  const executed: string[] = [];
+  let closed = 0;
+  const commands: import("../../apps/tui/src/command-palette").Command[] = [
+    {
+      id: "project-a",
+      name: "Project · HarnessHub",
+      group: "Projects",
+      description: "/workspace/HarnessHub",
+      run: () => executed.push("project"),
+    },
+    {
+      id: "new",
+      name: "New Conversation",
+      group: "Workspace",
+      shortcut: "N",
+      description: "Use the selected project's shared workspace",
+      run: () => executed.push("new"),
+    },
+    {
+      id: "message",
+      name: "Write Message",
+      group: "Conversation",
+      shortcut: "Enter",
+      description: "Focus the message editor",
+      run: () => executed.push("message"),
+    },
+    {
+      id: "delete",
+      name: "Delete Conversation…",
+      group: "Conversation",
+      danger: true,
+      description: "Review and confirm deletion of application history",
+      run: () => executed.push("delete"),
+    },
+    ...Array.from({ length: 35 }, (_, i) => ({
+      id: `conversation-${i}`,
+      name: `Conversation · HarnessHub / 对话 ${i}`,
+      group: "Conversations" as const,
+      description: `/workspace/HarnessHub/feature-${i}`,
+      run: () => executed.push(`conversation-${i}`),
+    })),
+    {
+      id: "quit",
+      name: "Quit TUI",
+      group: "Interface",
+      description: "Keep Daemon and Agents running",
+      run: () => executed.push("quit"),
+    },
+  ];
+  const [items, setItems] = createSignal(commands);
+  const screen = await testRender(
+    () => <CommandPalette commands={items()} onClose={() => closed++} />,
+    { width: 150, height: 40 },
+  );
+  try {
+    for (const [width, height] of [
+      [150, 40],
+      [80, 24],
+      [35, 12],
+      [150, 40],
+    ] as const) {
+      screen.resize(width, height);
+      for (let i = 0; i < 4; i++) await screen.renderOnce();
+      const panel = screen.renderer.root.findDescendantById("command-palette");
+      const search = screen.renderer.root.findDescendantById("command-search");
+      const results = screen.renderer.root.findDescendantById("command-results");
+      if (!panel || !search || !results) throw new Error("Missing command menu controls");
+      expect(panel.width).toBeLessThanOrEqual(88);
+      expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+      expect(panel.y + panel.height).toBeLessThanOrEqual(height);
+      expect(Math.abs(panel.x - (width - panel.width) / 2)).toBeLessThanOrEqual(1);
+      expect(search.x + search.width).toBeLessThan(panel.x + panel.width);
+      expect(results.height).toBeGreaterThanOrEqual(2);
+      expect(screen.captureCharFrame()).toContain("Write Message");
+      expect(screen.captureCharFrame()).toContain("↑↓ choose");
+      writeFileSync(join(evidence, "frames", `commands-${width}.txt`), screen.captureCharFrame());
+      writeFileSync(
+        join(evidence, "frames", `commands-${width}.json`),
+        JSON.stringify(screen.captureSpans()),
+      );
     }
+    const initial = screen.captureCharFrame();
+    expect(initial.indexOf("Write Message")).toBeLessThan(initial.indexOf("New Conversation"));
+    expect(initial).toContain("Enter");
+    // Navigation skips section headings and the same selected ID survives metadata replacement.
+    screen.mockInput.pressArrow("down");
+    await screen.renderOnce();
+    setItems(commands.filter((c) => c.id !== "message").map((c) => ({ ...c })));
+    await screen.renderOnce();
+    expect(
+      (
+        screen.renderer.root.findDescendantById("command-option-delete") as BoxRenderable
+      )?.backgroundColor.equals(RGBA.fromHex(ui.selection)),
+    ).toBe(true);
+    screen.mockInput.pressEnter();
+    expect(executed).toEqual(["delete"]);
+    expect(closed).toBe(1);
+    // Search is case insensitive, token-based and can combine name with path.
+    await screen.mockInput.typeText("/FEATURE-34 对话");
+    for (let i = 0; i < 3; i++) await screen.renderOnce();
+    expect(screen.captureCharFrame()).toContain("1 / 1");
+    expect(screen.captureCharFrame()).toContain("对话 34");
+    await clickControl(screen, "command-option-conversation-34");
+    expect(executed).toEqual(["delete", "conversation-34"]);
+    expect(closed).toBe(2);
+    screen.mockInput.pressKey("a", { ctrl: true });
+    screen.mockInput.pressKey("k", { ctrl: true });
+    for (let i = 0; i < 15; i++) screen.mockInput.pressKey("\x1b[6~");
+    for (let i = 0; i < 4; i++) await screen.renderOnce();
+    expect(screen.captureCharFrame()).toContain("Quit TUI");
+    screen.mockInput.pressEnter();
+    expect(executed.at(-1)).toBe("quit");
+    expect(closed).toBe(3);
+    screen.mockInput.pressEscape();
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    await screen.renderOnce();
+    expect(closed).toBe(4);
+  } finally {
+    await screen.dispose();
   }
-  console.log(`Workspace layout evidence: ${root}`);
+  console.log(`Command menu evidence: ${evidence}`);
+});
+
+test("shared dialogs fit their containing conversation pane with the sidebar open", async () => {
+  const { Panel } = await import("../../apps/tui/src/ui");
+  const screen = await testRender(
+    () => (
+      <box flexDirection="row" width="100%" height="100%">
+        <box width={34} flexShrink={0}>
+          <text>Projects → Conversations</text>
+        </box>
+        <box id="dialog-host" flexGrow={1} minWidth={0} height="100%">
+          <Panel id="nested-dialog" title="ACP settings" height="80%">
+            <text>Native session options</text>
+          </Panel>
+        </box>
+      </box>
+    ),
+    { width: 150, height: 35 },
+  );
+  try {
+    for (const width of [150, 100, 70, 150]) {
+      screen.resize(width, 35);
+      for (let i = 0; i < 8; i++) await screen.renderOnce();
+      const host = screen.renderer.root.findDescendantById("dialog-host");
+      const dialog = screen.renderer.root.findDescendantById("nested-dialog");
+      if (!host || !dialog) throw new Error("Missing nested dialog");
+      expect(dialog.x).toBeGreaterThanOrEqual(host.x);
+      expect(dialog.x + dialog.width).toBeLessThanOrEqual(host.x + host.width);
+      expect(dialog.y + dialog.height).toBeLessThanOrEqual(host.y + host.height);
+      expect(dialog.width).toBeLessThanOrEqual(96);
+    }
+  } finally {
+    await screen.dispose();
+  }
 });

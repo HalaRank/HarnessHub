@@ -7,17 +7,11 @@ import { ui } from "./ui";
 type Entry = { path: string; name: string; directory: boolean; symlink: boolean };
 
 // TUI and Daemon run locally. This read-only view never invokes an Agent or follows symlinks.
-export function ProjectDirectory(props: {
-  rootPath: string;
-  showRoot?: boolean;
-  disabled?: boolean;
-  compact?: boolean;
-}) {
+export function ProjectDirectory(props: { rootPath: string }) {
   const cache = new Map<string, Entry[]>();
   const [open, setOpen] = createSignal<ReadonlySet<string>>(new Set([props.rootPath]));
   const [errors, setErrors] = createSignal<Record<string, string>>({});
   const [revision, setRevision] = createSignal(0);
-  const [hovered, setHovered] = createSignal<string | null>(null);
   let disposed = false;
   const click = mouseClick();
   const load = async (path: string) => {
@@ -81,28 +75,17 @@ export function ProjectDirectory(props: {
     if (!closing && !cache.has(entry.path)) void load(entry.path);
   };
   return (
-    <box
-      id="project-directory"
-      flexDirection="column"
-      flexGrow={1}
-      minHeight={0}
-      paddingX={1}
-      border={["top"]}
-      borderColor={ui.border}
-      title=" Project directory "
-      titleColor={ui.secondary}
-    >
-      <Show when={!props.compact}>
-        <text fg={ui.muted} height={1} flexShrink={0} wrapMode="none">
-          Click folders to expand / collapse
-        </text>
-      </Show>
+    <box id="project-directory" flexDirection="column" flexGrow={1} minHeight={0}>
+      <text height={1} flexShrink={0} fg={ui.text}>
+        <b>Project directory</b>
+      </text>
+      <text fg={ui.muted} height={1} flexShrink={0} wrapMode="none">
+        Click folders to expand / collapse · N creates a conversation
+      </text>
       <scrollbox flexGrow={1} minHeight={0} scrollX={false} focused={false}>
-        <Show when={props.showRoot !== false}>
-          <text selectable fg={ui.muted}>
-            {props.rootPath}
-          </text>
-        </Show>
+        <text selectable fg={ui.muted}>
+          {props.rootPath}
+        </text>
         <Show
           when={revision() > 0}
           fallback={<text>{errors()[props.rootPath] ? "" : "Loading directory…"}</text>}
@@ -113,29 +96,14 @@ export function ProjectDirectory(props: {
                 <box
                   height={1}
                   flexShrink={0}
-                  backgroundColor={
-                    hovered() === entry.path && entry.directory ? ui.hover : "transparent"
-                  }
-                  onMouse={(event) => {
-                    if (event.type === "over") setHovered(entry.path);
-                    if (event.type === "out") setHovered(null);
-                    click(entry.path, event, () => {
-                      if (!props.disabled) toggle(entry);
-                    });
-                  }}
+                  onMouse={(event) => click(entry.path, event, () => toggle(entry))}
                 >
                   <text
                     id={`directory-${relative(props.rootPath, entry.path)}`}
                     selectable={false}
                     wrapMode="none"
                     height={1}
-                    fg={
-                      entry.directory
-                        ? ui.project
-                        : entry.name.startsWith(".")
-                          ? ui.muted
-                          : ui.secondary
-                    }
+                    fg={entry.directory ? ui.text : ui.secondary}
                   >
                     <span
                       style={{ fg: ui.muted }}

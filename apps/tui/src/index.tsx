@@ -11,12 +11,12 @@ import { connect, watchSnapshot } from "@harnesshub/shared/client";
 import { createCliRenderer, type KeyEvent, type TextareaRenderable } from "@opentui/core";
 import { render, useRenderer, useTerminalDimensions } from "@opentui/solid";
 import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
-import { ActionButton } from "./action-button";
 import { type AgentAction, AgentPane } from "./agent-pane";
 import { interruptTui, useClipboard } from "./clipboard";
 import { type Command, CommandPalette } from "./command-palette";
 import { DeleteConfirmation } from "./delete-confirmation";
 import { flushDrafts } from "./draft-session";
+import { ProjectDirectory } from "./project-directory";
 import { expandProjectPath } from "./project-path";
 import { ProjectPathInput } from "./project-path-input";
 import {
@@ -30,7 +30,6 @@ import {
 import { matches, navigationShortcuts, shortcuts } from "./shortcuts";
 import { newViewState, type ViewState } from "./transcript";
 import { inputStyle, KeyHints, listStyle, Panel, statusColor, ui } from "./ui";
-import { WorkspaceOverview } from "./workspace-overview";
 
 export function App(props: {
   initialProjectId?: string | undefined;
@@ -531,6 +530,74 @@ export function App(props: {
     setError("");
     setForm("rename");
   };
+  const commandMetadata = (): Record<string, Partial<Command>> => ({
+    message: {
+      group: "Conversation",
+      order: -20,
+      shortcut: "Enter",
+      description: "Focus the message editor",
+    },
+    changes: {
+      group: "Conversation",
+      order: -19,
+      description: "View the workspace's real Git changes",
+    },
+    queue: { group: "Conversation", description: "Inspect messages waiting to be sent" },
+    initialize: { group: "Conversation" },
+    approval: {
+      group: "Conversation",
+      description: "Choose from the Agent's native permission options",
+    },
+    cancel: {
+      group: "Conversation",
+      shortcut: "Esc",
+      description: "Interrupt the current Agent task",
+    },
+    harness: { group: "Conversation", order: -18, shortcut: "Ctrl+H" },
+    settings: { group: "Conversation", order: -17 },
+    handoff: { group: "Conversation" },
+    cancel_switch: {
+      group: "Conversation",
+      description: "Return to the source Harness before sending",
+    },
+    restore_pending: { group: "Conversation" },
+    raw: { group: "Conversation" },
+    rename: {
+      group: "Conversation",
+      order: 10,
+      description: "Change this conversation's display name",
+    },
+    archive: {
+      group: "Conversation",
+      order: 11,
+      description: "Move this conversation between active and archived lists",
+    },
+    delete: {
+      group: row()?.value.conversation ? "Conversation" : "Workspace",
+      order: 99,
+      danger: true,
+      shortcut: "Delete",
+      description: "Review and confirm deletion of application history",
+    },
+    actions: { group: "Workspace", description: "Rename, archive or delete the current selection" },
+    project: { group: "Workspace", order: -9 },
+    new: { group: "Workspace", order: -10, shortcut: "N" },
+    new_standalone: { group: "Workspace", shortcut: "Ctrl+N" },
+    new_worktree: { group: "Workspace" },
+    worktrees: { group: "Workspace" },
+    archives: {
+      group: "Workspace",
+      description: "Switch between active and archived conversations",
+    },
+    sidebar: {
+      group: "Interface",
+      shortcut: keys().sidebar,
+      description: "Show or hide the project and conversation tree",
+    },
+    activity: { group: "Interface", description: "Show or hide background activity counts" },
+    keys: { group: "Interface", description: "Customize keyboard shortcuts" },
+    quit: { group: "Interface", shortcut: "Ctrl+C" },
+  });
   const contextCommands = createMemo<Command[]>(() => {
     const target = row()?.value;
     if (!target) return [];
@@ -560,136 +627,141 @@ export function App(props: {
       },
     ];
   });
-  const commands = createMemo<Command[]>(() => [
-    { id: "actions", name: "Project and Conversation Actions", run: () => setForm("actions") },
-    ...contextCommands(),
-    ...allRows().map((r) => ({
-      id: r.id,
-      name: r.conversation
-        ? `Conversation · ${r.project ? `${r.project.name} / ` : ""}${r.conversation.title}`
-        : `Project · ${r.project?.name}`,
-      description: r.conversation
-        ? `${r.conversation.runtimeStatus} · ${r.conversation.workspacePath}`
-        : (r.project?.rootPath ?? ""),
-      run: () => selectRow(r),
-    })),
-    {
-      id: "archives",
-      name: showArchived() ? "Hide Archived Conversations" : "View Archived Conversations",
-      run: () => {
-        const previous = row()?.value;
-        batch(() => {
-          setShowArchived((v) => !v);
-          if (!allRows().some((r) => r.id === selected()))
-            setSelected(
-              previous?.project ? projectKey(previous.project.id) : (allRows()[0]?.id ?? null),
-            );
-        });
+  const commands = createMemo<Command[]>(() => {
+    const items: Command[] = [
+      { id: "actions", name: "Project and Conversation Actions", run: () => setForm("actions") },
+      ...contextCommands(),
+      ...allRows().map<Command>((r) => ({
+        id: r.id,
+        group: r.conversation ? "Conversations" : "Projects",
+        name: r.conversation
+          ? `Conversation · ${r.project ? `${r.project.name} / ` : ""}${r.conversation.title}`
+          : `Project · ${r.project?.name}`,
+        description: r.conversation
+          ? `${r.conversation.runtimeStatus} · ${r.conversation.workspacePath}`
+          : (r.project?.rootPath ?? ""),
+        run: () => selectRow(r),
+      })),
+      {
+        id: "archives",
+        name: showArchived() ? "Hide Archived Conversations" : "View Archived Conversations",
+        run: () => {
+          const previous = row()?.value;
+          batch(() => {
+            setShowArchived((v) => !v);
+            if (!allRows().some((r) => r.id === selected()))
+              setSelected(
+                previous?.project ? projectKey(previous.project.id) : (allRows()[0]?.id ?? null),
+              );
+          });
+        },
       },
-    },
-    {
-      id: "project",
-      name: "Add Project",
-      description: "Register an existing local directory",
-      run: () => setForm("project"),
-    },
-    {
-      id: "new",
-      name: "New Conversation",
-      description: "Use the selected project's shared workspace",
-      run: () => void createConversation("shared"),
-    },
-    {
-      id: "new_standalone",
-      name: "New Standalone Conversation",
-      description: "Ctrl+N · Use the directory where this hhu was launched, without a project",
-      run: () => void createConversation("shared", true),
-    },
-    {
-      id: "new_worktree",
-      name: "New Conversation in Git Worktree",
-      description: "Create an isolated branch and working directory",
-      run: () => void createConversation("worktree"),
-    },
-    {
-      id: "worktrees",
-      name: "Manage Worktrees",
-      description: "Inspect managed directories and safe cleanup",
-      run: () => {
-        void (async () => {
-          try {
-            const client = await connect();
-            if (!client) throw new Error("Daemon disconnected");
-            setWorktrees(await client.request<ManagedWorktree[]>("/v1/worktrees"));
-            setForm("worktrees");
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "Worktree query failed");
-          }
-        })();
+      {
+        id: "project",
+        name: "Add Project",
+        description: "Register an existing local directory",
+        run: () => setForm("project"),
       },
-    },
-    { id: "sidebar", name: "Toggle Sidebar", run: toggleSidebar },
-    { id: "activity", name: "Toggle Global Activity", run: () => setShowActivity((v) => !v) },
-    { id: "keys", name: "Configure Shortcuts", run: () => setForm("shortcuts") },
-    {
-      id: "quit",
-      name: "Quit TUI",
-      description: "Keep the Daemon and Agents running in the background",
-      run: () => {
-        void exit();
+      {
+        id: "new",
+        name: "New Conversation",
+        description: "Use the selected project's shared workspace",
+        run: () => void createConversation("shared"),
       },
-    },
-    ...(row()?.value.conversation
-      ? [
-          {
-            id: "raw",
-            name: "Raw Events / Debug",
-            description: "Inspect the complete persisted ACP protocol",
-            run: () => dispatch("raw"),
-          },
-          {
-            id: "restore_pending",
-            name: "Restore Unconfirmed Message",
-            description: "Return the reserved message to the editor for inspection",
-            run: () => dispatch("restore_pending"),
-          },
-          { id: "message", name: "Write Message", run: () => setForm("message") },
-          {
-            id: "initialize",
-            name: "Initialize ACP session",
-            description: "Connect and negotiate capabilities without a Prompt",
-            run: () => dispatch("initialize"),
-          },
-          { id: "changes", name: "Toggle Changes / Chat", run: () => dispatch("changes") },
-          { id: "queue", name: "Message Queue", run: () => dispatch("queue") },
-          { id: "approval", name: "Choose Native Approval", run: () => setForm("approval") },
-          { id: "cancel", name: "Cancel Current Turn (ACP)", run: () => dispatch("cancel") },
-          {
-            id: "harness",
-            name: "Select Next Harness",
-            description: "Ctrl+H · The first message to the target starts Handoff",
-            run: () => dispatch("harness"),
-          },
-          {
-            id: "cancel_switch",
-            name: "Cancel Pending Harness Switch",
-            run: () => dispatch("cancel_switch"),
-          },
-          {
-            id: "handoff",
-            name: "Handoff Failure",
-            description: "View saved context, confirm degraded context, retry or cancel",
-            run: () => dispatch("handoff"),
-          },
-          {
-            id: "settings",
-            name: "HarnessHub ACP settings",
-            description: "Choose model, mode and other options exposed by the native session",
-            run: () => setForm("settings"),
-          },
-        ]
-      : []),
-  ]);
+      {
+        id: "new_standalone",
+        name: "New Standalone Conversation",
+        description: "Ctrl+N · Use the directory where this hhu was launched, without a project",
+        run: () => void createConversation("shared", true),
+      },
+      {
+        id: "new_worktree",
+        name: "New Conversation in Git Worktree",
+        description: "Create an isolated branch and working directory",
+        run: () => void createConversation("worktree"),
+      },
+      {
+        id: "worktrees",
+        name: "Manage Worktrees",
+        description: "Inspect managed directories and safe cleanup",
+        run: () => {
+          void (async () => {
+            try {
+              const client = await connect();
+              if (!client) throw new Error("Daemon disconnected");
+              setWorktrees(await client.request<ManagedWorktree[]>("/v1/worktrees"));
+              setForm("worktrees");
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Worktree query failed");
+            }
+          })();
+        },
+      },
+      { id: "sidebar", name: "Toggle Sidebar", run: toggleSidebar },
+      { id: "activity", name: "Toggle Global Activity", run: () => setShowActivity((v) => !v) },
+      { id: "keys", name: "Configure Shortcuts", run: () => setForm("shortcuts") },
+      {
+        id: "quit",
+        name: "Quit TUI",
+        description: "Keep the Daemon and Agents running in the background",
+        run: () => {
+          void exit();
+        },
+      },
+      ...(row()?.value.conversation
+        ? [
+            {
+              id: "raw",
+              name: "Raw Events / Debug",
+              description: "Inspect the complete persisted ACP protocol",
+              run: () => dispatch("raw"),
+            },
+            {
+              id: "restore_pending",
+              name: "Restore Unconfirmed Message",
+              description: "Return the reserved message to the editor for inspection",
+              run: () => dispatch("restore_pending"),
+            },
+            { id: "message", name: "Write Message", run: () => setForm("message") },
+            {
+              id: "initialize",
+              name: "Initialize ACP session",
+              description: "Connect and negotiate capabilities without a Prompt",
+              run: () => dispatch("initialize"),
+            },
+            { id: "changes", name: "Toggle Changes / Chat", run: () => dispatch("changes") },
+            { id: "queue", name: "Message Queue", run: () => dispatch("queue") },
+            { id: "approval", name: "Choose Native Approval", run: () => setForm("approval") },
+            { id: "cancel", name: "Cancel Current Turn (ACP)", run: () => dispatch("cancel") },
+            {
+              id: "harness",
+              name: "Select Next Harness",
+              description: "Ctrl+H · The first message to the target starts Handoff",
+              run: () => dispatch("harness"),
+            },
+            {
+              id: "cancel_switch",
+              name: "Cancel Pending Harness Switch",
+              run: () => dispatch("cancel_switch"),
+            },
+            {
+              id: "handoff",
+              name: "Handoff Failure",
+              description: "View saved context, confirm degraded context, retry or cancel",
+              run: () => dispatch("handoff"),
+            },
+            {
+              id: "settings",
+              name: "HarnessHub ACP settings",
+              description: "Choose model, mode and other options exposed by the native session",
+              run: () => setForm("settings"),
+            },
+          ]
+        : []),
+    ];
+    const metadata = commandMetadata();
+    return items.map((command) => ({ ...command, ...metadata[command.id] }));
+  });
   const submit = async (value: string) => {
     if (busy()) return;
     setBusy(true);
@@ -720,14 +792,29 @@ export function App(props: {
       backgroundColor={ui.canvas}
     >
       <box id="app-header" flexDirection="row" height={1} flexShrink={0} backgroundColor={ui.panel}>
+        <box
+          id="commands-button"
+          backgroundColor={ui.selection}
+          onMouse={(event) => {
+            if (event.type !== "down" || event.button !== 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (form() && form() !== "message" && form() !== "transcript") return;
+            openPalette();
+          }}
+        >
+          <text selectable={false} fg={ui.accent}>
+            {" "}
+            / Commands{" "}
+          </text>
+        </box>
         <text fg={ui.text} flexShrink={0}>
-          <b> HarnessHub</b>
+          <b>HarnessHub</b>
           <span style={{ fg: statusColor(state()) }}>{` · ${state()}`}</span>
         </text>
-        <box flexGrow={1} minWidth={0} />
-        <Show when={showActivity() && dimensions().width >= 100}>
-          <text fg={ui.muted} wrapMode="none" height={1} flexShrink={0}>
-            {"Global · "}
+        <Show when={showActivity() && dimensions().width >= 70}>
+          <text fg={ui.muted} wrapMode="none" height={1}>
+            {" · Global · "}
             <span
               style={{ fg: snapshot().activity.running ? ui.accent : ui.muted }}
             >{`Running ${snapshot().activity.running}`}</span>
@@ -739,84 +826,44 @@ export function App(props: {
             <span
               style={{ fg: snapshot().activity.problems ? ui.error : ui.muted }}
             >{`Problems ${snapshot().activity.problems}`}</span>
-            {"   "}
           </text>
         </Show>
-        <Show when={showActivity() && dimensions().width >= 55 && dimensions().width < 100}>
-          <text height={1} flexShrink={0} fg={ui.muted}>
-            <span
-              style={{ fg: snapshot().activity.pendingApprovals ? ui.warning : ui.muted }}
-            >{`! ${snapshot().activity.pendingApprovals}`}</span>
-            <span
-              style={{ fg: snapshot().activity.problems ? ui.error : ui.muted }}
-            >{`  × ${snapshot().activity.problems}  `}</span>
-          </text>
+        <Show when={showArchived()}>
+          <text fg={ui.warning}> · Archives visible</text>
         </Show>
-        <Show when={showArchived() && dimensions().width >= 70}>
-          <text fg={ui.warning} flexShrink={0}>
-            Archives{" "}
-          </text>
-        </Show>
-        <box
-          id="commands-button"
-          flexShrink={0}
-          backgroundColor={ui.selection}
-          onMouse={(event) => {
-            if (event.type !== "down" || event.button !== 0) return;
-            event.preventDefault();
-            event.stopPropagation();
-            if (form() && form() !== "message" && form() !== "transcript") return;
-            openPalette();
-          }}
-        >
-          <text selectable={false} fg={ui.accent}>
-            {dimensions().width >= 45 ? " / Commands " : " / "}
-          </text>
-        </box>
       </box>
       <box flexGrow={1} minHeight={0} flexDirection="row" gap={1}>
         <Show when={sidebarVisible()}>
           <box
             id="workspace-sidebar"
-            width={Math.min(32, Math.floor(dimensions().width * 0.28))}
+            width={Math.min(34, Math.floor(dimensions().width * 0.28))}
             minWidth={0}
-            border={["right"]}
+            border
             borderColor={ui.border}
             backgroundColor={ui.panel}
             flexDirection="column"
           >
-            <box paddingX={1} paddingTop={1} flexShrink={0}>
-              <text height={1} flexShrink={0} fg={ui.text} wrapMode="none">
-                <b>Projects</b>
-                <span style={{ fg: ui.muted }}>{`  ${snapshot().projects.length}`}</span>
-              </text>
-            </box>
-            <box flexDirection="row" paddingX={1} paddingBottom={1} gap={1} flexShrink={0}>
-              <ActionButton
-                id="sidebar-add-project"
-                label="+ Add"
-                disabled={busy() || (!!form() && form() !== "message" && form() !== "transcript")}
-                onPress={() => setForm("project")}
-              />
-              <Show when={row()}>
-                <box
-                  height={1}
-                  flexShrink={0}
-                  onMouse={(event) =>
-                    sidebarClick("sidebar-actions", event, () => {
-                      if (!form() || form() === "transcript") {
-                        setError("");
-                        setForm("actions");
-                      }
-                    })
-                  }
-                >
-                  <text selectable={false} fg={ui.muted}>
-                    ⋯ Actions
-                  </text>
-                </box>
-              </Show>
-            </box>
+            <text height={1} flexShrink={0} fg={ui.text} wrapMode="none">
+              <b>Projects → Conversations</b>
+            </text>
+            <Show when={row()}>
+              <box
+                height={1}
+                flexShrink={0}
+                onMouse={(event) =>
+                  sidebarClick("sidebar-actions", event, () => {
+                    if (!form() || form() === "transcript") {
+                      setError("");
+                      setForm("actions");
+                    }
+                  })
+                }
+              >
+                <text selectable={false} fg={ui.muted}>
+                  ⋯ Actions
+                </text>
+              </box>
+            </Show>
             <Show
               when={rows().length > 0}
               fallback={
@@ -848,7 +895,15 @@ export function App(props: {
             </Show>
           </box>
         </Show>
-        <box flexGrow={1} flexShrink={1} minWidth={0} flexDirection="column" minHeight={0} gap={0}>
+        <box
+          id="conversation-main"
+          flexGrow={1}
+          flexShrink={1}
+          minWidth={0}
+          flexDirection="column"
+          minHeight={0}
+          gap={0}
+        >
           <Show
             when={row()}
             fallback={
@@ -860,21 +915,6 @@ export function App(props: {
                   Add an existing project directory, then create a conversation.
                 </text>
                 <KeyHints items={[["/", "commands and projects"]]} />
-                <box flexDirection="row" flexWrap="wrap" gap={1}>
-                  <ActionButton
-                    id="welcome-add-project"
-                    label="+ Add project"
-                    primary
-                    disabled={!!form() || busy()}
-                    onPress={() => setForm("project")}
-                  />
-                  <ActionButton
-                    id="welcome-new-conversation"
-                    label="+ Standalone conversation"
-                    disabled={!!form() || busy()}
-                    onPress={() => void createConversation("shared", true)}
-                  />
-                </box>
               </box>
             }
           >
@@ -883,9 +923,6 @@ export function App(props: {
               flexDirection={row()?.value.conversation ? "row" : "column"}
               flexShrink={0}
               columnGap={2}
-              paddingX={row()?.value.conversation ? 0 : 1}
-              paddingTop={row()?.value.conversation ? 0 : 1}
-              backgroundColor={ui.panel}
             >
               <text
                 id="workspace-heading"
@@ -925,24 +962,7 @@ export function App(props: {
             when={row() && !row()?.value.conversation ? row()?.value.project?.rootPath : undefined}
             keyed
           >
-            {(rootPath) => (
-              <WorkspaceOverview
-                rootPath={rootPath}
-                archived={showArchived()}
-                conversations={snapshot().conversations.filter(
-                  (c) => c.projectId === row()?.value.project?.id,
-                )}
-                disabled={!!form() || busy()}
-                onCreate={(mode) => void createConversation(mode)}
-                onSelect={(conversation) =>
-                  selectRow({
-                    id: conversationKey(conversation.id),
-                    project: row()?.value.project ?? null,
-                    conversation,
-                  })
-                }
-              />
-            )}
+            {(rootPath) => <ProjectDirectory rootPath={rootPath} />}
           </Show>
           <Show when={row()?.value.conversation?.id} keyed>
             {(conversationId) => (
@@ -992,16 +1012,7 @@ export function App(props: {
       </Show>
       <Show when={form() === "rename" && renameTarget()}>
         {(target) => (
-          <box
-            border
-            borderColor={ui.border}
-            backgroundColor={ui.panel}
-            flexDirection="column"
-            height={5}
-          >
-            <text fg={ui.text}>
-              <b>Rename Conversation</b>
-            </text>
+          <Panel title="Rename Conversation" hint="Update the name shown in the sidebar" height={6}>
             <input
               {...inputStyle}
               id="conversation-title"
@@ -1019,7 +1030,7 @@ export function App(props: {
                 ["Esc", "cancel"],
               ]}
             />
-          </box>
+          </Panel>
         )}
       </Show>
       <Show when={form() === "worktrees"}>
@@ -1100,7 +1111,10 @@ export function App(props: {
       <Show when={form() === "actions"}>
         <CommandPalette
           title="Conversation / Project actions"
-          commands={contextCommands()}
+          commands={contextCommands().map((command) => ({
+            ...command,
+            ...commandMetadata()[command.id],
+          }))}
           onClose={() => setForm(null)}
         />
       </Show>
@@ -1186,31 +1200,22 @@ export function App(props: {
       <box backgroundColor={ui.panel} height={1} flexShrink={0}>
         <KeyHints
           items={
-            dimensions().width < 70
+            form() === "message"
               ? [
                   ["/", "Commands"],
-                  ["Ctrl+C", "Quit"],
+                  ["Ctrl+H", "Harness"],
+                  ["Ctrl+N", "New at launch path"],
+                  ["Ctrl+T", "Transcript"],
+                  ["Ctrl+C", "Copy / Clear / Quit"],
                 ]
-              : form() === "message"
-                ? [
-                    ["/", "Commands"],
-                    ["Ctrl+H", "Harness"],
-                    ["Ctrl+T", "Transcript"],
-                    ["Ctrl+C", "Copy / Clear / Quit"],
-                  ]
-                : row()?.value.conversation
-                  ? [
-                      ["/", "Commands"],
-                      ["Ctrl+H", "Harness"],
-                      ["Enter", "Message"],
-                      ["Ctrl+C", "Copy / Clear / Quit"],
-                    ]
-                  : [
-                      ["/", "Commands"],
-                      ["N", "New conversation"],
-                      ["Ctrl+N", "Standalone"],
-                      ["Ctrl+C", "Quit"],
-                    ]
+              : [
+                  ["/", "Commands"],
+                  ["Ctrl+H", "Harness"],
+                  ["N", "New in project"],
+                  ["Ctrl+N", "New at launch path"],
+                  ["Enter", "Message"],
+                  ["Ctrl+C", "Copy / Clear / Quit"],
+                ]
           }
         />
       </box>

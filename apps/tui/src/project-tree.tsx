@@ -86,17 +86,11 @@ export function ProjectTree(props: {
         event.stopPropagation();
       }}
     >
-      <Show when={props.rows[0]?.project === null}>
-        <text height={1} flexShrink={0} fg={ui.muted} selectable={false}>
-          {" "}
-          Standalone
-        </text>
-      </Show>
       <For each={props.rows}>
         {(row) => (
           <box
             id={row.id}
-            height={2}
+            height={row.conversation ? 2 : 3}
             flexShrink={0}
             flexDirection="column"
             justifyContent="center"
@@ -121,19 +115,6 @@ export function ProjectTree(props: {
               );
             }}
           >
-            <Show when={props.selected === row.id}>
-              <text
-                position="absolute"
-                left={0}
-                top={0}
-                width={1}
-                height={2}
-                fg={ui.accent}
-                selectable={false}
-              >
-                {"▎\n▎"}
-              </text>
-            </Show>
             <box flexDirection="row" alignItems="center" height={1} flexShrink={0}>
               <Show
                 when={!row.conversation}

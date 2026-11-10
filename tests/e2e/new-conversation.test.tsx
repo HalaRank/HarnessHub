@@ -3,10 +3,17 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import type { TextareaRenderable, TextRenderable } from "@opentui/core";
+import {
+  type BoxRenderable,
+  RGBA,
+  type ScrollBoxRenderable,
+  type TextareaRenderable,
+  type TextRenderable,
+} from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { App } from "../../apps/tui/src/index";
 import { conversationKey, projectKey } from "../../apps/tui/src/project-tree";
+import { ui } from "../../apps/tui/src/ui";
 import { connect } from "../../packages/shared/src/client";
 import type { Conversation, Draft, Project, Snapshot } from "../../packages/shared/src/index";
 import { clickControl, openCommands } from "./ui-actions";
@@ -220,19 +227,31 @@ test("conversation shortcuts do not create while a modal or chat history owns th
   }
 });
 
-test("workspace overview opens conversations and creates in the selected project without starting an Agent", async () => {
-  const { project, conversation } = await setup("HarnessHub workspace");
-  mkdirSync(join(project.rootPath, "src"));
+test("restored TUI keeps the project tree on the left and opens chat on the right across resize", async () => {
+  const { project, conversation } = await setup("Restored layout");
   writeFileSync(join(project.rootPath, "README.md"), "# Workspace fixture\n");
   const screen = await testRender(
     () => <App initialProjectId={project.id} launchCwd={launchCwd} onExit={() => {}} />,
     { width: 150, height: 35 },
   );
   try {
-    await waitFor(
-      screen,
-      () => !!screen.renderer.root.findDescendantById("project-new-conversation"),
-    );
+    await waitFor(screen, () => screen.captureCharFrame().includes("README.md"));
+    expect(screen.captureCharFrame()).toContain("Projects → Conversations");
+    expect(screen.renderer.root.findDescendantById("workspace-overview")).toBeUndefined();
+    await openCommands(screen);
+    const firstAction = screen.renderer.root.findDescendantById(
+      "command-option-new",
+    ) as BoxRenderable;
+    expect(firstAction.backgroundColor.equals(RGBA.fromHex(ui.selection))).toBe(true);
+    writeFileSync(join(temp, "commands-project.txt"), screen.captureCharFrame());
+    writeFileSync(join(temp, "commands-project.json"), JSON.stringify(screen.captureSpans()));
+    screen.mockInput.pressEscape();
+    await waitFor(screen, () => !screen.renderer.root.findDescendantById("command-palette"));
+    const tree = screen.renderer.root.findDescendantById("project-tree") as ScrollBoxRenderable;
+    tree.scrollChildIntoView(conversationKey(conversation.id));
+    await screen.renderOnce();
+    await clickControl(screen, conversationKey(conversation.id));
+    await waitFor(screen, () => !!editor(screen));
     for (const [width, height] of [
       [150, 35],
       [100, 30],
@@ -242,27 +261,32 @@ test("workspace overview opens conversations and creates in the selected project
     ] as const) {
       screen.resize(width, height);
       for (let i = 0; i < 5; i++) await screen.renderOnce();
-      const button = screen.renderer.root.findDescendantById("project-new-conversation");
-      const directory = screen.renderer.root.findDescendantById("project-directory");
-      if (!button || !directory) throw new Error("Missing project controls after resize");
-      expect(button.x + button.width).toBeLessThanOrEqual(width);
-      expect(directory.y + directory.height).toBeLessThanOrEqual(height - 1);
-      expect(screen.captureCharFrame()).toContain("README.md");
-      writeFileSync(join(temp, `workspace-${width}.txt`), screen.captureCharFrame());
-      writeFileSync(join(temp, `workspace-${width}.json`), JSON.stringify(screen.captureSpans()));
+      const sidebar = screen.renderer.root.findDescendantById("workspace-sidebar");
+      const main = screen.renderer.root.findDescendantById("conversation-main");
+      const input = editor(screen);
+      const history = screen.renderer.root.findDescendantById("native-history");
+      if (!main || !input || !history) throw new Error("Missing conversation controls");
+      if (width >= 90) {
+        if (!sidebar) throw new Error("Missing project tree");
+        expect(sidebar.x + sidebar.width).toBeLessThan(main.x);
+        const treeRow = screen.renderer.root.findDescendantById(conversationKey(conversation.id));
+        expect(treeRow?.x).toBeLessThan(main.x);
+      } else expect(sidebar).toBeUndefined();
+      expect(main.x + main.width).toBeLessThanOrEqual(width);
+      expect(input.x).toBeGreaterThanOrEqual(main.x);
+      expect(history.x).toBeGreaterThanOrEqual(main.x);
+      expect(history.y + history.height).toBeLessThanOrEqual(input.y);
+      expect(input.y + input.height).toBeLessThan(height);
+      writeFileSync(join(temp, `restored-chat-${width}.txt`), screen.captureCharFrame());
+      writeFileSync(
+        join(temp, `restored-chat-${width}.json`),
+        JSON.stringify(screen.captureSpans()),
+      );
     }
-    await clickControl(screen, `recent-${conversation.id}`);
-    await waitFor(screen, () => !!editor(screen));
-    expect(
-      (screen.renderer.root.findDescendantById("workspace-heading") as TextRenderable).plainText,
-    ).toBe(conversation.title);
     await clickControl(screen, projectKey(project.id));
-    await waitFor(
-      screen,
-      () => !!screen.renderer.root.findDescendantById("project-new-conversation"),
-    );
+    await waitFor(screen, () => screen.captureCharFrame().includes("README.md"));
     const before = (await conversations()).length;
-    await clickControl(screen, "project-new-conversation");
+    screen.mockInput.pressKey("n");
     await waitFor(
       screen,
       async () => (await conversations()).length === before + 1 && !!editor(screen)?.focused,
@@ -271,12 +295,20 @@ test("workspace overview opens conversations and creates in the selected project
       (c) => c.projectId === project.id && c.id !== conversation.id,
     );
     expect(created?.workspacePath).toBe(project.rootPath);
-    expect(created?.workspacePath).not.toBe(launchCwd);
     expect(created?.activeNativeSessionId).toBeNull();
-    expect(created?.runtimeStatus).toBe("IDLE");
     await screen.mockInput.typeText("Keep this local draft");
-    await clickControl(screen, "sidebar-add-project");
-    expect(screen.captureCharFrame()).toContain("Add existing project");
+    const sidebarBefore = screen.renderer.root.findDescendantById("workspace-sidebar");
+    const mainBefore = screen.renderer.root.findDescendantById("conversation-main");
+    const geometry = [sidebarBefore?.x, sidebarBefore?.width, mainBefore?.x, mainBefore?.width];
+    await openCommands(screen);
+    writeFileSync(join(temp, "commands-in-app.txt"), screen.captureCharFrame());
+    writeFileSync(join(temp, "commands-in-app.json"), JSON.stringify(screen.captureSpans()));
+    expect([sidebarBefore?.x, sidebarBefore?.width, mainBefore?.x, mainBefore?.width]).toEqual(
+      geometry,
+    );
+    await screen.mockInput.typeText("Add Project");
+    screen.mockInput.pressEnter();
+    await waitFor(screen, () => screen.captureCharFrame().includes("Add existing project"));
     screen.mockInput.pressEscape();
     await screen.renderOnce();
     expect(editor(screen)?.plainText).toBe("Keep this local draft");

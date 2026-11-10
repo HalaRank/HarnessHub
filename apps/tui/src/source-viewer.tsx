@@ -48,6 +48,7 @@ export function SourceViewer(props: { parts: SourcePart[]; onClose: () => void }
   return (
     <Panel
       title="Original source"
+      width="96%"
       hint="Inspect and copy complete original content. Esc closes."
       height="94%"
     >
