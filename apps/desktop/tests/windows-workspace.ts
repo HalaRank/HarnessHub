@@ -108,6 +108,10 @@ export async function workspaceSmoke(
     );
   };
   await send("desktop-native-diff");
+  await waitFor(() => js("!!document.querySelector('.tool-activity')"));
+  await js(
+    "document.querySelectorAll('.activity-heading[aria-expanded=\"false\"]').forEach(b => b.click())",
+  );
   await waitFor(() =>
     js(
       "Array.from(document.querySelectorAll('.tool-heading')).some(b => b.textContent.includes('Mock native Diff'))",

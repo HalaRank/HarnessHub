@@ -1,0 +1,130 @@
+$ bun scripts/test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+✔ cleanup rejects assume-unchanged and skip-worktree without losing hidden edits (965.504978ms)
+✔ a file written after preflight survives retained cleanup and interrupted move reconciliation (9256.361677ms)
+✔ no-pipe descendant blocks stop until explicit force (10780.540531ms)
+✔ no-pipe descendant exits cooperatively (1544.27328ms)
+✔ retry after degraded target preparation failure delivers the fresh report exactly once (352.022543ms)
+✔ explicit native close and clean restart persist a visible lost-context boundary (2915.486298ms)
+Audit remediation evidence: /tmp/hhu-audit-fixes-x6btcQ
+✔ timed-out native settings block new Turns until late response or confirmed stop (22301.331946ms)
+✔ failed partial installation preserves the entire previous runnable release (6773.266654ms)
+✔ real smoke evidence rejects later-Turn tools, failed outputs and input-only cwd (1.379454ms)
+✔ confirmed project deletion closes idle Workers and cascades archived history and drafts, preserving files and other projects (1338.763047ms)
+✔ project deletion reserves all children during cooperative close and refuses new work or metadata rebinding (1861.130765ms)
+✔ an active child blocks the whole project before any idle sibling is stopped; archiving keeps it running (1162.155015ms)
+✔ unconfirmed Worker exit retains project history and releases reservations for an explicit retry (5666.032069ms)
+✔ confirmed Conversation deletion cancels running work and approvals, terminates unresponsive owned Workers and removes UNCERTAIN history (9037.877236ms)
+✔ deleting an initializing Worker reserves the Conversation, settles async writers and never dispatches its Prompt (1771.363617ms)
+✔ deleting during native configuration closes the pending RPC before removing its Conversation (1959.164951ms)
+Deletion integration evidence: /tmp/hhu-deletion-eYsYRn
+✔ deleting failed, generating, preparing-target and delivering Handoffs closes both owned sides and releases reservations (7056.828677ms)
+✔ Enter follow-up uses advertised steering, keeps one active turn and deduplicates request IDs (1791.295716ms)
+✔ Tab queue persists FIFO and sends each follow-up once after normal completion (1941.481361ms)
+✔ Agents without steering advertise a visible queue fallback and receive no steering request (1684.314337ms)
+✔ Esc cancellation holds queued work until explicit resume and retains cancel tail events (616.931046ms)
+✔ Follow-ups while waiting for native permission never approve it and queue removal is explicit (653.811004ms)
+✔ Idle steering race waits for original prompt completion and starts one host-owned next turn (1758.578487ms)
+✔ Lost steering acknowledgement becomes UNCERTAIN, survives restart, and is never replayed (3683.966983ms)
+✔ Daemon crash holds unsubmitted queue entries and reconnect GET never dispatches them (2389.477391ms)
+✔ Harness switching holds the queue and duplicate explicit resumes cannot dispatch twice (1814.00711ms)
+Input evidence /tmp/hhu-inputs-jwvtDx
+✔ a request ID reserved by the queue cannot be reused as a normal turn in another conversation (489.42267ms)
+✔ new conversations inherit the last selected Harness across projects, standalone and store reopen (72.819115ms)
+✔ simultaneous CLI starts share one authenticated Node Daemon, with empty global state (2351.352216ms)
+✔ Project/Conversation CRUD validates actual paths, canonicalizes duplicates, and preserves files (302.289833ms)
+✔ real WS invalidations commit before broadcast; reconnect recovers missed changes (60.656926ms)
+✔ SQLite uses WAL, foreign keys, schema version, and private permissions (3.763746ms)
+✔ graceful stop and fresh Node process recover real SQLite history (2468.361943ms)
+✔ kernel lock recovers after Daemon crash and stale instance metadata is safely replaced (1563.77806ms)
+✔ doctor reports real runtime and native binding; CLI errors are explicit (1955.925925ms)
+✔ pending migrations back up existing database; newer schema is refused intact (27.565207ms)
+✔ built hhu cold-starts from home in two real PTYs; closing clients keeps the Daemon alive (4011.800754ms)
+✔ actual client subscription reconnects across Daemon restart and refreshes SQLite without command replay (1862.000642ms)
+Phase-1 test evidence: /tmp/hhu-phase1-oMV3q3
+✔ migration upgrades a real Phase-1 database without losing projects/conversations (1290.912175ms)
+✔ SDK initialization, both cwd values, native settings, ordered raw streams and unknown events (568.715126ms)
+✔ concurrent duplicate prompts execute once; different content and overlapping Turns are rejected (437.08841ms)
+✔ native concurrent permissions block, validate optionId, and accept only one racing decision (560.247406ms)
+✔ cancel expires approvals and commits native trailing chunks before completion (487.66746ms)
+✔ independent Conversation sequences, committed WS events, pagination and real watcher reconnect (711.139927ms)
+✔ Worker crash and lost stdio become UNCERTAIN without replay or usable stale approvals (633.772365ms)
+✔ daemon stop refuses active Turns; explicit cancel-active waits for tail and closes idle Workers (2265.337844ms)
+✔ uncooperative cancellation keeps Daemon alive; forced stop needs explicit confirmation (5640.463106ms)
+✔ Daemon crash recovers persisted history, expires approvals and never resumes/replays a Turn (1889.007427ms)
+✔ cancel during initialization never submits a prompt; unavailable executables leave traceable errors (696.352488ms)
+✔ application logs contain no prompts, native tool output or profile environment values (0.86624ms)
+✔ negotiated session/close blocks racing prompts and closes before Worker termination (494.336375ms)
+Phase-2 test evidence: /tmp/hhu-phase2-MExkNZ
+✔ incremental Phase 2 migration preserves history and privately stored legacy profiles (1521.796313ms)
+✔ automatic titles use the first message once, persist and respect explicit names (3475.028969ms)
+✔ parallel projects have separate native sessions, cwd, events, cancellation and background approvals (505.955203ms)
+✔ shared workspaces allow concurrent Turns and emit file-conflict warning without a global lock (657.629345ms)
+✔ draft CAS, durable request reservation, duplicate clients and preferences survive restart (3962.424028ms)
+✔ two clients reconnect across real WS disconnects, page long history in order and never send a Prompt (5204.777947ms)
+✔ Daemon SIGKILL expires background approvals, marks idle sessions INTERRUPTED and active execution UNCERTAIN (2257.520744ms)
+✔ invalid project roots are never recreated; rebinding updates only stopped Conversation workspaces (412.565966ms)
+✔ Profiles inherit native credentials, reject new credential overrides and disclose only legacy key names (299.127092ms)
+✔ large Unicode drafts obey schema bounds; CAS races and metadata deletion preserve user files (118.118824ms)
+Phase-3 test evidence: /tmp/hhu-phase3-U3uYte
+✔ Changes returns actual staged, unstaged, untracked, rename, delete and binary data (929.584593ms)
+✔ Changes uses bound workspace, handles non-repositories and rejects arbitrary paths (541.27329ms)
+✔ oversized Git output is an explicit error and does not silently truncate (130.866262ms)
+✔ sidebar and validated shortcut preferences persist across daemon restart in private SQLite (2676.591102ms)
+✔ Bun and Node clients reach only the local Daemon even with proxy environment variables (703.568124ms)
+✔ archive/restore survives restart; confirmed deletion removes app relations and preserves workspace (4038.152358ms)
+✔ confirmed Conversation deletion stops active or UNCERTAIN work while project deletion keeps its preflight guard (1639.321882ms)
+Phase-4 integration evidence: /tmp/hhu-phase4-iwa8Yj
+✔ built TUI handles raw Ctrl+C and OS SIGINT; exiting leaves the running Worker intact (2086.372726ms)
+✔ A → B → A creates three native sessions, same Harness reuses, pending selection has zero model calls and cancels (1618.510521ms)
+✔ two clients duplicate target submissions use one reservation/report/Prompt; cross-content and overlapping requests are rejected (784.110517ms)
+✔ generation failure holds target, explicit cancel never sends; explicit retry stays on same request (441.11455ms)
+✔ degraded continuation requires confirmation, uses prior saved report and observable history without another user message (894.516775ms)
+✔ target Session creation failure preserves source and report; target RPC rejection is UNCERTAIN and never resends (1058.781179ms)
+✔ source running, approval and cancellation block target execution; internal report permissions remain native user decisions (1627.657095ms)
+✔ isolated worktrees bind actual cwd, preserve on Conversation deletion, reject dirty/ignored files and preserve branch on safe cleanup (3342.962384ms)
+✔ non-Git projects refuse worktree creation; ownership/branch mismatches refuse cleanup (455.942044ms)
+✔ shared Conversations remain parallel with conflict warning and never mix native history (1574.008807ms)
+✔ switch after source shutdown exposes its cause and requires explicit degraded confirmation (3474.484467ms)
+✔ restart preserves saved report through unavailable-source retry and requires explicit confirmation without replaying source (3046.306378ms)
+✔ daemon recovery never commits/replays GENERATING or DELIVERING and blocks UNCERTAIN request actions (8007.461598ms)
+✔ interrupted worktree creation is not treated as usable; unregistered directories are never removed (5783.915963ms)
+✔ real schema 5 SQL migrates all existing data to the current schema with backup and explicit session binding (2089.185816ms)
+✔ real concurrent Git path/branch conflicts and partial creation never bind a Conversation or delete pre-existing data (13713.158282ms)
+✔ actual isolated daemon crashes during GENERATING and DELIVERING recover UNCERTAIN with no Prompt replay (6729.070948ms)
+
+Interrupted while running:
+
+⚠ tests/integration/phase5.test.mjs (tests/integration/phase5.test.mjs:1:1)
+error: script "test" was terminated by signal SIGTERM (Polite quit request)
+✖ tests/integration/phase5.test.mjs (57935.702373ms)
+✖ tests/integration/phase6.test.mjs
+✖ tests/integration/rc-remediation.test.mjs
+✖ tests/integration/standalone-conversations.test.mjs
+ℹ tests 89
+ℹ suites 0
+ℹ pass 85
+ℹ fail 0
+ℹ cancelled 4
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 238207.792713
+
+✖ failing tests:
+
+test at tests/integration/phase5.test.mjs:1:1
+✖ tests/integration/phase5.test.mjs (57935.702373ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/integration/phase6.test.mjs:1:1
+✖ tests/integration/phase6.test.mjs
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/integration/rc-remediation.test.mjs:1:1
+✖ tests/integration/rc-remediation.test.mjs
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/integration/standalone-conversations.test.mjs:1:1
+✖ tests/integration/standalone-conversations.test.mjs
+  'Promise resolution is still pending but the event loop has already resolved'

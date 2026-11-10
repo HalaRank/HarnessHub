@@ -8,7 +8,7 @@ import { call, DesktopDraft } from "./drafts";
 import { Environment } from "./Environment";
 import { Handoffs } from "./Handoffs";
 import { DesktopTranscript } from "./history";
-import { MessageView } from "./Message";
+import { TranscriptView } from "./Message";
 import { PathActions } from "./PathActions";
 import { Worktrees } from "./Worktrees";
 
@@ -535,15 +535,12 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                     查看较早消息（{visibleStart}）
                   </button>
                 )}
-                {visibleRows.map((row) => (
-                  <MessageView
-                    conversationId={current.id}
-                    key={row.id}
-                    row={row}
-                    api={api}
-                    expanded={expanded.current}
-                  />
-                ))}
+                <TranscriptView
+                  conversationId={current.id}
+                  rows={visibleRows}
+                  api={api}
+                  expanded={expanded.current}
+                />
                 {historyPage !== null && (
                   <div className="history-navigation">
                     {visibleStart + 100 < rows.length && (

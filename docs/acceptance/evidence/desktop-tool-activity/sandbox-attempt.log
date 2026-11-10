@@ -1,0 +1,346 @@
+$ bun scripts/test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+node:internal/child_process:1143
+    result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+                   ^
+
+<ref *1> Error: spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe EPERM
+    at Object.spawnSync (node:internal/child_process:1143:20)
+    at spawnSync (node:child_process:911:24)
+    at execFileSync (node:child_process:954:15)
+    at cli (file:///home/clj/HarnessHub/HarnessHub/tests/integration/audit-fixes.test.mjs:30:3)
+    at file:///home/clj/HarnessHub/HarnessHub/tests/integration/audit-fixes.test.mjs:39:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  path: '/home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  spawnargs: [
+    '/home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js',
+    'daemon',
+    'start'
+  ],
+  error: [Circular *1],
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '',
+    'HarnessHub: Daemon did not start. Run hhu daemon logs; check Node/native SQLite, flock and schema compatibility (/tmp/hhu-audit-fixes-hbaVV1/state/harnesshub/logs).\n'
+  ],
+  pid: 85,
+  stdout: '',
+  stderr: 'HarnessHub: Daemon did not start. Run hhu daemon logs; check Node/native SQLite, flock and schema compatibility (/tmp/hhu-audit-fixes-hbaVV1/state/harnesshub/logs).\n'
+}
+
+Node.js v24.18.0
+✖ tests/integration/audit-fixes.test.mjs (1704.579155ms)
+node:internal/child_process:1143
+    result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+                   ^
+
+<ref *1> Error: spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe EPERM
+    at Object.spawnSync (node:internal/child_process:1143:20)
+    at spawnSync (node:child_process:911:24)
+    at execFileSync (node:child_process:954:15)
+    at cli (file:///home/clj/HarnessHub/HarnessHub/tests/integration/deletion.test.mjs:17:3)
+    at file:///home/clj/HarnessHub/HarnessHub/tests/integration/deletion.test.mjs:18:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  path: '/home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  spawnargs: [
+    '/home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js',
+    'daemon',
+    'start'
+  ],
+  error: [Circular *1],
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    Buffer(0) [Uint8Array] [],
+    Buffer(162) [Uint8Array] [
+       72,  97, 114, 110, 101, 115, 115,  72, 117,  98,  58,  32,
+       68,  97, 101, 109, 111, 110,  32, 100, 105, 100,  32, 110,
+      111, 116,  32, 115, 116,  97, 114, 116,  46,  32,  82, 117,
+      110,  32, 104, 104, 117,  32, 100,  97, 101, 109, 111, 110,
+       32, 108, 111, 103, 115,  59,  32,  99, 104, 101,  99, 107,
+       32,  78, 111, 100, 101,  47, 110,  97, 116, 105, 118, 101,
+       32,  83,  81,  76, 105, 116, 101,  44,  32, 102, 108, 111,
+       99, 107,  32,  97, 110, 100,  32, 115,  99, 104, 101, 109,
+       97,  32,  99, 111,
+      ... 62 more items
+    ]
+  ],
+  pid: 118,
+  stdout: Buffer(0) [Uint8Array] [],
+  stderr: Buffer(162) [Uint8Array] [
+     72,  97, 114, 110, 101, 115, 115,  72, 117,  98,  58,  32,
+     68,  97, 101, 109, 111, 110,  32, 100, 105, 100,  32, 110,
+    111, 116,  32, 115, 116,  97, 114, 116,  46,  32,  82, 117,
+    110,  32, 104, 104, 117,  32, 100,  97, 101, 109, 111, 110,
+     32, 108, 111, 103, 115,  59,  32,  99, 104, 101,  99, 107,
+     32,  78, 111, 100, 101,  47, 110,  97, 116, 105, 118, 101,
+     32,  83,  81,  76, 105, 116, 101,  44,  32, 102, 108, 111,
+     99, 107,  32,  97, 110, 100,  32, 115,  99, 104, 101, 109,
+     97,  32,  99, 111,
+    ... 62 more items
+  ]
+}
+
+Node.js v24.18.0
+✖ tests/integration/deletion.test.mjs (1606.441336ms)
+✖ tests/integration/pending-inputs.test.mjs (2203.225634ms)
+✖ tests/integration/phase1.test.mjs (10358.714338ms)
+✖ tests/integration/phase2.test.mjs (2697.31866ms)
+✖ tests/integration/phase3.test.mjs (2415.09458ms)
+node:internal/child_process:1143
+    result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+                   ^
+
+<ref *1> Error: spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe EPERM
+    at Object.spawnSync (node:internal/child_process:1143:20)
+    at spawnSync (node:child_process:911:24)
+    at execFileSync (node:child_process:954:15)
+    at cli (file:///home/clj/HarnessHub/HarnessHub/tests/integration/phase4.test.mjs:27:3)
+    at file:///home/clj/HarnessHub/HarnessHub/tests/integration/phase4.test.mjs:32:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  path: '/home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  spawnargs: [
+    '/home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js',
+    'daemon',
+    'start'
+  ],
+  error: [Circular *1],
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    Buffer(0) [Uint8Array] [],
+    Buffer(160) [Uint8Array] [
+       72,  97, 114, 110, 101, 115, 115,  72, 117,  98,  58,  32,
+       68,  97, 101, 109, 111, 110,  32, 100, 105, 100,  32, 110,
+      111, 116,  32, 115, 116,  97, 114, 116,  46,  32,  82, 117,
+      110,  32, 104, 104, 117,  32, 100,  97, 101, 109, 111, 110,
+       32, 108, 111, 103, 115,  59,  32,  99, 104, 101,  99, 107,
+       32,  78, 111, 100, 101,  47, 110,  97, 116, 105, 118, 101,
+       32,  83,  81,  76, 105, 116, 101,  44,  32, 102, 108, 111,
+       99, 107,  32,  97, 110, 100,  32, 115,  99, 104, 101, 109,
+       97,  32,  99, 111,
+      ... 60 more items
+    ]
+  ],
+  pid: 732,
+  stdout: Buffer(0) [Uint8Array] [],
+  stderr: Buffer(160) [Uint8Array] [
+     72,  97, 114, 110, 101, 115, 115,  72, 117,  98,  58,  32,
+     68,  97, 101, 109, 111, 110,  32, 100, 105, 100,  32, 110,
+    111, 116,  32, 115, 116,  97, 114, 116,  46,  32,  82, 117,
+    110,  32, 104, 104, 117,  32, 100,  97, 101, 109, 111, 110,
+     32, 108, 111, 103, 115,  59,  32,  99, 104, 101,  99, 107,
+     32,  78, 111, 100, 101,  47, 110,  97, 116, 105, 118, 101,
+     32,  83,  81,  76, 105, 116, 101,  44,  32, 102, 108, 111,
+     99, 107,  32,  97, 110, 100,  32, 115,  99, 104, 101, 109,
+     97,  32,  99, 111,
+    ... 60 more items
+  ]
+}
+
+Node.js v24.18.0
+✖ tests/integration/phase4.test.mjs (1697.185009ms)
+node:internal/child_process:1143
+    result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+                   ^
+
+<ref *1> Error: spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe EPERM
+    at Object.spawnSync (node:internal/child_process:1143:20)
+    at spawnSync (node:child_process:911:24)
+    at execFileSync (node:child_process:954:15)
+    at cli (file:///home/clj/HarnessHub/HarnessHub/tests/integration/phase5.test.mjs:27:3)
+    at file:///home/clj/HarnessHub/HarnessHub/tests/integration/phase5.test.mjs:35:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  path: '/home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  spawnargs: [
+    '/home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js',
+    'daemon',
+    'start'
+  ],
+  error: [Circular *1],
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '',
+    'HarnessHub: Daemon did not start. Run hhu daemon logs; check Node/native SQLite, flock and schema compatibility (/tmp/hhu-phase5-bs6to8/state/harnesshub/logs).\n'
+  ],
+  pid: 765,
+  stdout: '',
+  stderr: 'HarnessHub: Daemon did not start. Run hhu daemon logs; check Node/native SQLite, flock and schema compatibility (/tmp/hhu-phase5-bs6to8/state/harnesshub/logs).\n'
+}
+
+Node.js v24.18.0
+✖ tests/integration/phase5.test.mjs (1606.182972ms)
+node:internal/child_process:1143
+    result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+                   ^
+
+<ref *1> Error: spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe EPERM
+    at Object.spawnSync (node:internal/child_process:1143:20)
+    at spawnSync (node:child_process:911:24)
+    at execFileSync (node:child_process:954:15)
+    at cli (file:///home/clj/HarnessHub/HarnessHub/tests/integration/phase6.test.mjs:34:3)
+    at file:///home/clj/HarnessHub/HarnessHub/tests/integration/phase6.test.mjs:41:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  path: '/home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  spawnargs: [
+    '/home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js',
+    'daemon',
+    'start'
+  ],
+  error: [Circular *1],
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '',
+    'HarnessHub: Daemon did not start. Run hhu daemon logs; check Node/native SQLite, flock and schema compatibility (/tmp/hhu-phase6-1Nbc7F/state/harnesshub/logs).\n'
+  ],
+  pid: 798,
+  stdout: '',
+  stderr: 'HarnessHub: Daemon did not start. Run hhu daemon logs; check Node/native SQLite, flock and schema compatibility (/tmp/hhu-phase6-1Nbc7F/state/harnesshub/logs).\n'
+}
+
+Node.js v24.18.0
+✖ tests/integration/phase6.test.mjs (2396.678891ms)
+node:internal/child_process:1143
+    result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+                   ^
+
+<ref *1> Error: spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe EPERM
+    at Object.spawnSync (node:internal/child_process:1143:20)
+    at spawnSync (node:child_process:911:24)
+    at execFileSync (node:child_process:954:15)
+    at file:///home/clj/HarnessHub/HarnessHub/tests/integration/rc-remediation.test.mjs:37:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync /home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  path: '/home/clj/.local/lib/node_modules/bun/bin/bun.exe',
+  spawnargs: [
+    'build',
+    'packages/core/src/changes.ts',
+    '--target=node',
+    '--outfile=/tmp/hhu-rc-remediation-4sGN7b/changes.mjs',
+    '--external=better-sqlite3',
+    '--external=ws',
+    '--external=@agentclientprotocol/sdk'
+  ],
+  error: [Circular *1],
+  status: 0,
+  signal: null,
+  output: [
+    null,
+    Buffer(70) [Uint8Array] [
+       66, 117, 110, 100, 108, 101, 100, 32,  50,  50,  57,  32,
+      109, 111, 100, 117, 108, 101, 115, 32, 105, 110,  32,  50,
+       53, 109, 115,  10,  10,  32,  32, 99, 104,  97, 110, 103,
+      101, 115,  46, 109, 106, 115,  32, 32,  50,  51,  56,  46,
+       55,  52,  32,  75,  66,  32,  32, 40, 101, 110, 116, 114,
+      121,  32, 112, 111, 105, 110, 116, 41,  10,  10
+    ],
+    Buffer(0) [Uint8Array] []
+  ],
+  pid: 831,
+  stdout: Buffer(70) [Uint8Array] [
+     66, 117, 110, 100, 108, 101, 100, 32,  50,  50,  57,  32,
+    109, 111, 100, 117, 108, 101, 115, 32, 105, 110,  32,  50,
+     53, 109, 115,  10,  10,  32,  32, 99, 104,  97, 110, 103,
+    101, 115,  46, 109, 106, 115,  32, 32,  50,  51,  56,  46,
+     55,  52,  32,  75,  66,  32,  32, 40, 101, 110, 116, 114,
+    121,  32, 112, 111, 105, 110, 116, 41,  10,  10
+  ],
+  stderr: Buffer(0) [Uint8Array] []
+}
+
+Node.js v24.18.0
+✖ tests/integration/rc-remediation.test.mjs (261.24019ms)
+✖ tests/integration/standalone-conversations.test.mjs (2816.588244ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 0
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 29782.578247
+
+✖ failing tests:
+
+test at tests/integration/audit-fixes.test.mjs:1:1
+✖ tests/integration/audit-fixes.test.mjs (1704.579155ms)
+  'test failed'
+
+test at tests/integration/deletion.test.mjs:1:1
+✖ tests/integration/deletion.test.mjs (1606.441336ms)
+  'test failed'
+
+test at tests/integration/pending-inputs.test.mjs:1:1
+✖ tests/integration/pending-inputs.test.mjs (2203.225634ms)
+  'test failed'
+
+test at tests/integration/phase1.test.mjs:1:1
+✖ tests/integration/phase1.test.mjs (10358.714338ms)
+  'test failed'
+
+test at tests/integration/phase2.test.mjs:1:1
+✖ tests/integration/phase2.test.mjs (2697.31866ms)
+  'test failed'
+
+test at tests/integration/phase3.test.mjs:1:1
+✖ tests/integration/phase3.test.mjs (2415.09458ms)
+  'test failed'
+
+test at tests/integration/phase4.test.mjs:1:1
+✖ tests/integration/phase4.test.mjs (1697.185009ms)
+  'test failed'
+
+test at tests/integration/phase5.test.mjs:1:1
+✖ tests/integration/phase5.test.mjs (1606.182972ms)
+  'test failed'
+
+test at tests/integration/phase6.test.mjs:1:1
+✖ tests/integration/phase6.test.mjs (2396.678891ms)
+  'test failed'
+
+test at tests/integration/rc-remediation.test.mjs:1:1
+✖ tests/integration/rc-remediation.test.mjs (261.24019ms)
+  'test failed'
+
+test at tests/integration/standalone-conversations.test.mjs:1:1
+✖ tests/integration/standalone-conversations.test.mjs (2816.588244ms)
+  'test failed'
+error: script "test" exited with code 1

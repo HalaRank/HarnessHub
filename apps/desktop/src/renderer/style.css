@@ -682,22 +682,81 @@ textarea:focus {
 .hljs-comment {
   color: var(--muted);
 }
-.tool-card {
-  border: 1px solid var(--line);
-  border-radius: 8px;
+.tool-activity {
+  margin: 8px 0 24px;
+  color: #a5a8ae;
+  font-size: 13px;
+  line-height: 1.6;
 }
+.activity-heading,
 .tool-heading {
   display: flex;
+  align-items: center;
   width: 100%;
-  justify-content: space-between;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 0;
   text-align: left;
-  gap: 10px;
+  gap: 8px;
+  color: inherit;
+  font: inherit;
 }
-.tool-heading small {
+.activity-heading {
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.tool-activity .message {
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+.tool-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.tool-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tool-status {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: #a5a8ae;
+}
+.tool-status.failed {
+  color: var(--error);
+}
+.tool-status.waiting {
+  color: #d6ba8e;
+}
+.activity-chevron {
+  flex-shrink: 0;
+  width: 12px;
   color: var(--muted);
 }
 .tool-body {
-  padding: 12px;
+  margin: 4px 0 12px 24px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+}
+@media (max-width: 600px) {
+  .tool-heading .tool-status.completed {
+    display: none;
+  }
+  .tool-body {
+    margin-left: 0;
+  }
 }
 .approval {
   padding: 12px;

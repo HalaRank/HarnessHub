@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "platform": "win32",
+  "electron": "45.2.3",
+  "checks": [
+    "Successful calls start collapsed",
+    "Five original titles are single-line with ellipsis and folded bodies",
+    "Individual expansion, full native copy and group preference survive streaming completion",
+    "Manual group collapse survives failure, with visible failure count",
+    "Narrow 600px window has no transcript overflow"
+  ],
+  "wide": {
+    "rowHeights": [
+      32,
+      32,
+      32,
+      32,
+      32
+    ],
+    "truncated": 5,
+    "bodyCount": 0,
+    "overflow": false
+  },
+  "narrow": {
+    "viewport": 587,
+    "overflow": false,
+    "rows": [
+      {
+        "height": 32,
+        "right": 552
+      },
+      {
+        "height": 32,
+        "right": 552
+      },
+      {
+        "height": 32,
+        "right": 552
+      },
+      {
+        "height": 32,
+        "right": 552
+      },
+      {
+        "height": 32,
+        "right": 552
+      }
+    ]
+  }
+}

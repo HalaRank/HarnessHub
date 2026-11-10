@@ -1,0 +1,5 @@
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+$ bun run --cwd apps/desktop build
+$ bun ../../scripts/desktop.ts build
+Built Windows Desktop assets: /tmp/hhu-desktop-build-S1EkCN

@@ -14,6 +14,29 @@ export type Message = {
   handoff?: { report: string; incomplete: boolean; source: string; target: string };
 };
 
+export type TranscriptItem = Message | { id: string; tools: Message[] };
+
+// Group only adjacent tools from the same native turn, within the mounted history page.
+export function groupToolActivity(rows: Message[]): TranscriptItem[] {
+  const items: TranscriptItem[] = [];
+  for (const row of rows) {
+    const tail = items.at(-1);
+    if (!row.tool) {
+      items.push(row);
+    } else if (
+      tail &&
+      "tools" in tail &&
+      tail.tools[0]?.turn === row.turn &&
+      tail.tools[0]?.session === row.session
+    ) {
+      tail.tools.push(row);
+    } else {
+      items.push({ id: `activity:${row.id}`, tools: [row] });
+    }
+  }
+  return items;
+}
+
 // O(new events), stable row identities, O(1) native tool lookup. Raw events stay in SQLite.
 export class DesktopTranscript {
   constructor(readonly identity = "") {}

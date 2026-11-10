@@ -1,0 +1,3 @@
+$ bun run --cwd apps/desktop build
+$ bun ../../scripts/desktop.ts build
+Built Windows Desktop assets: /tmp/hhu-desktop-build-39d3cz

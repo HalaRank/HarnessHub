@@ -1,0 +1,70 @@
+bun test v1.4.4 (38afee6c8)
+
+tests/tool-activity.test.tsx:
+(pass) adjacent tools group within one native turn without crossing messages, sessions or pages [0.32ms]
+(pass) completed activity collapses to one summary with no mounted outputs [6.84ms]
+(pass) expanding a group shows original titles and keeps successful tool bodies folded [3.60ms]
+(pass) running, failed, pending and waiting tools reveal details by default [5.54ms]
+(pass) manual group and individual preferences survive streaming status changes [2.74ms]
+(pass) unknown native titles remain inert and complete when expanded [0.64ms]
+
+tests/workspace.test.tsx:
+(pass) unpublished /path and ordinary slash-prefix text require explicit plain text confirmation [0.32ms]
+(pass) controlled navigation rejects arbitrary paths, force, missing confirmation and extra IPC fields [3.79ms]
+(pass) WSL UNC conversion preserves spaces, unicode and literal shell characters, rejects ambiguous Windows names [0.69ms]
+(pass) WSL realpath boundary rejects tool traversal and symlink escape, locates deleted files safely [2.42ms]
+(pass) Git status labels and source separation preserve native old/new text [12.64ms]
+(pass) large multi-hunk and single-hunk diffs have bounded highlighted DOM [35.92ms]
+(pass) handoff roundtrip reports and real states are traceable, UNCERTAIN has no replay action [36.22ms]
+(pass) native tool location provenance survives content-only and status-only updates [0.82ms]
+
+tests/release.test.ts:
+(pass) Windows archive rejects unexpected native modules, workers and linked payloads [0.46ms]
+(pass) release configuration preserves app identity, data and explicit unsigned manual distribution [0.50ms]
+(pass) mismatch diagnostics expose validated versions and blockers without token or stop calls [1.79ms]
+(pass) real Harness evidence reader follows the server cursor beyond 1000 events [1.53ms]
+
+tests/history.test.tsx:
+(pass) basic history preserves user/Agent text and concatenates chunks without diagnostics [0.48ms]
+(pass) native tool titles and status retained, protocol body stays out of chat [0.10ms]
+(pass) React renders safe layout with navigation, composer and empty states [2.70ms]
+
+tests/chat.test.tsx:
+(pass) Enter sends, Shift+Enter preserves newline, IME/229 and composition confirmation never send [0.09ms]
+(pass) composer keeps one native model and approval selector, with legacy fallbacks and Chinese labels [2.34ms]
+(pass) independent drafts persist across editors and rapid conversation switches [0.29ms]
+(pass) two clients obey CAS; failed save and send preserve local text without silent overwrite [0.37ms]
+(pass) a competing reserved draft never replaces different unsaved local text [0.24ms]
+(pass) double send dispatches one turn and clears only an accepted draft [0.16ms]
+(pass) lost ACK keeps request ID locked; explicit lookup recovers without another prompt [0.28ms]
+(pass) confirmed unpublished slash text uses one plain Prompt and lost ACK never repeats it [0.37ms]
+(pass) reopening a durable unconfirmed request never automatically sends or releases it on 404 [0.21ms]
+(pass) 10k events append incrementally, merge native tools by session, preserve old rows and reject gaps [11.05ms]
+(pass) successful tools collapse, failed/waiting expand, manual preference wins [2.07ms]
+(pass) Markdown supports GFM/code highlights while HTML, event handlers and unsafe URLs stay inert [19.81ms]
+(pass) typed write actions reject arbitrary methods, paths, native configs, unconfirmed deletion [3.71ms]
+(pass) handoff records merge by ID and keep the expandable native report without internal prompt [2.10ms]
+(pass) RC-05 reload cannot erase edits while a save succeeds [0.47ms]
+(pass) RC-05 reload cannot erase edits while a save fails [0.16ms]
+(pass) RC-05 latest reload wins; invalidated component loads cannot overwrite cached editor [0.29ms]
+(pass) RC-02/03 Desktop shows explicit context recovery and independently blocks uncertain delivery [1.36ms]
+(pass) RC-04 expired approval replay clears waiting without rewriting native tool status [0.67ms]
+
+tests/bridge.test.ts:
+(pass) WSL discovery and bootstrap boundary > UTF-16LE/BOM/UTF-8 and localized state, names containing spaces [0.18ms]
+(pass) WSL discovery and bootstrap boundary > missing WSL and empty discovery give actionable errors [0.19ms]
+(pass) WSL discovery and bootstrap boundary > WSL1 and unknown names cannot execute bootstrap [0.25ms]
+(pass) WSL discovery and bootstrap boundary > known distro and untrusted-looking names are argv, not shell interpolation [1.20ms]
+(pass) WSL discovery and bootstrap boundary > missing installation, incompatible and broken startup do not expose stdout/stderr [0.62ms]
+(pass) WSL discovery and bootstrap boundary > dynamic ports, identity schema, protocol and version validated [0.91ms]
+(pass) WSL discovery and bootstrap boundary > fixed bootstrap finds Linux HOME with no interactive shell or Windows PATH [5.37ms]
+(pass) WSL discovery and bootstrap boundary > installed launcher restores PATH/XDG, quoted absolute executable/release from foreign cwd [2.18ms]
+(pass) Electron boundary > IPC exact allowlist rejects arbitrary HTTP, shell, file paths and extra fields [0.96ms]
+(pass) Electron boundary > only the exact window main frame and document can invoke IPC [0.07ms]
+(pass) Electron boundary > local settings persist only selected distro and reject malformed data [1.06ms]
+(pass) Electron boundary > renderer bundle excludes Node/native modules and preload exposes no token [2.71ms]
+
+ 52 pass
+ 0 fail
+ 304 expect() calls
+Ran 52 tests across 6 files. [374.00ms]

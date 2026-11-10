@@ -126,3 +126,7 @@ Windows Node 构建成功，最终文件复制到仓库 `dist/desktop/releases/0
 测试脚本第一轮将单个 PowerShell 注册对象误当数组，并假定 InstallLocation 字段存在；实际 NSIS 用 UninstallString。现改用 `@(Installed).Count` 和精确测试 uninstaller 路径判断，修正后完整流程通过。未据脚本失败删除用户安装。
 
 这是一台已有 WSL 的真实 Windows 测试，不是全新系统镜像。无 WSL 首装、安装向导所有人工选项、重启恢复、物理设备体验、Claude 登录和真实人工审批仍按未验证项处理。**Release Candidate 判定仍为未达标，等待人工验收。**
+
+## 2026-11-10 工具活动区优化
+
+依据用户提供的 HarnessHub 与 Codex 截图，聊天工具区增加连续调用分组、成功摘要折叠、紧凑单行标题、状态提示和手动展开保持。实际 Windows 界面、测试结果、截图与人工验收步骤见 [工具活动区验收](desktop-tool-activity.md)。
