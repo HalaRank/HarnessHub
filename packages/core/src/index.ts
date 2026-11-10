@@ -69,8 +69,8 @@ export class Projects {
     workspaceMode: "shared" | "worktree" = "shared",
     baseBranch?: string,
   ) {
-    if (baseBranch && workspaceMode !== "worktree")
-      throw new AppError(400, "A starting branch requires a Git Worktree");
+    if (baseBranch && workspaceMode === "shared")
+      return this.createSharedOnBranch(projectId, title, baseBranch);
     projectRoot(this.store.getProject(projectId).rootPath);
     const workspace =
       workspaceMode === "worktree" ? await this.worktrees.create(projectId, baseBranch) : undefined;
@@ -84,6 +84,85 @@ export class Projects {
             "Worktree created but Conversation binding failed; inspect and explicitly clean up",
         });
       throw error;
+    }
+  }
+  private async createSharedOnBranch(projectId: string, title: string | undefined, branch: string) {
+    const cwd = projectRoot(this.store.getProject(projectId).rootPath);
+    if (this.store.projectOperations.has(projectId))
+      throw new AppError(409, "Project has a pending operation; wait for it to finish");
+    this.store.assertWorkspaceAvailable(cwd);
+    this.store.projectOperations.add(projectId);
+    this.store.workspaceOperations.add(cwd);
+    let repositoryPath = cwd;
+    let reservedPath = cwd;
+    const release = () => {
+      this.store.projectOperations.delete(projectId);
+      this.store.workspaceOperations.delete(reservedPath);
+    };
+    try {
+      repositoryPath = projectRoot(
+        (await safeGit(cwd, ["rev-parse", "--show-toplevel"])).stdout.replace(/\n$/, ""),
+      );
+      // Extend the reservation to the repository root, including nested Projects
+      // and standalone Conversations. No await while replacing the reservation.
+      this.store.workspaceOperations.delete(cwd);
+      this.store.assertWorkspaceAvailable(repositoryPath);
+      this.store.workspaceOperations.add(repositoryPath);
+      reservedPath = repositoryPath;
+      await safeGit(cwd, ["check-ref-format", "--branch", branch]);
+      await safeGit(cwd, [
+        "rev-parse",
+        "--verify",
+        "--end-of-options",
+        `refs/heads/${branch}^{commit}`,
+      ]);
+      const current = await safeGit(cwd, ["symbolic-ref", "--quiet", "HEAD"]).catch(
+        (error: { code?: number }) => {
+          if (error.code === 1) return { stdout: "" };
+          throw error;
+        },
+      );
+      if (current.stdout.trim() !== `refs/heads/${branch}`) {
+        const affected = this.store
+          .listConversations()
+          .filter(
+            (c) =>
+              c.workspacePath === repositoryPath ||
+              c.workspacePath.startsWith(`${repositoryPath}/`) ||
+              repositoryPath.startsWith(`${c.workspacePath}/`),
+          );
+        for (const c of affected) {
+          try {
+            this.store.assertConversationDeletable(c.id);
+          } catch {
+            throw new AppError(
+              409,
+              "Shared workspace has an active or unresolved Conversation; finish it before switching branches, or create a Worktree",
+            );
+          }
+        }
+        const flags = await safeGit(cwd, ["ls-files", "-v", "-z"]);
+        if (flags.stdout.split("\0").some((entry) => /^[a-zS]/.test(entry)))
+          throw new AppError(
+            409,
+            "Index flags can hide changes (assume-unchanged/skip-worktree); branch switch refused",
+          );
+        // Git preserves conflicting tracked, untracked AND ignored files. Never
+        // force, stash, reset, create a branch or bypass another worktree's owner.
+        await safeGit(cwd, ["switch", "--no-guess", "--no-overwrite-ignore", "--", branch]);
+      }
+      // Release immediately before the synchronous binding so no other HHU
+      // operation can switch branches between checkout and Conversation creation.
+      release();
+      return this.store.addConversation(projectId, title);
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(
+        409,
+        "Unable to switch shared workspace branch. Check the local branch, conflicting changes or another Worktree using it; no force or stash was attempted",
+      );
+    } finally {
+      release();
     }
   }
 }

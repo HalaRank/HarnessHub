@@ -8,7 +8,7 @@
 - 独立会话位于全部项目之后，使用顶层缩进和行内小字标识。没有项目式标题、计数、折叠按钮或独立分组的新建按钮。顶栏新建入口和新建页的项目选择仍可创建独立会话。
 - 新建会话使用现有 HarnessHub Logo、包含所选项目名的引导语和底部输入框。项目、Git 分支、创建工作树开关放在输入框上方。
 - 首次发送才创建 Conversation。省略显式 title，沿用既有 hhu 首条接受消息自动命名逻辑。先保存真实 Conversation 的 CAS 草稿，再使用现有 DesktopDraft 提交，保留 requestId 查询和不确定结果处理。
-- Shared 模式显示当前分支，工作树模式可选择真实本地分支。后端校验完整 ref 并解析为 commit，再创建既有托管 hhu 分支和目录。未指定分支的旧 TUI/API 调用继续从 HEAD 创建。
+- 原实现 Shared 模式只显示当前分支，工作树模式可选择真实本地分支。后端校验完整 ref 并解析为 commit，再创建既有托管 hhu 分支和目录。未指定分支的旧 TUI/API 调用继续从 HEAD 创建。用户后续要求 Shared 模式也可选分支，现已由 [共享分支选择补充](desktop-phase-4-shared-branch.md) 扩展。
 - 新建页首条消息也写入 WSL SQLite，复用 DesktopDraft 的串行保存、CAS 和加载竞态保护。多个窗口编辑同一新建页草稿时，过期保存返回冲突，可显式重新载入。SQLite schema 从 7 升到 8，沿用迁移前私有备份与失败回滚。
 
 Git 参数依据已核对官方文档。[git-worktree](https://git-scm.com/docs/git-worktree)、[git-rev-parse](https://git-scm.com/docs/git-rev-parse)。

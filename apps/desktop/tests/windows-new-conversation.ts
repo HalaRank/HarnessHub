@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Conversation, ConversationEvent } from "@harnesshub/shared";
+import type { Conversation, ConversationEvent, ProjectBranches } from "@harnesshub/shared";
 import type { BrowserWindow } from "electron";
 import type { DesktopConnection } from "../src/main/connection";
 
@@ -126,6 +126,69 @@ export async function newConversationSmoke(
     join(output, "desktop-conversation-actions.png"),
     (await win.webContents.capturePage()).toPNG(),
   );
+  await click(win, '.project-heading button[aria-label="新建会话"]');
+  await waitFor(() => js("!document.querySelector('select[aria-label=分支]')?.disabled"));
+  assert.equal(await js("document.querySelector('input[aria-label=创建工作树]').checked"), false);
+  await js(
+    "(() => { const s = document.querySelector('select[aria-label=分支]'); s.value = 'feature/shared'; s.dispatchEvent(new Event('change', {bubbles:true})); })()",
+  );
+  await click(win, 'input[aria-label="创建工作树"]');
+  await click(win, 'input[aria-label="创建工作树"]');
+  assert.equal(
+    await js("document.querySelector('select[aria-label=分支]').value"),
+    "feature/shared",
+  );
+  const projectId = conversation.projectId;
+  assert.ok(projectId);
+  const branchState = () =>
+    connection.action({
+      type: "project.branches",
+      projectId,
+    }) as Promise<ProjectBranches>;
+  assert.equal((await branchState()).currentBranch, "main");
+  await js(
+    "(() => { const s = document.querySelector('select[aria-label=Harness]'); s.value = 'desktop-smoke'; s.dispatchEvent(new Event('change', {bubbles:true})); })()",
+  );
+  await fill(win, "共享目录选择分支 smoke");
+  writeFileSync(
+    join(output, "desktop-shared-branch.png"),
+    (await win.webContents.capturePage()).toPNG(),
+  );
+  await click(win, '[aria-label="发送消息"]');
+  await waitFor(() =>
+    js(
+      "!document.querySelector('.new-conversation') && document.querySelector('h1').textContent === '共享目录选择分支 smoke'",
+    ),
+  );
+  const sharedId = connection.getState().conversationId;
+  assert.ok(sharedId);
+  const shared = connection.getState().snapshot?.conversations.find((c) => c.id === sharedId);
+  assert.ok(shared);
+  assert.equal(shared?.workspaceMode, "shared");
+  assert.equal(shared?.worktreeId, null);
+  assert.equal(
+    shared.workspacePath,
+    connection.getState().snapshot?.projects.find((p) => p.id === projectId)?.rootPath,
+  );
+  assert.equal((await branchState()).currentBranch, "feature/shared");
+  await waitFor(() =>
+    connection.getState().interaction?.sessions.some((s) => s.cwd === shared?.workspacePath),
+  );
+  const sharedHistory = async () =>
+    (
+      (await connection.action({ type: "history", conversationId: sharedId, after: 0 })) as {
+        events: ConversationEvent[];
+      }
+    ).events;
+  await waitFor(async () =>
+    (await sharedHistory()).some((e) => e.kind === "runtime.turn_finished"),
+  );
+  assert.equal((await sharedHistory()).filter((e) => e.kind === "user.message").length, 1);
+  await connection.action({
+    type: "conversation.delete",
+    conversationId: sharedId,
+    confirmed: true,
+  });
   await connection.action({ type: "conversation.delete", conversationId: id, confirmed: true });
   await connection.action({
     type: "conversation.delete",
@@ -139,5 +202,6 @@ export async function newConversationSmoke(
     "Double send creates one user Turn, automatic title and native cwd in the real managed Worktree",
     "Conversation row rename, archive and restore operate on the target conversation",
     "Standalone rows follow every project, use root indentation and row-level labels without a project heading",
+    "Shared mode selects a branch without Worktree; toggling preserves the selection, only sending switches Git, and the native cwd stays in the shared directory",
   ];
 }

@@ -116,7 +116,7 @@ export function NewConversation({
               type: "conversation.create",
               projectId: project.id,
               workspaceMode: worktree ? "worktree" : "shared",
-              ...(worktree && baseBranch ? { baseBranch } : {}),
+              ...(branches?.hasCommits && baseBranch ? { baseBranch } : {}),
             }
           : { type: "conversation.standalone", workspacePath: value.workspace };
         try {
@@ -194,7 +194,7 @@ export function NewConversation({
                 <select
                   aria-label="分支"
                   value={baseBranch}
-                  disabled={busy || !!prepared.current || !worktree || !branches?.hasCommits}
+                  disabled={busy || !!prepared.current || !branches?.hasCommits}
                   onChange={(e) => setBaseBranch(e.target.value)}
                 >
                   {!branches ? (
@@ -223,10 +223,7 @@ export function NewConversation({
                   aria-label="创建工作树"
                   checked={worktree}
                   disabled={busy || !!prepared.current || !branches?.hasCommits}
-                  onChange={(e) => {
-                    setWorktree(e.target.checked);
-                    setBaseBranch(branches?.currentBranch ?? "");
-                  }}
+                  onChange={(e) => setWorktree(e.target.checked)}
                 />
                 <span>创建工作树</span>
               </label>
@@ -334,7 +331,11 @@ export function NewConversation({
           </div>
         )}
         <p className="composer-note">
-          {worktree ? "在所选分支的独立工作树中开始" : "共享目录中的并行任务可能修改同一文件"}
+          {worktree
+            ? "在所选分支的独立工作树中开始"
+            : baseBranch && baseBranch !== branches?.currentBranch
+              ? "首次发送时将共享目录切换到所选分支，会影响使用该目录的其他会话"
+              : "共享目录中的并行任务可能修改同一文件"}
           {" · Enter 发送，Shift+Enter 换行"}
         </p>
       </div>
