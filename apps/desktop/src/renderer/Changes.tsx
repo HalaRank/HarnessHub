@@ -97,7 +97,7 @@ export function Changes({
   return (
     <section className="changes" aria-label="Workspace Git Changes">
       <div className="diff-heading">
-        <h2>Workspace Git</h2>
+        <h3>Workspace Git</h3>
         <button
           type="button"
           disabled={!connected || busy}
@@ -110,22 +110,36 @@ export function Changes({
           刷新
         </button>
       </div>
-      <p className="file-path">{conversation.workspacePath}</p>
-      <p className="subtle">
+      <p className="changes-workspace file-path">{conversation.workspacePath}</p>
+      <p className="panel-notice">
         {conversation.workspaceMode === "shared"
           ? "Shared Workspace · 并行修改可能冲突。"
           : "独立 Worktree。"}
         真实 Git 状态，不归属任何 Agent 或 Conversation。
       </p>
       {state && (
-        <small>
-          观测时间 {new Date(state.observedAt).toLocaleTimeString()} · {state.files.length} 个文件
-        </small>
+        <div className="changes-observation">
+          <span>{state.files.length} 个变更文件</span>
+          <span className="subtle">观测于 {new Date(state.observedAt).toLocaleTimeString()}</span>
+        </div>
+      )}
+      {!state && !error && connected && (
+        <p role="status" className="panel-empty">
+          正在读取 Git 状态…
+        </p>
       )}
       {!connected && <p role="status">连接已断开，显示最后观测结果。</p>}
       {error && <p role="alert">{error}</p>}
-      {state && !state.repository && <p>{state.notice}</p>}
-      {state?.repository && !state.files.length && <p>工作区干净</p>}
+      {state && !state.repository && <p className="panel-empty">{state.notice}</p>}
+      {state?.repository && !state.files.length && (
+        <div className="panel-empty">
+          <span className="empty-check" aria-hidden="true">
+            ✓
+          </span>
+          <strong>工作区干净</strong>
+          <p>当前没有 Git 变更。</p>
+        </div>
+      )}
       {tab === "changes" && (
         <>
           <div className="change-list">
@@ -134,18 +148,29 @@ export function Changes({
                 <button
                   type="button"
                   className="change-file"
+                  title={file.previousPath ? `${file.previousPath} → ${file.path}` : file.path}
                   onClick={() => {
                     setPatch(null);
                     setPath(file.path);
                     selectTab("diff");
                   }}
                 >
-                  <span className={`git-status ${gitStatus(file)}`}>{gitStatus(file)}</span>
-                  <span>{file.path}</span>
-                  <small>
+                  <span className={`git-status ${gitStatus(file)}`} title={gitStatus(file)}>
+                    {gitStatus(file) === "Untracked" ? "?" : gitStatus(file).slice(0, 1)}
+                  </span>
+                  <span className="change-file-name">
+                    <span>{file.path.split("/").at(-1)}</span>
+                    {file.path.includes("/") && (
+                      <small>{file.path.slice(0, file.path.lastIndexOf("/"))}</small>
+                    )}
+                  </span>
+                  <small className="git-raw-status" title="Git index / worktree status">
                     {file.index}
                     {file.worktree}
                   </small>
+                  <span className="change-arrow" aria-hidden="true">
+                    ›
+                  </span>
                 </button>
               </div>
             ))}
@@ -176,7 +201,10 @@ export function Changes({
             ‹ 返回文件列表
           </button>
           {!path ? (
-            <p>先在 Changes 中选择文件。</p>
+            <div className="panel-empty">
+              <strong>选择文件查看 Diff</strong>
+              <p>在 Changes 中选择一个变更文件。</p>
+            </div>
           ) : (
             <>
               <h3 className="file-path">{path}</h3>

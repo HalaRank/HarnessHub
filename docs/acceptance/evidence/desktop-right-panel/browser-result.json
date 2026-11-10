@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "checks": [
+    "Details binds current conversation; management stays folded",
+    "Git list and Diff selection survive switching",
+    "Debug keeps complete original events",
+    "Keyboard resizing grows panel by 20px",
+    "Browser mouse drag and pointer capture grow panel by 70px without jumping",
+    "760px overlay keeps sidebar width and has no horizontal overflow",
+    "Close dismisses only the panel; no runtime or mutation action"
+  ],
+  "geometry": {
+    "rect": {
+      "x": 1037,
+      "y": 48,
+      "width": 7,
+      "height": 892,
+      "top": 48,
+      "right": 1044,
+      "bottom": 940,
+      "left": 1037
+    },
+    "hit": "panel-resize"
+  },
+  "narrow": {
+    "width": 490,
+    "right": 760,
+    "viewport": 760,
+    "overflow": false,
+    "sidebar": 260
+  }
+}

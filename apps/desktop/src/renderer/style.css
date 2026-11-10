@@ -583,26 +583,7 @@ h2 {
   background: var(--panel);
   border-left: 1px solid var(--line);
 }
-.work-panel > header {
-  display: flex;
-  padding: 12px 8px;
-  gap: 1px;
-}
-.work-panel :where(header button) {
-  font-size: 11px;
-}
-.work-panel button[aria-pressed="true"] {
-  background: var(--raised);
-}
-.panel-content {
-  overflow: auto;
-  padding: 10px 20px;
-  font-size: 12px;
-  line-height: 1.8;
-}
-.panel-content h2 {
-  font-size: 14px;
-}
+
 dt {
   color: var(--muted);
   margin-top: 18px;
@@ -1049,11 +1030,6 @@ dialog footer {
 .panel-resize:focus {
   background: var(--line);
 }
-.panel-content {
-  min-height: 0;
-  flex: 1;
-  padding: 10px 14px;
-}
 .diff-heading,
 .diff-pages {
   display: flex;
@@ -1065,30 +1041,75 @@ dialog footer {
   overflow-wrap: anywhere;
   font-family: Consolas, monospace;
 }
+.changes-workspace {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 8px 0;
+}
+.changes-observation {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 10px;
+  font-size: 10px;
+  margin: 20px 0 8px;
+}
 .change-file {
   display: flex;
   width: 100%;
   gap: 10px;
-  align-items: baseline;
+  align-items: center;
   text-align: left;
-  padding: 7px 2px;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 6px;
+  border-radius: 6px;
 }
-.change-file > span:nth-child(2) {
+.change-file-name {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  gap: 2px;
+}
+.change-file-name > :where(span, small) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.change-file-name > small {
+  color: var(--muted);
+  font-size: 10px;
 }
 .git-status {
-  font-size: 10px;
-  min-width: 54px;
-  color: var(--muted);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 24px;
+  border-radius: 5px;
+  background: var(--raised);
+  font:
+    11px Consolas,
+    monospace;
+  color: #d4bd8a;
 }
 .git-status.Added,
 .git-status.Untracked {
   color: #8fc9a1;
 }
-.git-status.Deleted {
+.git-status.Deleted,
+.git-status.Conflict {
   color: #d89a9a;
+}
+.git-raw-status {
+  color: var(--muted);
+  font:
+    10px Consolas,
+    monospace;
+  white-space: pre;
+}
+.change-arrow {
+  color: var(--muted);
+  font-size: 16px;
 }
 .diff-view,
 .native-diff {
@@ -1338,4 +1359,265 @@ dialog :where(pre) {
 .new-conversation .send:disabled {
   color: var(--text);
   background: var(--selected);
+}
+
+/* Current conversation work panel. */
+.work-panel-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+.panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 14px;
+}
+.panel-heading-text {
+  flex: 1;
+  min-width: 0;
+}
+.panel-eyebrow {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.panel-heading h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 5px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.panel-heading .icon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.panel-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 14px;
+}
+.panel-tabs button {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 4px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  border-radius: 5px 5px 0 0;
+}
+.panel-tabs button[aria-pressed="true"] {
+  color: var(--text);
+}
+.panel-tabs button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  height: 2px;
+  left: 10px;
+  right: 10px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.panel-content {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0 18px 20px;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.panel-content h3,
+.panel-content h2 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+}
+.panel-section,
+.work-panel .handoff-flow {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.panel-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.panel-runtime {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.panel-runtime > :where(span) {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.panel-runtime.RUNNING,
+.panel-runtime.PREPARING {
+  color: var(--success);
+}
+.panel-runtime.WAITING_APPROVAL,
+.panel-runtime.UNCERTAIN,
+.panel-runtime.CANCELLING {
+  color: #e0bf83;
+}
+.panel-runtime.ERROR,
+.panel-runtime.INTERRUPTED {
+  color: var(--error);
+}
+.panel-facts {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.panel-facts > div {
+  display: grid;
+  grid-template-columns: minmax(76px, 1fr) minmax(0, 2fr);
+  align-items: baseline;
+  gap: 12px;
+}
+.panel-facts dt,
+.panel-facts dd {
+  margin: 0;
+  font-size: 12px;
+}
+.panel-facts dd {
+  text-align: right;
+}
+.workspace-location {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.workspace-location > code {
+  display: block;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  font:
+    11px / 1.7 Consolas,
+    monospace;
+}
+.workspace-location .path-actions {
+  display: flex;
+  padding: 6px;
+  border-top: 1px solid var(--line);
+}
+.workspace-location button {
+  font-size: 11px;
+  color: var(--muted);
+}
+.panel-notice {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 12px 0 0;
+  line-height: 1.7;
+}
+.work-panel .handoff-flow {
+  border-top: 0;
+  margin-top: 0;
+}
+.work-panel .handoff-flow > .subtle {
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.work-panel .handoff-record {
+  margin-bottom: 0;
+  padding-left: 10px;
+}
+.debug-events pre,
+.work-panel .handoff-record pre {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 400px;
+  overflow: auto;
+}
+.panel-management {
+  margin-top: 12px;
+}
+.panel-management > summary {
+  color: var(--muted);
+  font-size: 11px;
+  padding: 10px 0;
+}
+.panel-management .management-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 0;
+}
+.panel-management .danger {
+  color: var(--error);
+  margin-left: auto;
+}
+.panel-debug,
+.work-panel .changes {
+  padding-top: 20px;
+}
+.panel-count {
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: var(--raised);
+  font-size: 10px;
+  color: var(--muted);
+}
+.panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 36px 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.panel-empty strong {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text);
+}
+.panel-empty p {
+  margin: 0;
+}
+.empty-check {
+  font-size: 20px;
+  color: var(--success);
+  margin-bottom: 6px;
+}
+.debug-events > details {
+  border-bottom: 1px solid var(--line);
+}
+.debug-events summary {
+  padding: 10px 0;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+}
+.event-seq {
+  color: var(--muted);
+  margin-right: 6px;
+}
+
+.handoff-session {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.handoff-session code {
+  display: block;
+  padding: 6px 0;
+  font-size: 10px;
 }

@@ -44,17 +44,25 @@ export function Handoffs({
   };
   return (
     <section className="handoff-flow" aria-label="Context Handoff">
-      <h2>Context Handoff</h2>
+      <div className="panel-section-heading">
+        <h2>Context Handoff</h2>
+        <span className="panel-count">{handoffs.length}</span>
+      </div>
       {pending && !handoffs.some((h) => !["COMMITTED", "CANCELLED"].includes(h.status)) && (
         <p>
           PENDING_SWITCH · {source.harnessId} → {conversation.selectedHarnessId}
           。首条目标消息提交后才生成报告。
         </p>
       )}
-      <p className="subtle">
-        当前 NativeSession · {source?.harnessId ?? "尚未创建"} · {source?.id ?? "—"}
-      </p>
-      {!handoffs.length && <p>暂无已提交交接。</p>}
+      {source ? (
+        <details className="handoff-session">
+          <summary>当前 NativeSession · {source.harnessId}</summary>
+          <code>{source.id}</code>
+        </details>
+      ) : (
+        <p className="subtle">尚未创建原生会话</p>
+      )}
+      {!handoffs.length && <p className="subtle">暂无已提交交接。</p>}
       {error && <p role="alert">{error}</p>}
       {handoffs.map((h) => (
         <article className="handoff-record" key={h.id}>
@@ -65,18 +73,18 @@ export function Handoffs({
             {h.degraded ? "降级交接 · 已确认" : "源 Harness 报告"} ·{" "}
             {new Date(h.updatedAt).toLocaleString()}
           </p>
-          <dl>
-            <dt>源 NativeSession</dt>
-            <dd>{h.sourceNativeSessionId}</dd>
-            <dt>目标 NativeSession</dt>
-            <dd>{h.targetNativeSessionId ?? "尚未创建"}</dd>
-            <dt>源事件边界</dt>
-            <dd>
-              #{h.sourceEventStart} → #{h.sourceEventEnd}
-            </dd>
-          </dl>
           <details>
             <summary>追溯交接与原生会话</summary>
+            <dl>
+              <dt>源 NativeSession</dt>
+              <dd>{h.sourceNativeSessionId}</dd>
+              <dt>目标 NativeSession</dt>
+              <dd>{h.targetNativeSessionId ?? "尚未创建"}</dd>
+              <dt>源事件边界</dt>
+              <dd>
+                #{h.sourceEventStart} → #{h.sourceEventEnd}
+              </dd>
+            </dl>
             <pre>
               {JSON.stringify(
                 {

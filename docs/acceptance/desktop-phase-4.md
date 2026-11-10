@@ -134,3 +134,7 @@ Windows Node 构建成功，最终文件复制到仓库 `dist/desktop/releases/0
 ## 2026-11-10 会话侧栏与全局设置
 
 右栏只展示当前会话信息，全局环境、安装指南、WSL 选择和托管 Worktree 管理移到左上角设置。左栏常驻并可拖动调宽。实现文件、实测证据及人工验收见 [专项记录](desktop-phase-4-conversation-layout.md)。
+
+## 右边栏 UI 重构补充
+
+2026-11-10 按用户要求重构 Desktop 右侧会话面板，详情、工作区、交接与管理分组展示，整理 Changes / Diff / Debug 导航与文件列表。实现、截图、自动验证、首次全量 PTY 超时及独立重跑结果见 [右边栏补充验收](desktop-phase-4-right-panel.md)。Windows 完整鼠标 / 窄窗序列仍待人工验收，不改变原生审批及运行行为。

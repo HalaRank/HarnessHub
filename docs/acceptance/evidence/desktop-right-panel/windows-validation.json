@@ -1,0 +1,26 @@
+{
+  "complete": false,
+  "platform": "win32",
+  "electron": "45.2.3",
+  "source": "Isolated actual App, WorkPanel and stylesheet with fixture Desktop API",
+  "verified": [
+    "Details grouped by current conversation",
+    "Changes filename/directory and status markers",
+    "File selection and retained Diff selection",
+    "Expandable raw events"
+  ],
+  "screenshots": [
+    "details.png",
+    "changes.png",
+    "diff.png"
+  ],
+  "unverified": [
+    "Complete Windows mouse drag and narrow-window sequence",
+    "Physical mouse and display DPI"
+  ],
+  "attempts": [
+    "Initial click occurred before the panel was ready; retry passed view assertions.",
+    "Electron sendInputEvent resize assertion did not grow the panel.",
+    "Subsequent Windows capture lost display surface or waited for a frame until deadline. Complete interaction check moved to isolated Chromium; Windows overall pass is not claimed."
+  ]
+}

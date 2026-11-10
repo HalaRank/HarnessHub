@@ -3,15 +3,13 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import type { DesktopApi, DesktopRequest, DesktopState, Distribution } from "../contracts";
 import { AppSettings } from "./AppSettings";
 import { ArchiveDialog } from "./ArchiveDialog";
-import { Changes } from "./Changes";
 import { Composer } from "./Composer";
 import { ConversationDialog, type ConversationDialogValue } from "./ConversationDialog";
 import { call, DesktopDraft, newConversationDraft } from "./drafts";
-import { Handoffs } from "./Handoffs";
 import { DesktopTranscript } from "./history";
 import { TranscriptView } from "./Message";
 import { NewConversation, type NewConversationValue } from "./NewConversation";
-import { PathActions } from "./PathActions";
+import { WorkPanel } from "./WorkPanel";
 
 declare global {
   interface Window {
@@ -66,7 +64,6 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   const [newConversation, setNewConversation] = useState<NewConversationValue | null>(null);
   const creating = useRef(false);
   const [historyPage, setHistoryPage] = useState<number | null>(null);
-  const [debugPage, setDebugPage] = useState(0);
   const history = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
   const accept = useCallback(
@@ -247,7 +244,6 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
   }, [api]);
   useEffect(() => {
     follow.current = state.conversationId !== null;
-    setDebugPage(0);
     setHistoryPage(null);
   }, [state.conversationId]);
   useEffect(() => {
@@ -663,191 +659,32 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
           )}
         </main>
         {panel && current && !newConversation && (
-          <aside className="work-panel" aria-label="工作面板">
-            <hr
-              className="panel-resize"
-              aria-label="调整工作面板宽度"
-              aria-orientation="vertical"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
-                  e.preventDefault();
-                  setPanelWidth((w) =>
-                    Math.max(300, Math.min(700, w + (e.key === "ArrowLeft" ? 20 : -20))),
-                  );
-                }
-              }}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.currentTarget.setPointerCapture(e.pointerId);
-              }}
-              onPointerMove={(e) => {
-                if (e.currentTarget.hasPointerCapture(e.pointerId))
-                  setPanelWidth(Math.max(300, Math.min(700, window.innerWidth - e.clientX)));
-              }}
-              onPointerUp={(e) => e.currentTarget.releasePointerCapture(e.pointerId)}
-            />
-            <header>
-              <button
-                type="button"
-                aria-pressed={panel === "details"}
-                onClick={() => setPanel("details")}
-              >
-                Details
-              </button>
-              <button
-                type="button"
-                aria-pressed={panel === "changes"}
-                onClick={() => setPanel("changes")}
-              >
-                Changes
-              </button>
-              <button
-                type="button"
-                aria-pressed={panel === "diff"}
-                onClick={() => setPanel("diff")}
-              >
-                Diff
-              </button>
-              <button
-                type="button"
-                aria-pressed={panel === "debug"}
-                onClick={() => setPanel("debug")}
-              >
-                Debug
-              </button>
-              <button
-                type="button"
-                className="icon"
-                aria-label="关闭工作面板"
-                onClick={() => setPanel(null)}
-              >
-                ×
-              </button>
-            </header>
-            <div className="panel-content">
-              {panel === "changes" || panel === "diff" ? (
-                current ? (
-                  <Changes
-                    key={draftKey}
-                    api={api}
-                    conversation={current}
-                    connected={state.status === "connected"}
-                    tab={panel}
-                    selectTab={setPanel}
-                  />
-                ) : (
-                  <p>选择会话以查看 Workspace Changes。</p>
-                )
-              ) : panel === "details" ? (
-                <>
-                  <h2>会话详情</h2>
-                  <dl>
-                    <dt>Linux Workspace</dt>
-                    <dd>{current?.workspacePath ?? "未选择会话"}</dd>
-                    <dt>工作区模式</dt>
-                    <dd>{current?.workspaceMode ?? "—"}</dd>
-                    <dt>执行状态</dt>
-                    <dd>{current?.runtimeStatus ?? "—"}</dd>
-                  </dl>
-                  {current && (
-                    <PathActions
-                      api={api}
-                      conversationId={current.id}
-                      path={current.workspacePath}
-                      location={{ kind: "workspace" }}
-                    />
-                  )}
-                  {current?.workspaceMode === "shared" && (
-                    <p className="subtle">
-                      共享目录允许并行 Agent 修改，注意文件冲突。Git 变更不推断归属。
-                    </p>
-                  )}
-                  <details>
-                    <summary>会话管理</summary>
-                    <div className="management-actions">
-                      {current && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setDialog({ kind: "rename", conversation: current })}
-                          >
-                            重命名
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void request({
-                                type: "conversation.patch",
-                                conversationId: current.id,
-                                patch: { archived: !current.archivedAt },
-                              })
-                            }
-                          >
-                            {current.archivedAt ? "恢复归档" : "归档"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDialog({ kind: "delete", conversation: current })}
-                          >
-                            删除
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </details>
-                  {current && (
-                    <Handoffs
-                      key={draftKey}
-                      api={api}
-                      conversation={current}
-                      connected={state.status === "connected"}
-                      handoffs={
-                        state.interaction?.conversationId === current.id
-                          ? state.interaction.handoffs
-                          : []
-                      }
-                      sessions={
-                        state.interaction?.conversationId === current.id
-                          ? state.interaction.sessions
-                          : []
-                      }
-                    />
-                  )}
-                </>
-              ) : (
-                <>
-                  <h2>原始事件</h2>
-                  <p className="subtle">仅用于调试；事件内容按纯文本显示。</p>
-                  <div className="debug-nav">
-                    <button
-                      type="button"
-                      disabled={debugPage === 0}
-                      onClick={() => setDebugPage((value) => value - 1)}
-                    >
-                      上一组
-                    </button>
-                    <span>{debugPage + 1}</span>
-                    <button
-                      type="button"
-                      disabled={(debugPage + 1) * 20 >= state.events.length}
-                      onClick={() => setDebugPage((value) => value + 1)}
-                    >
-                      下一组
-                    </button>
-                  </div>
-                  {state.events.slice(debugPage * 20, (debugPage + 1) * 20).map((event) => (
-                    <details key={event.id}>
-                      <summary>
-                        #{event.seq} · {event.kind}
-                      </summary>
-                      <pre>{JSON.stringify(event, null, 2)}</pre>
-                    </details>
-                  ))}
-                </>
-              )}
-            </div>
-          </aside>
+          <WorkPanel
+            key={draftKey}
+            api={api}
+            conversation={current}
+            connected={state.status === "connected"}
+            tab={panel}
+            selectTab={setPanel}
+            close={() => setPanel(null)}
+            resize={(value) => setPanelWidth(Math.max(300, Math.min(700, value)))}
+            rename={() => setDialog({ kind: "rename", conversation: current })}
+            archive={() =>
+              void request({
+                type: "conversation.patch",
+                conversationId: current.id,
+                patch: { archived: !current.archivedAt },
+              })
+            }
+            remove={() => setDialog({ kind: "delete", conversation: current })}
+            events={state.events}
+            sessions={
+              state.interaction?.conversationId === current.id ? state.interaction.sessions : []
+            }
+            handoffs={
+              state.interaction?.conversationId === current.id ? state.interaction.handoffs : []
+            }
+          />
         )}
       </div>
     </div>
