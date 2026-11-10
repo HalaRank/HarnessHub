@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "geometry": {
+    "width": 36,
+    "height": 36,
+    "radius": "50%",
+    "text": "",
+    "svg": true,
+    "center": 0,
+    "bottom": 12,
+    "background": "rgb(24, 25, 27)"
+  },
+  "checks": [
+    "Scrolling up shows a 36px round SVG arrow centered above the composer, without visible label or full-width bar",
+    "Arrow returns from an older history page to the latest message and hides itself",
+    "New output follows the bottom after returning to latest",
+    "Screenshot unavailable: page.screenshot: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n"
+  ],
+  "errors": []
+}

@@ -556,60 +556,64 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
             />
           ) : (
             <>
-              <div
-                className="history"
-                ref={history}
-                onScroll={(event) => {
-                  const element = event.currentTarget;
-                  follow.current =
-                    element.scrollHeight - element.scrollTop - element.clientHeight < 80;
-                  if (!follow.current) setHistoryPage((value) => value ?? visibleStart);
-                }}
-              >
-                {!current ? (
-                  <div className="welcome">
-                    <img className="welcome-mark" src="../assets/logo.png" alt="HarnessHub Logo" />
-                    <h2>继续你的项目</h2>
-                    <p>
-                      通过左上角设置连接 WSL2 环境，再从左侧选择会话。
-                      <br />
-                      这里显示与 TUI 相同的消息历史。
-                    </p>
-                  </div>
-                ) : (
-                  <div className="transcript">
-                    {state.historyLoading && !rows.length && (
-                      <p className="subtle" role="status">
-                        正在读取历史…
+              <div className="history-container">
+                <div
+                  className="history"
+                  ref={history}
+                  onScroll={(event) => {
+                    const element = event.currentTarget;
+                    follow.current =
+                      element.scrollHeight - element.scrollTop - element.clientHeight < 80;
+                    if (!follow.current) setHistoryPage((value) => value ?? visibleStart);
+                  }}
+                >
+                  {!current ? (
+                    <div className="welcome">
+                      <img
+                        className="welcome-mark"
+                        src="../assets/logo.png"
+                        alt="HarnessHub Logo"
+                      />
+                      <h2>继续你的项目</h2>
+                      <p>
+                        通过左上角设置连接 WSL2 环境，再从左侧选择会话。
+                        <br />
+                        这里显示与 TUI 相同的消息历史。
                       </p>
-                    )}
-                    {!state.historyLoading && !rows.length && (
-                      <div className="empty-chat">
-                        <h2>还没有可显示的消息</h2>
-                        <p>选择 Harness，发送第一条消息开始工作。</p>
-                      </div>
-                    )}
-                    {visibleStart > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          follow.current = false;
-                          setHistoryPage(Math.max(0, visibleStart - 100));
-                          if (history.current) history.current.scrollTop = 0;
-                        }}
-                      >
-                        查看较早消息（{visibleStart}）
-                      </button>
-                    )}
-                    <TranscriptView
-                      conversationId={current.id}
-                      rows={visibleRows}
-                      api={api}
-                      expanded={expanded.current}
-                    />
-                    {historyPage !== null && (
-                      <div className="history-navigation">
-                        {visibleStart + 100 < rows.length && (
+                    </div>
+                  ) : (
+                    <div className="transcript">
+                      {state.historyLoading && !rows.length && (
+                        <p className="subtle" role="status">
+                          正在读取历史…
+                        </p>
+                      )}
+                      {!state.historyLoading && !rows.length && (
+                        <div className="empty-chat">
+                          <h2>还没有可显示的消息</h2>
+                          <p>选择 Harness，发送第一条消息开始工作。</p>
+                        </div>
+                      )}
+                      {visibleStart > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            follow.current = false;
+                            setHistoryPage(Math.max(0, visibleStart - 100));
+                            if (history.current) history.current.scrollTop = 0;
+                          }}
+                        >
+                          查看较早消息（{visibleStart}）
+                        </button>
+                      )}
+                      <TranscriptView
+                        conversationId={current.id}
+                        rows={visibleRows}
+                        api={api}
+                        expanded={expanded.current}
+                      />
+                      {historyPage !== null && visibleStart + 100 < rows.length && (
+                        <div className="history-navigation">
                           <button
                             type="button"
                             onClick={() => {
@@ -619,21 +623,27 @@ export function App({ api = window.harnessHub }: { api?: DesktopApi }) {
                           >
                             查看较新消息
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            follow.current = true;
-                            setHistoryPage(null);
-                            if (history.current)
-                              history.current.scrollTop = history.current.scrollHeight;
-                          }}
-                        >
-                          回到最新消息
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {current && historyPage !== null && (
+                  <button
+                    type="button"
+                    className="jump-to-latest"
+                    aria-label="回到最新消息"
+                    title="回到最新消息"
+                    onClick={() => {
+                      follow.current = true;
+                      setHistoryPage(null);
+                      if (history.current) history.current.scrollTop = history.current.scrollHeight;
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 4v16m-7-7 7 7 7-7" />
+                    </svg>
+                  </button>
                 )}
               </div>
               {current && draft ? (
