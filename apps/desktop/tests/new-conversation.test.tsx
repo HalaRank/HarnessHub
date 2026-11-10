@@ -102,7 +102,7 @@ test("standalone conversation marks its ownership within the row", () => {
   expect(html).toContain('<span class="standalone-label">独立会话</span>');
   expect(html).not.toContain("project-heading");
 });
-test("Desktop creates unnamed project and standalone conversations and forwards the worktree starting branch", async () => {
+test("Desktop forwards branch selection for shared and worktree conversations", async () => {
   const calls: unknown[] = [];
   const client = {
     request: async (...args: unknown[]) => {
@@ -111,6 +111,12 @@ test("Desktop creates unnamed project and standalone conversations and forwards 
   } as unknown as Parameters<typeof performAction>[0];
   for (const request of [
     { type: "conversation.create", projectId: id },
+    {
+      type: "conversation.create",
+      projectId: id,
+      workspaceMode: "shared",
+      baseBranch: "feature/start",
+    },
     {
       type: "conversation.create",
       projectId: id,
@@ -126,6 +132,11 @@ test("Desktop creates unnamed project and standalone conversations and forwards 
       `/v1/projects/${id}/conversations`,
       "POST",
       { title: undefined, workspaceMode: undefined, baseBranch: undefined },
+    ],
+    [
+      `/v1/projects/${id}/conversations`,
+      "POST",
+      { title: undefined, workspaceMode: "shared", baseBranch: "feature/start" },
     ],
     [
       `/v1/projects/${id}/conversations`,

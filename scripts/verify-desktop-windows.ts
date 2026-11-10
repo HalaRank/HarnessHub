@@ -66,8 +66,22 @@ try {
   git("init", "-b", "main");
   writeFileSync(join(workspace, "deleted.txt"), "deleted fixture\n");
   writeFileSync(join(workspace, "sentinel.txt"), "original\n");
+  writeFileSync(join(workspace, "branch.txt"), "main\n");
   git("add", ".");
   git("-c", "user.name=HHU Test", "-c", "user.email=test@localhost", "commit", "-m", "fixture");
+  git("switch", "-c", "feature/shared");
+  writeFileSync(join(workspace, "branch.txt"), "shared feature\n");
+  git("add", "branch.txt");
+  git(
+    "-c",
+    "user.name=HHU Test",
+    "-c",
+    "user.email=test@localhost",
+    "commit",
+    "-m",
+    "branch fixture",
+  );
+  git("switch", "main");
   unlinkSync(join(workspace, "deleted.txt"));
   writeFileSync(join(workspace, "added.txt"), "added fixture\n");
   git("add", "added.txt");

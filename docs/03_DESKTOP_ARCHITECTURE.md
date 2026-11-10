@@ -126,6 +126,10 @@ WSL install:local 继续持同一 flock、完整 release staging、原子 launch
 
 用户追加要求 Windows App 也可从 GitHub 直接下载安装包。统一发布工作流调用既有 Windows NSIS/ZIP 验证管线，与 Linux 独立后端一起按同一版本 Tag 构建；两个平台成功后创建单个 draft Release。Windows 校验/manifest 上传时增加 `windows-x64-` 前缀，避免与 Linux 资产冲突。Windows 用户直接下载 exe 或 ZIP，所选 WSL2 发行版安装同 Release 的后端包，无需源码 checkout。保持 unsigned、手动发布和无自动更新；本地配置不代表远端发布或平台验收通过。实施、真实本地验证及远端未验证项见 [GitHub 分发补充验收](acceptance/desktop-phase-4-github-distribution.md)。
 
+### Desktop Phase 4 补充：共享目录选择分支
+
+2026-11-10 用户要求未勾选“创建工作树”也可选择分支。新建页对已有提交的 Git 项目开放本地分支选择；只选择不执行 Git，首次发送才创建 Conversation。`baseBranch` 在 Worktree 模式仍是新托管分支的起点，在 Shared 模式表示切换项目共享目录的本地分支；未传该字段的现有调用继续使用原目录。Shared 切换会影响使用同一目录的会话，界面明确提示，ACP cwd 仍绑定原项目根目录。后端在 Git 操作期间预留整个仓库路径，拒绝活动或未解决会话下的实际分支切换，不 force、不 stash，不覆盖冲突或 ignored 文件；相同分支不执行切换。验收见 [共享分支选择](acceptance/desktop-phase-4-shared-branch.md)。
+
 ### Desktop Phase 4 补充：会话侧栏与全局设置（2026-11-10）
 
 用户修正 Desktop 的内容分区：右侧工作面板仅显示当前 Conversation 的详情、真实 Changes/Diff、原始事件和 Handoff。环境诊断、版本信息、安装/升级指南、WSL 发行版选择及全部托管 Worktree 管理统一进入左上角“应用设置”模态窗口。没有选中会话或处于新建会话页时不展示工作面板；连接故障通过独立帮助入口打开相同设置。

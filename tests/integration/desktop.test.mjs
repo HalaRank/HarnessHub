@@ -909,7 +909,7 @@ test("release readiness refuses active Turns and stale prechecks without stoppin
   await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
 });
 
-test("Desktop new conversations auto-name and managed worktrees start from the selected local branch", async () => {
+test("Desktop new conversations auto-name and shared/worktree workspaces use the selected local branch", async () => {
   // This test owns its backend so it also exercises the normal unnamed creation entry point.
   const connection = new DesktopConnection({ connect: bridge }, 100);
   const i = await bridge();
@@ -923,6 +923,7 @@ test("Desktop new conversations auto-name and managed worktrees start from the s
   await git("-c", "user.name=HHU", "-c", "user.email=test@localhost", "commit", "-m", "main");
   await git("switch", "-c", "feature/start");
   writeFileSync(join(root, "branch.txt"), "feature\n");
+  writeFileSync(join(root, "collision.txt"), "tracked on feature\n");
   await git("add", ".");
   await git("-c", "user.name=HHU", "-c", "user.email=test@localhost", "commit", "-m", "feature");
   await git("switch", "main");
@@ -999,15 +1000,64 @@ test("Desktop new conversations auto-name and managed worktrees start from the s
       );
     }
     assert.equal((await connection.action({ type: "worktrees.list" })).length, count);
+    const sharedRequest = {
+      type: "conversation.create",
+      projectId: p.id,
+      workspaceMode: "shared",
+      baseBranch: "feature/start",
+    };
+    const beforeShared = (await local.request(`/v1/projects/${p.id}/conversations`)).length;
+    for (const baseBranch of ["missing", "main~1", "main@{0}", "--help"])
+      await assert.rejects(
+        connection.action({ ...sharedRequest, baseBranch }),
+        (e) => e.status === 409,
+      );
+    assert.equal((await git("branch", "--show-current")).stdout.trim(), "main");
+    writeFileSync(join(root, "branch.txt"), "unsaved work\n");
+    await assert.rejects(connection.action(sharedRequest), (e) => e.status === 409);
+    assert.equal(readFileSync(join(root, "branch.txt"), "utf8"), "unsaved work\n");
+    for (const flag of ["assume-unchanged", "skip-worktree"]) {
+      await git("update-index", `--${flag}`, "branch.txt");
+      await assert.rejects(connection.action(sharedRequest), (e) => e.status === 409);
+      assert.equal(readFileSync(join(root, "branch.txt"), "utf8"), "unsaved work\n");
+      await git("update-index", `--no-${flag}`, "branch.txt");
+    }
+    writeFileSync(join(root, "branch.txt"), "main\n");
+    // Both untracked and ignored collisions must survive a failed switch.
+    writeFileSync(join(root, "collision.txt"), "keep me\n");
+    await assert.rejects(connection.action(sharedRequest), (e) => e.status === 409);
+    writeFileSync(join(root, ".git", "info", "exclude"), "collision.txt\n");
+    await assert.rejects(connection.action(sharedRequest), (e) => e.status === 409);
+    assert.equal(readFileSync(join(root, "collision.txt"), "utf8"), "keep me\n");
+    unlinkSync(join(root, "collision.txt"));
+    assert.equal((await local.request(`/v1/projects/${p.id}/conversations`)).length, beforeShared);
+    const shared = await connection.action(sharedRequest);
+    assert.equal(shared.workspaceMode, "shared");
+    assert.equal(shared.workspacePath, root);
+    assert.equal(shared.worktreeId, null);
+    assert.equal(readFileSync(join(root, "branch.txt"), "utf8"), "feature\n");
+    assert.equal((await git("branch", "--show-current")).stdout.trim(), "feature/start");
+    assert.equal((await connection.action({ type: "worktrees.list" })).length, count);
+    const running = await local.request(`/v1/conversations/${shared.id}/turns`, "POST", {
+      requestId: randomUUID(),
+      harnessId: "desktop-mock",
+      message: "slow",
+    });
     await assert.rejects(
-      connection.action({
-        type: "conversation.create",
-        projectId: p.id,
-        workspaceMode: "shared",
-        baseBranch: "feature/start",
-      }),
-      (e) => e.status === 400,
+      connection.action({ ...sharedRequest, baseBranch: "main" }),
+      (e) => e.status === 409,
     );
+    // Keeping the current branch is safe even during a parallel Turn.
+    await connection.action(sharedRequest);
+    assert.equal((await git("branch", "--show-current")).stdout.trim(), "feature/start");
+    await local.request(`/v1/turns/${running.id}/cancel`, "POST", {});
+    await waitFor(async () => (await local.request(`/v1/turns/${running.id}`)).endedAt);
+    await connection.action({ ...sharedRequest, baseBranch: "main" });
+    // A branch already checked out in another worktree remains protected by Git.
+    const occupied = join(temp, "occupied-branch");
+    await git("worktree", "add", occupied, "feature/start");
+    await assert.rejects(connection.action(sharedRequest), (e) => e.status === 409);
+    assert.equal((await git("branch", "--show-current")).stdout.trim(), "main");
     const standalone = await connection.action({
       type: "conversation.standalone",
       workspacePath: root,
@@ -1018,6 +1068,8 @@ test("Desktop new conversations auto-name and managed worktrees start from the s
       (await connection.action({ type: "project.branches", projectId: p.id })).currentBranch,
       null,
     );
+    await connection.action({ ...sharedRequest, baseBranch: "main" });
+    assert.equal((await git("branch", "--show-current")).stdout.trim(), "main");
     const unborn = join(temp, "unborn-project");
     mkdirSync(unborn);
     await run("git", ["init", "-b", "new"], { cwd: unborn });
