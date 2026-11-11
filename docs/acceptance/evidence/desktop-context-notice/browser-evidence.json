@@ -1,0 +1,20 @@
+{
+  "errors": [],
+  "viewports": [
+    {
+      "width": 1100,
+      "cardWidth": 800,
+      "height": 100.5625,
+      "overflow": false,
+      "cardOverflow": false
+    },
+    {
+      "width": 390,
+      "cardWidth": 358,
+      "height": 100.5625,
+      "overflow": false,
+      "cardOverflow": false
+    }
+  ],
+  "recoveryConfirmationPreserved": true
+}

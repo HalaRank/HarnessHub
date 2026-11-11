@@ -673,6 +673,78 @@ h2 {
 .composer-area {
   padding: 10px 28px 0;
 }
+summary {
+  cursor: pointer;
+  padding: 7px 0;
+  overflow-wrap: anywhere;
+}
+.context-notice {
+  display: flex;
+  gap: 10px;
+  max-width: 800px;
+  margin: 0 auto 10px;
+  padding: 12px 14px;
+  border: 1px solid #494033;
+  border-radius: 10px;
+  background: #211f1c;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.context-notice-icon {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  fill: none;
+  stroke: #d6ba8e;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+.context-notice-body {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.context-notice-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+}
+.context-notice-heading strong {
+  color: #ddc9ab;
+  font-size: 13px;
+  font-weight: 600;
+}
+.context-notice-action {
+  padding: 3px 9px;
+  border: 1px solid #534737;
+  background: #302a22;
+  color: #e0cfb7;
+  font: inherit;
+}
+.context-notice-action:hover:not(:disabled) {
+  border-color: #776348;
+  background: #3b3227;
+}
+.context-notice-body p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.context-notice-details {
+  margin-top: 5px;
+  color: var(--muted);
+}
+.context-notice-details summary {
+  width: fit-content;
+  padding: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.context-notice-details summary:hover {
+  color: var(--text);
+}
 .composer {
   background: var(--raised);
   border: 1px solid var(--line);
@@ -735,11 +807,6 @@ pre {
   overflow-wrap: anywhere;
   font-size: 10px;
   font-family: Consolas, monospace;
-}
-summary {
-  cursor: pointer;
-  padding: 7px 0;
-  overflow-wrap: anywhere;
 }
 .management-actions {
   display: flex;

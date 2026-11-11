@@ -101,6 +101,7 @@ export function Composer({
     state.snapshot?.pendingInputs?.filter((i) => i.conversationId === conversation.id) ?? [];
   const uncertainInput = inputDelivery.some((i) => i.state === "UNCERTAIN");
   const uncertain = conversation.runtimeStatus === "UNCERTAIN" || uncertainInput;
+  const disconnected = !switching && !!source && (source.status === "INTERRUPTED" || uncertain);
   const sending = inputDelivery.some((i) => i.state === "SENDING");
   const steering = object(object(object(source?.capabilities).initialize)._meta).steering;
   const canSteer = object(steering).supported === true && draft.images.length === 0;
@@ -231,21 +232,49 @@ export function Composer({
           <pre>{plain.text}</pre>
         </Confirm>
       )}
-      {!switching && source && (source.status === "INTERRUPTED" || uncertain) && (
-        <div className="banner" role="status">
-          旧原生上下文已断开；原始聊天和工具历史仍保留。
-          {!source.exitConfirmed && <p>Worker 退出尚未确认，请先检查并结束旧任务。</p>}
-          <button
-            type="button"
-            disabled={busy || !connected || !!handoff || !!context?.approvals.length || sending}
-            onClick={() => {
-              setExternalStopped(false);
-              setRecover(true);
-            }}
-          >
-            使用新原生上下文继续
-          </button>
-        </div>
+      {(disconnected || (uncertain && !uncertainInput)) && (
+        <section className="context-notice" aria-label="会话状态提示">
+          <svg className="context-notice-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v6m0 3v1" />
+          </svg>
+          <div className="context-notice-body">
+            <div className="context-notice-heading">
+              <strong role="status">{uncertain ? "执行结果不确定" : "原生上下文已断开"}</strong>
+              {disconnected && (
+                <button
+                  type="button"
+                  className="context-notice-action"
+                  disabled={
+                    busy || !connected || !!handoff || !!context?.approvals.length || sending
+                  }
+                  onClick={() => {
+                    setExternalStopped(false);
+                    setRecover(true);
+                  }}
+                >
+                  使用新原生上下文继续 <span aria-hidden="true">→</span>
+                </button>
+              )}
+            </div>
+            <p>
+              {disconnected ? "聊天和工具历史已保留。" : "请检查历史和工作区。"}
+              {uncertain ? "消息不会自动重发。" : "继续前请先检查历史和工作区。"}
+            </p>
+            <details className="context-notice-details">
+              <summary>
+                {disconnected && source && !source.exitConfirmed
+                  ? "后台任务退出待确认 · 查看说明"
+                  : "查看说明"}
+              </summary>
+              {disconnected && source && !source.exitConfirmed && (
+                <p>Worker 退出尚未确认，请先检查并结束旧任务。</p>
+              )}
+              {disconnected && <p>旧原生上下文已断开；继续时将创建新上下文，保留历史和草稿。</p>}
+              {uncertain && <p>状态：UNCERTAIN。请核对已有执行结果，避免重复操作。</p>}
+            </details>
+          </div>
+        </section>
       )}
       {recover && source && (
         <Confirm
@@ -399,11 +428,6 @@ export function Composer({
               </div>
             ))}
         </section>
-      )}
-      {uncertain && !uncertainInput && (
-        <div className="banner error">
-          UNCERTAIN · 执行结果不确定。请检查历史和工作区；此会话不会自动重发。
-        </div>
       )}
       {(error || draft.error) && (
         <div className="banner error" role="alert">
