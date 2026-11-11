@@ -4,6 +4,7 @@ import type { DesktopApi, DesktopRequest, DesktopState } from "../contracts";
 import { inputAction, slashIntent } from "./Composer";
 import { Confirm } from "./Confirm";
 import { call, DesktopActionError, DesktopDraft } from "./drafts";
+import { Select } from "./Select";
 
 export type NewConversationValue = { projectId: string; workspace: string };
 
@@ -171,9 +172,10 @@ export function NewConversation({
       </div>
       <div className="composer-area">
         <div className="new-conversation-options">
-          <label>
+          <label htmlFor="new-project">
             <span>项目</span>
-            <select
+            <Select
+              id="new-project"
               aria-label="项目"
               value={value.projectId}
               disabled={busy || !!prepared.current}
@@ -185,13 +187,14 @@ export function NewConversation({
                 </option>
               ))}
               <option value="">独立会话</option>
-            </select>
+            </Select>
           </label>
           {project && (
             <>
-              <label>
+              <label htmlFor="new-branch">
                 <span>{worktree ? "起始分支" : "分支"}</span>
-                <select
+                <Select
+                  id="new-branch"
                   aria-label="分支"
                   value={baseBranch}
                   disabled={busy || !!prepared.current || !branches?.hasCommits}
@@ -213,7 +216,7 @@ export function NewConversation({
                       ))}
                     </>
                   )}
-                </select>
+                </Select>
               </label>
               <label className="worktree-toggle">
                 <input
@@ -293,7 +296,7 @@ export function NewConversation({
             }}
           />
           <div className="composer-footer">
-            <select
+            <Select
               aria-label="Harness"
               value={selectedHarness}
               disabled={busy}
@@ -305,7 +308,7 @@ export function NewConversation({
                   {p.name}
                 </option>
               ))}
-            </select>
+            </Select>
             <button type="submit" className="send" aria-label="发送消息" disabled={disabled}>
               {busy ? "创建中…" : "↑"}
             </button>

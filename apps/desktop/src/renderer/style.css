@@ -57,6 +57,143 @@ select {
   padding: 8px;
   min-width: 0;
 }
+select {
+  max-width: 100%;
+  min-height: 32px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+select:hover:not(:disabled) {
+  border-color: #535b67;
+  background: var(--hover);
+}
+select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+select option {
+  color: var(--text);
+  background: var(--raised);
+}
+/* Chromium's native picker keeps keyboard navigation and escapes scroll containers. */
+@supports (appearance: base-select) {
+  select,
+  select::picker(select) {
+    appearance: base-select;
+  }
+  select {
+    align-items: center;
+    gap: 10px;
+  }
+  select > button {
+    display: flex;
+    min-width: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: inherit;
+  }
+  select > button:hover:not(:disabled) {
+    background: transparent;
+  }
+  select .select-value {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  select:open {
+    border-color: #535b67;
+    background: var(--hover);
+  }
+  select::picker-icon {
+    content: "";
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    margin: -3px 2px 0 auto;
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg);
+    transition: transform 150ms ease-out;
+  }
+  select:open::picker-icon {
+    transform: translateY(3px) rotate(225deg);
+  }
+  select::picker(select) {
+    min-width: max(anchor-size(self-inline), 180px);
+    max-width: min(420px, calc(100vw - 24px));
+    max-height: min(320px, 50dvh);
+    margin-block: 4px;
+    padding: 4px;
+    border: 1px solid #42464e;
+    border-radius: 8px;
+    background: var(--raised);
+    color: var(--text);
+    box-shadow: 0 4px 8px #0005;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 20px;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  select option {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: transparent;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  select option:checked {
+    background: #343b46;
+  }
+  select option:enabled:hover {
+    background: var(--hover);
+  }
+  select option:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
+  }
+  select option::checkmark {
+    order: 1;
+    flex-shrink: 0;
+    margin-inline-start: auto;
+    color: var(--accent);
+  }
+  select option:disabled {
+    color: var(--muted);
+    cursor: default;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    select::picker-icon {
+      transition: none;
+    }
+  }
+  @media (forced-colors: active) {
+    select option:checked {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+    select option::checkmark {
+      color: inherit;
+    }
+  }
+}
 .app {
   height: 100vh;
   display: flex;
@@ -668,23 +805,13 @@ textarea:focus {
 }
 .composer-footer select {
   max-width: 180px;
-  min-height: 32px;
-  padding: 5px 8px;
-  font-size: 12px;
-  text-overflow: ellipsis;
   border-color: transparent;
   background: transparent;
 }
-.composer-footer select:hover:not(:disabled) {
+.composer-footer select:where(:hover:not(:disabled), :open),
+.new-conversation-options select:where(:hover:not(:disabled), :open) {
+  border-color: #535b67;
   background: var(--hover);
-}
-.composer-footer select:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.composer-footer option {
-  color: var(--text);
-  background: var(--raised);
 }
 .composer-footer label {
   display: flex;
@@ -1285,16 +1412,13 @@ dialog :where(pre) {
   color: #abb0b8;
   font-size: 12px;
 }
+.new-conversation-options label > span {
+  flex-shrink: 0;
+}
 .new-conversation-options select {
-  color: var(--text);
   background: transparent;
   border-color: transparent;
   max-width: 200px;
-  padding: 6px 2px;
-  text-overflow: ellipsis;
-}
-.new-conversation-options option {
-  background: var(--raised);
 }
 .worktree-toggle {
   cursor: pointer;

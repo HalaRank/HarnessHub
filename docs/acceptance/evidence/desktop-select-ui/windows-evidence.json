@@ -1,0 +1,93 @@
+{
+  "passed": true,
+  "platform": "win32",
+  "electron": "45.2.3",
+  "chromium": "156.0.8078.80",
+  "checks": [
+    "All Composer selectors use the styled native picker, 12px text and 32px triggers",
+    "Mouse opens and Escape dismisses the picker, keyboard model selection sends one settings request",
+    "Keyboard selection of the empty project value enters standalone conversation",
+    "Long branch list scrolls within 320px, long option wraps and selection retains the full value",
+    "720px window keeps all selection controls within the content width",
+    "WSL picker works above the modal and keyboard skips disabled WSL1",
+    "First Escape dismisses the WSL picker, second Escape closes settings",
+    "Legacy ACP modes use the same native picker",
+    "Reduced motion disables arrow animation and forced colors retain the selection checkmark"
+  ],
+  "styles": [
+    {
+      "label": "Harness",
+      "appearance": "base-select",
+      "pickerAppearance": "base-select",
+      "font": "12px",
+      "pickerFont": "12px",
+      "height": 32
+    },
+    {
+      "label": "config-model",
+      "appearance": "base-select",
+      "pickerAppearance": "base-select",
+      "font": "12px",
+      "pickerFont": "12px",
+      "height": 32
+    },
+    {
+      "label": "config-mode",
+      "appearance": "base-select",
+      "pickerAppearance": "base-select",
+      "font": "12px",
+      "pickerFont": "12px",
+      "height": 32
+    }
+  ],
+  "branchStyles": {
+    "height": 320,
+    "maxHeight": "320px",
+    "overflow": "auto",
+    "options": 50,
+    "longOption": {
+      "x": 473.9140625,
+      "right": 868.9140625,
+      "height": 52
+    },
+    "viewport": 1087
+  },
+  "longValue": {
+    "width": 198,
+    "scroll": 198,
+    "outer": {
+      "x": 468.9140625,
+      "y": 520.9140625,
+      "width": 200,
+      "height": 32,
+      "top": 520.9140625,
+      "right": 668.9140625,
+      "bottom": 552.9140625,
+      "left": 468.9140625
+    }
+  },
+  "narrow": {
+    "width": 707,
+    "overflow": false,
+    "controls": [
+      {
+        "right": 420.9140625,
+        "height": 32
+      },
+      {
+        "right": 542,
+        "height": 32
+      },
+      {
+        "right": 444.9609375,
+        "height": 32
+      }
+    ]
+  },
+  "highContrast": {
+    "adjust": "none",
+    "color": "rgb(0, 0, 0)",
+    "background": "rgb(26, 235, 255)",
+    "mark": "rgb(0, 0, 0)"
+  }
+}

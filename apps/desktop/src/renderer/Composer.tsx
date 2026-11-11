@@ -10,6 +10,7 @@ import type { DesktopApi, DesktopRequest, DesktopState } from "../contracts";
 import { Confirm } from "./Confirm";
 import { call, type DesktopDraft } from "./drafts";
 import { Copy } from "./Markdown";
+import { Select } from "./Select";
 
 export function inputAction(
   event: { key: string; shiftKey: boolean; isComposing?: boolean; keyCode?: number },
@@ -448,7 +449,7 @@ export function Composer({
           }}
         />
         <div className="composer-footer">
-          <select
+          <Select
             aria-label="Harness"
             value={harness}
             disabled={
@@ -471,7 +472,7 @@ export function Composer({
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
           {!session && !switching && harness && acting && (
             <span className="composer-connection" role="status">
               正在连接…
@@ -501,7 +502,7 @@ export function Composer({
           {settings.map((option) => (
             <label key={String(option.id)} htmlFor={`config-${String(option.id)}`}>
               <span>{option === modelOption ? "模型" : "审批模式"}</span>
-              <select
+              <Select
                 id={`config-${String(option.id)}`}
                 title={typeof option.description === "string" ? option.description : undefined}
                 value={String(option.currentValue)}
@@ -528,15 +529,16 @@ export function Composer({
                       {String(o.name ?? o.value)}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
           ))}
           {!modeOption &&
             Array.isArray(modes.availableModes) &&
             modes.availableModes.length > 0 && (
-              <label>
+              <label htmlFor="native-mode">
                 <span>审批模式</span>
-                <select
+                <Select
+                  id="native-mode"
                   value={String(modes.currentModeId)}
                   disabled={busy || !connected || switching}
                   onChange={(e) =>
@@ -555,7 +557,7 @@ export function Composer({
                       </option>
                     );
                   })}
-                </select>
+                </Select>
               </label>
             )}
           {activeTurn && (

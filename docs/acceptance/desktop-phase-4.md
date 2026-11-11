@@ -138,3 +138,7 @@ Windows Node 构建成功，最终文件复制到仓库 `dist/desktop/releases/0
 ## 右边栏 UI 重构补充
 
 2026-11-10 按用户要求重构 Desktop 右侧会话面板，详情、工作区、交接与管理分组展示，整理 Changes / Diff / Debug 导航与文件列表。实现、截图、自动验证、首次全量 PTY 超时及独立重跑结果见 [右边栏补充验收](desktop-phase-4-right-panel.md)。Windows 完整鼠标 / 窄窗序列仍待人工验收，不改变原生审批及运行行为。
+
+## 2026-11-11 选择框 UI
+
+统一项目、分支、Harness、模型、审批模式与 WSL 选择框的深色菜单、字体、选中状态及长名称显示。Windows 实测、限定验证范围与人工验收步骤见 [选择框 UI 验收](desktop-phase-4-select-ui.md)。

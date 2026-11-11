@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { DesktopState, Distribution } from "../contracts";
+import { Select } from "./Select";
 
 const connectionLabels = {
   idle: "未连接",
@@ -77,7 +78,7 @@ export function WslEnvironment({
             </p>
           )}
           <div className={`distribution-row ${choice ? "has-choice" : ""}`}>
-            <select
+            <Select
               id="distribution"
               aria-label="WSL 发行版"
               value={choice}
@@ -95,7 +96,7 @@ export function WslEnvironment({
                   {d.name} · WSL{d.version}
                 </option>
               ))}
-            </select>
+            </Select>
             <button type="button" disabled={!available || starting} onClick={() => connect(choice)}>
               {starting ? "连接中…" : "连接"}
             </button>

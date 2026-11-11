@@ -1,0 +1,305 @@
+$ bun scripts/test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+✔ cleanup rejects assume-unchanged and skip-worktree without losing hidden edits (704.022551ms)
+✔ a file written after preflight survives retained cleanup and interrupted move reconciliation (7172.483134ms)
+✔ no-pipe descendant blocks stop until explicit force (10710.765187ms)
+✔ no-pipe descendant exits cooperatively (1462.614932ms)
+✔ retry after degraded target preparation failure delivers the fresh report exactly once (377.420023ms)
+✔ explicit native close and clean restart persist a visible lost-context boundary (2532.40459ms)
+Audit remediation evidence: /tmp/hhu-audit-fixes-KWEavW
+✔ timed-out native settings block new Turns until late response or confirmed stop (22277.213608ms)
+✔ failed partial installation preserves the entire previous runnable release (4407.630259ms)
+✔ real smoke evidence rejects later-Turn tools, failed outputs and input-only cwd (1.349414ms)
+✔ confirmed project deletion closes idle Workers and cascades archived history and drafts, preserving files and other projects (923.683268ms)
+✔ project deletion reserves all children during cooperative close and refuses new work or metadata rebinding (1388.385413ms)
+✔ an active child blocks the whole project before any idle sibling is stopped; archiving keeps it running (563.528432ms)
+✔ unconfirmed Worker exit retains project history and releases reservations for an explicit retry (5418.221074ms)
+✔ confirmed Conversation deletion cancels running work and approvals, terminates unresponsive owned Workers and removes UNCERTAIN history (7884.046428ms)
+✔ deleting an initializing Worker reserves the Conversation, settles async writers and never dispatches its Prompt (1723.625899ms)
+✔ deleting during native configuration closes the pending RPC before removing its Conversation (1771.67003ms)
+Deletion integration evidence: /tmp/hhu-deletion-F98q8S
+✔ deleting failed, generating, preparing-target and delivering Handoffs closes both owned sides and releases reservations (6186.397905ms)
+✔ Enter follow-up uses advertised steering, keeps one active turn and deduplicates request IDs (1541.35783ms)
+✔ Tab queue persists FIFO and sends each follow-up once after normal completion (1616.873751ms)
+✔ Agents without steering advertise a visible queue fallback and receive no steering request (1503.177263ms)
+✔ Esc cancellation holds queued work until explicit resume and retains cancel tail events (369.333286ms)
+✔ Follow-ups while waiting for native permission never approve it and queue removal is explicit (285.140695ms)
+✔ Idle steering race waits for original prompt completion and starts one host-owned next turn (1508.114802ms)
+✔ Lost steering acknowledgement becomes UNCERTAIN, survives restart, and is never replayed (2451.766019ms)
+✔ Daemon crash holds unsubmitted queue entries and reconnect GET never dispatches them (1970.408553ms)
+✔ Harness switching holds the queue and duplicate explicit resumes cannot dispatch twice (1629.944603ms)
+Input evidence /tmp/hhu-inputs-DUH596
+✔ a request ID reserved by the queue cannot be reused as a normal turn in another conversation (350.306239ms)
+✔ new conversations inherit the last selected Harness across projects, standalone and store reopen (39.276141ms)
+✔ simultaneous CLI starts share one authenticated Node Daemon, with empty global state (1218.107492ms)
+✔ Project/Conversation CRUD validates actual paths, canonicalizes duplicates, and preserves files (127.905151ms)
+✔ real WS invalidations commit before broadcast; reconnect recovers missed changes (45.672048ms)
+✔ SQLite uses WAL, foreign keys, schema version, and private permissions (2.956387ms)
+✔ graceful stop and fresh Node process recover real SQLite history (1522.81438ms)
+✔ kernel lock recovers after Daemon crash and stale instance metadata is safely replaced (1272.698893ms)
+✔ doctor reports real runtime and native binding; CLI errors are explicit (1245.57704ms)
+✔ pending migrations back up existing database; newer schema is refused intact (13.35256ms)
+✔ built hhu cold-starts from home in two real PTYs; closing clients keeps the Daemon alive (3361.508812ms)
+✔ actual client subscription reconnects across Daemon restart and refreshes SQLite without command replay (1847.190484ms)
+Phase-1 test evidence: /tmp/hhu-phase1-qnQKsr
+✔ migration upgrades a real Phase-1 database without losing projects/conversations (1226.285067ms)
+✔ SDK initialization, both cwd values, native settings, ordered raw streams and unknown events (472.264331ms)
+✔ concurrent duplicate prompts execute once; different content and overlapping Turns are rejected (441.08562ms)
+✔ native concurrent permissions block, validate optionId, and accept only one racing decision (457.911915ms)
+✔ cancel expires approvals and commits native trailing chunks before completion (350.300062ms)
+✔ independent Conversation sequences, committed WS events, pagination and real watcher reconnect (580.214404ms)
+✔ Worker crash and lost stdio become UNCERTAIN without replay or usable stale approvals (520.665073ms)
+✔ daemon stop refuses active Turns; explicit cancel-active waits for tail and closes idle Workers (2065.904691ms)
+✔ uncooperative cancellation keeps Daemon alive; forced stop needs explicit confirmation (5573.606327ms)
+✔ Daemon crash recovers persisted history, expires approvals and never resumes/replays a Turn (1686.553529ms)
+✔ cancel during initialization never submits a prompt; unavailable executables leave traceable errors (593.440156ms)
+✔ application logs contain no prompts, native tool output or profile environment values (0.764247ms)
+✔ negotiated session/close blocks racing prompts and closes before Worker termination (471.544652ms)
+Phase-2 test evidence: /tmp/hhu-phase2-MvF5M2
+✔ incremental Phase 2 migration preserves history and privately stored legacy profiles (1254.556268ms)
+✔ automatic titles use the first message once, persist and respect explicit names (2900.876322ms)
+✔ parallel projects have separate native sessions, cwd, events, cancellation and background approvals (468.504271ms)
+✔ shared workspaces allow concurrent Turns and emit file-conflict warning without a global lock (628.02788ms)
+✔ draft CAS, durable request reservation, duplicate clients and preferences survive restart (3278.936409ms)
+✔ two clients reconnect across real WS disconnects, page long history in order and never send a Prompt (3639.874639ms)
+✔ Daemon SIGKILL expires background approvals, marks idle sessions INTERRUPTED and active execution UNCERTAIN (2188.547138ms)
+✔ invalid project roots are never recreated; rebinding updates only stopped Conversation workspaces (346.645558ms)
+✔ Profiles inherit native credentials, reject new credential overrides and disclose only legacy key names (267.120968ms)
+✔ large Unicode drafts obey schema bounds; CAS races and metadata deletion preserve user files (112.172009ms)
+Phase-3 test evidence: /tmp/hhu-phase3-BMAHAx
+✔ Changes returns actual staged, unstaged, untracked, rename, delete and binary data (775.596922ms)
+✔ Changes uses bound workspace, handles non-repositories and rejects arbitrary paths (561.5317ms)
+✔ oversized Git output is an explicit error and does not silently truncate (117.368877ms)
+✔ sidebar and validated shortcut preferences persist across daemon restart in private SQLite (2024.985968ms)
+✔ Bun and Node clients reach only the local Daemon even with proxy environment variables (529.854112ms)
+✔ archive/restore survives restart; confirmed deletion removes app relations and preserves workspace (3172.55273ms)
+✔ confirmed Conversation deletion stops active or UNCERTAIN work while project deletion keeps its preflight guard (1513.370151ms)
+Phase-4 integration evidence: /tmp/hhu-phase4-u4sAb3
+✔ built TUI handles raw Ctrl+C and OS SIGINT; exiting leaves the running Worker intact (2085.93026ms)
+✔ A → B → A creates three native sessions, same Harness reuses, pending selection has zero model calls and cancels (1132.550198ms)
+✔ two clients duplicate target submissions use one reservation/report/Prompt; cross-content and overlapping requests are rejected (703.129963ms)
+✔ generation failure holds target, explicit cancel never sends; explicit retry stays on same request (387.109882ms)
+✔ degraded continuation requires confirmation, uses prior saved report and observable history without another user message (750.441533ms)
+✔ target Session creation failure preserves source and report; target RPC rejection is UNCERTAIN and never resends (780.080882ms)
+✔ source running, approval and cancellation block target execution; internal report permissions remain native user decisions (1113.151495ms)
+✔ isolated worktrees bind actual cwd, preserve on Conversation deletion, reject dirty/ignored files and preserve branch on safe cleanup (3069.567405ms)
+✔ non-Git projects refuse worktree creation; ownership/branch mismatches refuse cleanup (379.35741ms)
+✔ shared Conversations remain parallel with conflict warning and never mix native history (1496.133499ms)
+✔ switch after source shutdown exposes its cause and requires explicit degraded confirmation (2796.383164ms)
+✔ restart preserves saved report through unavailable-source retry and requires explicit confirmation without replaying source (2696.440623ms)
+✔ daemon recovery never commits/replays GENERATING or DELIVERING and blocks UNCERTAIN request actions (6981.356738ms)
+✔ interrupted worktree creation is not treated as usable; unregistered directories are never removed (4486.942385ms)
+✔ real schema 5 SQL migrates all existing data to the current schema with backup and explicit session binding (1896.35012ms)
+✔ real concurrent Git path/branch conflicts and partial creation never bind a Conversation or delete pre-existing data (11919.421401ms)
+✔ actual isolated daemon crashes during GENERATING and DELIVERING recover UNCERTAIN with no Prompt replay (4057.612057ms)
+Phase-5 integration evidence: /tmp/hhu-phase5-zykjaY
+✔ unexpected source report tools preserve native evidence and require explicit risk/degraded confirmation (607.410177ms)
+HarnessHub: EEXIST: file already exists, open '/tmp/hhu-phase6-GnEUVn/conversation.md'
+✔ conversation export separates readable records from raw ACP debug data (1240.969879ms)
+✔ private data and actual multi-generation log rotation retain user-only permissions (2.718546ms)
+HarnessHub: Invalid JSON input (contents omitted)
+✔ failed migration rolls back all SQL, preserves the schema and a restorable private backup (37.914463ms)
+✔ unsafe SQLite/sidecar symlinks are rejected before touching external files; permissions are repaired (1.836672ms)
+✔ structured secrets are redacted in raw, normalized and debug export; native prose remains exact (508.034507ms)
+✔ an adapter exiting before its stubborn descendant closes stdio cannot report cleanup success (10465.61902ms)
+✔ explicit doctor handshake sends initialize/session/new without any prompt (1156.540553ms)
+✔ WS rejects browser Origins and incorrect tokens; client rejects an instance identity substitution (15.928698ms)
+✔ cancel-active safely cancels a FAILED Handoff and restart accepts new work without replay (2615.853952ms)
+✔ installer locks out an unresponsive instance even when instance metadata is missing (527.96449ms)
+✔ confirmed deletion terminates a retained Handoff source without stopping another Conversation (12545.045393ms)
+✔ slow Git creation/removal leaves Daemon responsive and reservations block rebind, shutdown and cleanup races (8265.242309ms)
+✔ user-level installation is atomic, runnable from Home and refuses an active old-version instance (5646.185277ms)
+Phase-6 integration evidence: /tmp/hhu-phase6-GnEUVn
+✔ unborn repositories and locked Worktrees fail safely without deleting files or branches (523.347627ms)
+✔ RC-01 function: fsmonitor never executes; changes and files survive (227.583646ms)
+✔ RC-01 HTTP: fsmonitor never executes; changes and files survive (204.606313ms)
+✔ RC-01 Desktop: fsmonitor never executes; changes and files survive (196.14821ms)
+✔ RC-01 Worktree: fsmonitor never executes; changes and files survive (385.407122ms)
+✔ RC-02 confirmed idle exit persists end and Desktop explicitly creates a new native context (828.650563ms)
+✔ RC-02 recovery refuses stream-only without killing worker (388.00601ms)
+✔ RC-02 recovery refuses active without killing worker (259.39257ms)
+✔ RC-03 steer-turn-first: input outcome remains independent of completed Turn (20263.307144ms)
+✔ RC-03 steer-timeout-first: input outcome remains independent of completed Turn (20335.903476ms)
+✔ RC-03 steer-ack: input outcome remains independent of completed Turn (311.710854ms)
+✔ RC-03 steer-failed: input outcome remains independent of completed Turn (246.522285ms)
+✔ RC-03 Desktop and TUI reconnect to the same durable uncertain delivery after restart (1631.913635ms)
+✔ RC-04 crash recovery expires approvals atomically with replayable terminal events (3723.213152ms)
+✔ RC-01 include/filter/diff/textconv/environment commands cannot run; rename/untracked/ignore remain accurate (496.070006ms)
+✔ RC-01 status blocks submodule drivers and worktree checkout blocks branch-conditional filters (677.028443ms)
+✔ RC-02 child close is not process-group exit; confirmation waits for its descendant (461.509937ms)
+RC evidence: /tmp/hhu-rc-remediation-6bL1UE
+✔ RC-02 rejected Prompt followed by exit never unlocks an UNCERTAIN Turn (585.09523ms)
+✔ schema 6 upgrade preserves dependent history, drafts and preferences, backs up and restores FK enforcement (49.920453ms)
+Standalone Conversation evidence: /tmp/hhu-standalone-JtuIY0
+✔ standalone creation validates the explicit path, uses it for both ACP cwd values and persists without a project (3687.500249ms)
+ℹ tests 119
+ℹ suites 0
+ℹ pass 119
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 305200.211585
+bun test v1.4.4 (38afee6c8)
+
+tests/e2e/ui-hierarchy.test.tsx:
+(pass) slash commands distinguish names, native hints and descriptions in both selection states [141.45ms]
+(pass) palette keeps path search and empty results safe at narrow terminal sizes [105.01ms]
+(pass) chrome text, descriptions and placeholders meet normal-text contrast [0.64ms]
+Command menu evidence: /tmp/hhu-command-ui-HArijz
+(pass) command menu groups actions, stays bounded on resize, and preserves exact execution targets [276.96ms]
+(pass) shared dialogs fit their containing conversation pane with the sidebar open [12.47ms]
+
+tests/e2e/tui.test.tsx:
+(pass) Solid view registers real workspace and empty conversation through authenticated Daemon [842.60ms]
+(pass) project directory Tab completes common prefixes, spaces, Unicode and symlinks without submitting [73.19ms]
+(pass) minimal ACP view sends once, preserves native choices and waits for a user decision [1457.12ms]
+(pass) native tool success collapses by default and manual expansion survives updates [16.07ms]
+(pass) drafts stay isolated when switching Conversations and restore with recent selection and preference after TUI exit [1285.88ms]
+(pass) background approval is discoverable in another Project, survives TUI exit and reconnects to the same Worker [521.93ms]
+(pass) persisted unconfirmed submission is read on reopen and explicit retries retain one requestId [317.59ms]
+(pass) a failed save while leaving a Conversation remains available for the next exit flush [14.54ms]
+
+tests/e2e/slash-commands.test.tsx:
+(pass) shortcut validation rejects editor collisions, terminal aliases and nonexistent keys [2.17ms]
+(pass) slash trigger uses the actual cursor prefix and rejects paths, code and later lines [0.12ms]
+(pass) slash filters native names, Tab and Enter complete without a Turn; explicit send has one idempotent Prompt [667.48ms]
+(pass) Esc closes suggestions first, then editor; unmatched Enter never creates a Turn [438.73ms]
+(pass) native new/model/quit are sent unchanged to ACP, never intercepted as HHU actions [804.76ms]
+(pass) unpublished native commands never fall back to HHU operations [443.92ms]
+(pass) ordinary letters, Ctrl+D/Y, arrows, Shift+Enter and Ctrl+J retain editor semantics [425.55ms]
+(pass) command menu owns keys, restores draft/cursor and sidebar actions preserve both [691.16ms]
+(pass) Ctrl+C copies valid editor selection, then clears draft, then exits without stopping Daemon/session [443.91ms]
+(pass) bracketed paste /path is never auto-executed and requires explicit ordinary-text sending [494.27ms]
+(pass) snapshot replacement/empty clearing is isolated; two TUI subscribers and reopen rebuild state [1186.18ms]
+(pass) pending switch hides source commands; A → B → A creates fresh session and stale command submission is rejected [1129.99ms]
+(pass) uninitialized/unpublished/closed sessions show precise status and initialize never sends a Prompt [720.26ms]
+(pass) long popup supports keyboard scrolling, mouse completion, narrow resize and Unicode parameters [445.39ms]
+(pass) advertised command without output records actual ACP response and does not claim success [283.79ms]
+(pass) daemon restart reconnects without replay and old persisted command snapshots cannot execute [3237.29ms]
+Slash command evidence: /tmp/hhu-slash-ui-VnqbUp
+
+tests/e2e/shortcuts.test.ts:
+(pass) Codex CLI defaults reserve Esc interrupt, Ctrl+J newline and Ctrl+O response copy [3.98ms]
+(pass) explicit shortcut overrides remain available, can be unbound and reject editor collisions [16.40ms]
+(pass) Ctrl+H supports legacy BS without consuming DEL or modified Backspace [0.15ms]
+
+tests/e2e/phase5.test.tsx:
+(pass) internal report events remain available in Debug without appearing as user/agent chat; one expandable Handoff row preserves complete report and sources [237.63ms]
+(pass) failed Handoff keeps raw fallback out of collapsed and expanded chat while Source retains complete materials [306.77ms]
+(pass) TUI Harness selection persists pending state, explicit menu cancellation restores source, and first message performs one Handoff with retained draft CAS [2473.16ms]
+(pass) failed Handoff TUI exposes saved materials and requires explicit degraded confirmation before dispatch [806.05ms]
+(pass) TUI creates automatically named independent Worktree from palette; safe cleanup is independent and asks for CLEAN confirmation [778.83ms]
+(pass) RC-03 TUI shows uncertain input delivery after completed Turn and preserves unsent editor text [556.48ms]
+(pass) RC-02 TUI explicitly continues with new context without sending its draft or Handoff [625.45ms]
+Phase-5 UI evidence: /tmp/hhu-phase5-ui-Z68EkK
+
+tests/e2e/phase4.test.tsx:
+(pass) native projection preserves Markdown, public thinking, tools, plans, unknown events and source correspondence [1.60ms]
+(pass) Markdown headings, lists, quotes, tables, code indentation and colored Diff render with OpenTUI [214.22ms]
+(pass) user messages have full-width gray backgrounds without coloring Agent replies at wide and narrow widths [427.88ms]
+(pass) tool details default to collapsed, explicit expansion survives status and pane remount [23.64ms]
+(pass) tool detail clicks work while composing and respect modal ownership without submitting a turn [720.13ms]
+(pass) source viewer copies exact original Markdown, code and native tool output using OSC52 [16.45ms]
+(pass) unknown events expose raw and normalized payloads with event IDs and sequence numbers [39.95ms]
+{"phase4Performance":true,"chunks":20000,"projectionMs":23,"displaySegments":20,"historyRows":10000,"mountedRowLimit":60}
+(pass) long history has bounded mounted rows, incremental content, scroll lock, bottom following and scroll restore [446.05ms]
+(pass) App Esc returns chat to the bottom from navigation or the editor without discarding drafts; modals take priority [540.37ms]
+(pass) unmodified letters other than N never invoke navigation, Harness or transcript actions [222.22ms]
+(pass) Enter sends once, Kitty Shift+Enter and Ctrl+J insert newlines without submitting [564.00ms]
+(pass) command palette searches projects and conversations, only explicit sidebar toggles hide it and configured shortcuts work [448.08ms]
+(pass) two concurrently streaming Conversations switch without mixing output, losing drafts or cancelling Workers [1630.10ms]
+(pass) Changes panel reads actual workspace Git state and exposes an inline patch [762.00ms]
+(pass) Codex terminal metadata deltas render and copy without changing native payloads; tool Diff stays inline [71.87ms]
+(pass) rapidly returning to a Conversation waits for its departing editor's pending CAS save [68.51ms]
+(pass) long text segments keep surrogate pairs and original full-message copying intact [0.77ms]
+(pass) new messages cannot replace the history being read after the user scrolls up [224.26ms]
+(pass) refinement hides ACP control traffic, retains real errors and all raw sources [13.57ms]
+(pass) Ctrl+C clears draft, second Ctrl+C exits; selection takes precedence and does not cancel running Agent [779.27ms]
+(pass) mouse release copies multiline chat and code; double click selects a word and triple click selects a line [958.64ms]
+(pass) archive, restore, Raw Events and delete confirmation synchronize between two TUI clients [1526.57ms]
+(pass) confirmed deletion cancels an active Conversation from the TUI, while closing the dialog keeps it running [806.13ms]
+(pass) Delete edits the draft while typing and deletion confirmation can be cancelled [427.16ms]
+(pass) two Delete presses confirm Conversation and Project deletion [248.88ms]
+(pass) conversation header uses two rows with title, path, Agent, model and status, wrapping safely when narrow [524.10ms]
+(pass) compact layout gives transcript most rows; input grows and narrow sidebar stays visible [273.72ms]
+(pass) action menu archives without confirmation, archive view isolates history, project deletion offers Cancel and Delete [1150.20ms]
+(pass) a deleted Conversation retires another client's dirty draft saver without blocking remaining drafts [18.43ms]
+(pass) clearing an unconfirmed draft persists empty input while retaining the reserved requestId [22.21ms]
+(pass) semantic projection classifies chat, activity, actions, notices, diagnostics and unknown extensions [1.28ms]
+(pass) diagnostic floods and legacy history replay produce the same clean chat without changing sources [82.69ms]
+(pass) public thinking, plans, tools, permission options and context/error notices render without metadata JSON [155.51ms]
+(pass) unknown visible text is concise by default, expandable, and linked to its full source [41.48ms]
+(pass) Raw Events Debug retains and copies full worker and authStatus sources hidden from chat [55.00ms]
+(pass) new Conversation stays empty after worker/auth startup, shows hello and reloads clean persisted history [762.73ms]
+(pass) diagnostic-only chat has a clean empty state and a concise running indicator [5.08ms]
+Phase-4 UI evidence: /tmp/hhu-phase4-ui-8d1BCE
+
+tests/e2e/paste-blocks.test.tsx:
+(pass) paste folding thresholds count lines and Unicode characters, not UTF-16 units [0.62ms]
+(pass) multiple paste blocks preserve original text, Unicode prefixes and literal labels [11.29ms]
+(pass) backspace deletes a whole block and undo/redo restore its full original payload [8.17ms]
+(pass) partial selections replace complete blocks without leaving placeholder fragments [11.14ms]
+(pass) replacing a selection with a paste, clearing and restoring drafts never leak markers [15.67ms]
+(pass) ordinary typing stays expanded and paste uses the terminal's existing ANSI sanitization [5.16ms]
+(pass) word deletion and forward delete treat folded text as an indivisible block [18.48ms]
+(pass) expansion can be undone and line-edit shortcuts never strand a partial marker [13.38ms]
+(pass) newline and line deletion cannot split a selected paste marker [8.29ms]
+
+tests/e2e/new-conversation.test.tsx:
+(pass) Ctrl+N works without projects and restores an ungrouped conversation at the captured launch path [243.11ms]
+(pass) N uses the selected project or child, does not steal chat input, and Ctrl+N preserves the draft [306.45ms]
+(pass) conversation shortcuts do not create while a modal or chat history owns the keys [283.13ms]
+(pass) restored TUI keeps the project tree on the left and opens chat on the right across resize [416.39ms]
+(pass) 80-column launch and reopen keep the tree visible beside the selected conversation [168.53ms]
+New conversation evidence: /tmp/hhu-new-conversation-n8cI8I
+
+tests/e2e/mouse-sidebar.test.tsx:
+(pass) sidebar spacing preserves names and keeps project headings more prominent [244.59ms]
+(pass) project arrows collapse independently; names expand/select; hover, selected highlight and keyboard/palette work [1096.51ms]
+(pass) large sidebar wheel is isolated from chat, selection and metadata refresh; offscreen rows are clickable [835.38ms]
+(pass) mouse navigation preserves unsent drafts, scroll and manual tools; background Worker keeps its Turn [1329.97ms]
+(pass) Enter focuses the selected conversation at the draft end without sending it [354.36ms]
+(pass) chat area clicks focus the draft without sending or stealing modal focus [1125.38ms]
+(pass) sidebar click/drag and chat selection do not cross-trigger; Ctrl+C copies, clears then quits [820.69ms]
+(pass) mouse rename targets the clicked conversation, supports cancel and syncs another TUI [506.53ms]
+(pass) row actions archive/restore/delete the intended ID without selecting a neighbor; delete still requires confirmation [1196.69ms]
+(pass) project directory reports an unavailable root without creating or modifying it [6.63ms]
+Mouse sidebar evidence: /tmp/hhu-mouse-sidebar-WK1wpC
+
+tests/e2e/codex-inputs.test.tsx:
+(pass) folded pastes expand for editing and send original text exactly once [543.52ms]
+(pass) folded drafts survive reopening as full editable text without submitting [285.84ms]
+(pass) queueing folded text persists the original payload without submitting a new Turn [368.72ms]
+(pass) folding never bypasses confirmation for unadvertised slash text [271.95ms]
+(pass) Enter steers while running, Tab queues, Esc dismisses suggestions before interrupting and preserves a draft [756.60ms]
+(pass) retired shortcuts leave editing keys available and HHU settings stay in the command palette [397.40ms]
+(pass) prompt history uses Up/Down and Ctrl+R while Ctrl+T opens transcript navigation [585.00ms]
+(pass) Agent/model remain visible and Ctrl+H switches without editing drafts or starting Handoff [676.54ms]
+
+tests/e2e/chat-scroll.test.tsx:
+(pass) the 181st Guardian Review keeps context and the wheel reaches all history in both directions [1002.55ms]
+(pass) each chat wheel event scrolls five lines in either direction, clamped at the edges [806.43ms]
+(pass) Esc returns from scrolled history to the newest message and resumes following [661.33ms]
+(pass) modal Esc preserves scroll; an explicit editor follow request returns to the latest message [625.70ms]
+
+tests/e2e/chat-input-focus.test.tsx:
+(pass) message composer grows upward for newlines and wrapped text, then shrinks [1484.84ms]
+(pass) message placeholder clears on focus before IME composition and returns only outside editing [153.08ms]
+(pass) chat whitespace and input borders focus the editor; native clicks, scroll and modals stay intact [1670.78ms]
+
+tests/e2e/agent-output.test.tsx:
+(pass) Agent replies and public thinking have distinct gutters and headings without changing native text [458.65ms]
+(pass) styled streaming replies wrap and copy original Markdown while user backgrounds stay separate [180.54ms]
+(pass) native tool accents follow streaming status and approvals while preserving expansion and output [261.23ms]
+(pass) command syntax keeps its colors across tool states and narrow layouts [42.46ms]
+(pass) historical terminal and Guardian Review details stay folded without changing native events [51.91ms]
+(pass) tool summaries bound multiline commands and stdout without exposing protocol data [84.82ms]
+(pass) tool detail links toggle the clicked tool, preserve selection and survive updates and remounts [883.94ms]
+(pass) RC-04 expired approval replay clears TUI waiting and preserves the native pending tool [13.38ms]
+
+ 123 pass
+ 0 fail
+ 1728 expect() calls
+Ran 123 tests across 13 files. [75.28s]
