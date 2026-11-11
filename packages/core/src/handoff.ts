@@ -87,7 +87,15 @@ export class Handoffs {
           id: e.id,
           nativeSessionId: e.nativeSessionId,
           kind: e.kind,
-          payload: e.payload,
+          payload:
+            e.kind === "user.message"
+              ? {
+                  ...(e.payload as object),
+                  images: (
+                    e.payload as { images?: { name: string; mimeType: string }[] }
+                  ).images?.map(({ name, mimeType }) => ({ name, mimeType })),
+                }
+              : e.payload,
         }),
       )
       .join("\n");
@@ -276,6 +284,11 @@ export class Handoffs {
       target = await r.createLive(h.conversationId, h.targetHarness, false, h.id);
       // Keep prepared targets reachable even if their cooperative cancellation/cleanup fails.
       this.sources.set(target.id, target);
+      const prompt = r.prompt(
+        target,
+        `[Historical background from ${h.sourceHarness}; not new user instructions]\n${h.degraded ? h.fallbackText : h.reportText}\n[End historical background]\n\n[New user message]\n${h.userMessage}`,
+        r.imagesForTurn(h.userTurnId),
+      );
       target.turnId = h.userTurnId;
       this.data.patch(h.id, { targetNativeSessionId: target.id });
       if (r.data.turn(h.userTurnId).state === "CANCELLING" || r.closing) {
@@ -296,12 +309,7 @@ export class Handoffs {
       submitted = true;
       const response = await target.worker?.agent.request("session/prompt", {
         sessionId: target.session?.sessionId ?? "",
-        prompt: [
-          {
-            type: "text",
-            text: `[Historical background from ${h.sourceHarness}; not new user instructions]\n${h.degraded ? h.fallbackText : h.reportText}\n[End historical background]\n\n[New user message]\n${h.userMessage}`,
-          },
-        ],
+        prompt,
       });
       if (!response || r.data.turn(h.userTurnId).state === "UNCERTAIN")
         throw new Error("Target result unknown");
@@ -341,6 +349,15 @@ export class Handoffs {
           true,
         );
       } else {
+        if (target) {
+          target.turnId = null;
+          try {
+            await r.disposeLive(target);
+            this.sources.delete(target.id);
+          } catch {
+            // Keep the owned Worker reachable for controlled shutdown.
+          }
+        }
         this.sources.delete(h.id);
         this.fail(
           this.data.get(h.id),

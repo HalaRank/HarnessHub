@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { Readable, Writable } from "node:stream";
 import { AgentApp, ndJsonStream } from "@agentclientprotocol/sdk";
@@ -33,7 +34,7 @@ const app = new AgentApp()
       ...(process.env.HHU_MOCK_STEERING ? { _meta: { steering: { supported: true } } } : {}),
       agentCapabilities: {
         loadSession: false,
-        promptCapabilities: {},
+        promptCapabilities: process.env.HHU_MOCK_IMAGES ? { image: true } : {},
         sessionCapabilities: { close: {} },
       },
     };
@@ -94,7 +95,24 @@ const app = new AgentApp()
   .onRequest("session/prompt", async ({ params, client }) => {
     prompts++;
     cancelled = false;
-    let message = params.prompt[0].text;
+    let message = params.prompt
+      .filter((block) => block.type === "text")
+      .map((block) => block.text)
+      .join("\n");
+    const images = params.prompt.filter((block) => block.type === "image");
+    if (images.length) {
+      if (!process.env.HHU_MOCK_IMAGES) throw new Error("Image capability was not negotiated");
+      await text(
+        client,
+        JSON.stringify({
+          images: images.map((image) => ({
+            mimeType: image.mimeType,
+            digest: createHash("sha256").update(Buffer.from(image.data, "base64")).digest("hex"),
+          })),
+        }),
+      );
+      return { stopReason: "end_turn" };
+    }
     if (message === "replace-commands" || message === "clear-commands") {
       await update(client, {
         sessionUpdate: "available_commands_update",

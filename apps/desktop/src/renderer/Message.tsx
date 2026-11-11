@@ -3,6 +3,7 @@ import { memo, useState } from "react";
 import type { DesktopApi } from "../contracts";
 import { NativeDiff } from "./Diff";
 import { groupToolActivity, type Message as MessageData } from "./history";
+import { ImagePreviews } from "./Images";
 import { Copy, Markdown } from "./Markdown";
 import { PathActions } from "./PathActions";
 
@@ -265,6 +266,7 @@ export const MessageView = memo(function MessageView({
             <Copy text={row.text} api={api} />
           </div>
           <div className="message-body">
+            <ImagePreviews images={row.images ?? []} />
             {row.role === "You" || row.role === "Plan" ? (
               row.text
             ) : (

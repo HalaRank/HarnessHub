@@ -1,4 +1,10 @@
-import type { Draft, Turn } from "@harnesshub/shared";
+import {
+  type Draft,
+  type ImageAttachment,
+  imageAttachments,
+  sameImages,
+  type Turn,
+} from "@harnesshub/shared";
 import type { DesktopApi, DesktopRequest } from "../contracts";
 
 export class DesktopActionError extends Error {
@@ -35,12 +41,17 @@ export function newConversationDraft(api: DesktopApi) {
 export class DesktopDraft {
   value: Draft;
   text = "";
+  images: ImageAttachment[] = [];
+  get hasContent() {
+    return !!this.text.trim() || this.images.length > 0;
+  }
   loaded = false;
   busy = false;
   error = "";
   result = "";
   private queue: Promise<unknown> = Promise.resolve();
   private loading: Promise<void> | undefined;
+  private imageRead: Promise<void> | undefined;
   private editGeneration = 0;
   private loadGeneration = 0;
   private listeners = new Set<() => void>();
@@ -98,6 +109,7 @@ export class DesktopDraft {
     }
     this.value = value;
     this.text = value.text;
+    this.images = value.images ?? [];
     this.loaded = true;
     this.error = "";
     this.changed();
@@ -109,14 +121,44 @@ export class DesktopDraft {
     this.changed();
     void this.flush().catch(() => {});
   }
-  flush() {
+  updateImages(images: ImageAttachment[]) {
+    if (!this.loaded || this.busy || this.value.pendingSubmission) return;
+    this.images = imageAttachments.parse(images);
+    this.editGeneration++;
+    this.changed();
+    void this.flush().catch(() => {});
+  }
+  async readImages(load: Promise<ImageAttachment[]>) {
+    if (this.imageRead || !this.loaded || this.busy || this.value.pendingSubmission) return;
+    this.imageRead = load.then((images) => {
+      this.updateImages([...this.images, ...images]);
+    });
+    try {
+      await this.imageRead;
+    } finally {
+      this.imageRead = undefined;
+    }
+    await this.flush();
+  }
+  async flush() {
+    await this.imageRead;
     return this.enqueue(async () => {
-      if (!this.loaded || this.text === this.value.text || this.value.pendingSubmission) return;
+      if (
+        !this.loaded ||
+        this.value.pendingSubmission ||
+        (this.text === this.value.text && sameImages(this.images, this.value.images))
+      )
+        return;
       try {
         this.value = await call<Draft>(this.api, {
           type: "draft.save",
           conversationId: this.conversationId,
-          draft: { revision: this.value.revision, text: this.text, pendingSubmission: null },
+          draft: {
+            revision: this.value.revision,
+            text: this.text,
+            images: this.images,
+            pendingSubmission: null,
+          },
         });
         this.error = "";
       } catch (error) {
@@ -131,7 +173,14 @@ export class DesktopDraft {
     harnessId: string,
     nativeCommand?: NonNullable<Draft["pendingSubmission"]>["nativeCommand"],
   ) {
-    if (this.busy || !this.loaded || !this.text.trim() || this.value.pendingSubmission) return;
+    if (
+      this.busy ||
+      this.imageRead ||
+      !this.loaded ||
+      !this.hasContent ||
+      this.value.pendingSubmission
+    )
+      return;
     this.invalidateLoads();
     this.busy = true;
     this.error = "";
@@ -143,6 +192,7 @@ export class DesktopDraft {
         requestId: crypto.randomUUID(),
         harnessId,
         message: this.text,
+        ...(this.images.length ? { images: this.images } : {}),
         ...(nativeCommand ? { nativeCommand } : {}),
       };
       // Retain the ID in memory even if the IPC response itself is lost.
@@ -167,7 +217,8 @@ export class DesktopDraft {
             type: "draft.load",
             conversationId: this.conversationId,
           });
-          if (latest.text === this.text) this.value = latest;
+          if (latest.text === this.text && sameImages(latest.images, this.images))
+            this.value = latest;
         } catch {
           /* Keep the old CAS revision and local text. */
         }
@@ -200,7 +251,7 @@ export class DesktopDraft {
         await call(this.api, {
           type: "draft.save",
           conversationId: this.conversationId,
-          draft: { revision: latest.revision, text: "", pendingSubmission: null },
+          draft: { revision: latest.revision, text: "", images: [], pendingSubmission: null },
         });
       }
       await this.reload();

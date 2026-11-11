@@ -1100,3 +1100,126 @@ test("Desktop new conversations auto-name and shared/worktree workspaces use the
     connection.dispose();
   }
 });
+
+test("Desktop image drafts, ACP bytes, request deduplication and Handoff retain attachments", async () => {
+  const imageDesktop = new DesktopConnection({ connect: bridge }, 100);
+  cleanups.push(() => imageDesktop.dispose());
+  await imageDesktop.connect("test");
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {
+    title: "Images",
+  });
+  const base = `/v1/conversations/${c.id}`;
+  const image = {
+    name: "截图.png",
+    mimeType: "image/png",
+    data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0L8AAAAASUVORK5CYII=",
+  };
+  for (const id of ["image-a", "image-b"])
+    await client.request("/v1/harness-profiles", "POST", {
+      id,
+      name: id,
+      command: process.execPath,
+      args: [resolve("tests/fixtures/mock-acp/server.mjs")],
+      envOverrides: { HHU_MOCK_IMAGES: "1" },
+    });
+  let draft = await client.request(`${base}/draft`);
+  draft = await client.request(`${base}/draft`, "PUT", {
+    ...draft,
+    conversationId: undefined,
+    text: "",
+    images: [image],
+  });
+  assert.deepEqual((await client.request(`${base}/draft`)).images, [image]);
+  // Older text-only clients retain attachments while editing and cannot reserve an incomplete submission.
+  draft = await client.request(`${base}/draft`, "PUT", {
+    revision: draft.revision,
+    text: "text edit",
+    pendingSubmission: null,
+  });
+  assert.deepEqual(draft.images, [image]);
+  await assert.rejects(
+    client.request(`${base}/draft`, "PUT", {
+      revision: draft.revision,
+      text: "text edit",
+      pendingSubmission: { requestId: randomUUID(), message: "text edit", harnessId: "image-a" },
+    }),
+    (error) => error.status === 409,
+  );
+  await waitFor(() =>
+    imageDesktop.getState().snapshot?.conversations.some((item) => item.id === c.id),
+  );
+  await imageDesktop.select(c.id);
+  const request = { requestId: randomUUID(), harnessId: "image-a", message: "", images: [image] };
+  const turn = await imageDesktop.action({
+    type: "turn.submit",
+    conversationId: c.id,
+    revision: draft.revision,
+    input: request,
+  });
+  await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
+  assert.equal((await client.request(`/v1/turns/${turn.id}`)).state, "COMPLETED");
+  assert.deepEqual((await client.request(`${base}/draft`)).images, []);
+  assert.equal((await client.request(`${base}/turns`, "POST", request)).id, turn.id);
+  await assert.rejects(
+    client.request(`${base}/turns`, "POST", {
+      ...request,
+      images: [{ ...image, name: "different.png" }],
+    }),
+    (error) => error.status === 409,
+  );
+  let events = (await client.request(`${base}/events?limit=1000`)).events;
+  assert.equal(events.filter((e) => e.kind === "session/prompt").length, 1);
+  const blocks = events.find((e) => e.kind === "session/prompt").raw.params.prompt;
+  assert.deepEqual(blocks, [{ type: "image", mimeType: image.mimeType, data: image.data }]);
+  assert.deepEqual(events.find((e) => e.kind === "user.message").payload.images, [image]);
+  await client.request(`${base}/harness`, "PUT", { harnessId: "image-b" });
+  const handoffTurn = await client.request(`${base}/turns`, "POST", {
+    ...request,
+    requestId: randomUUID(),
+    harnessId: "image-b",
+    message: "carry this image",
+  });
+  await waitFor(async () => (await client.request(`/v1/turns/${handoffTurn.id}`)).endedAt);
+  assert.equal((await client.request(`${base}/handoffs`)).at(-1).status, "COMMITTED");
+  events = (await client.request(`${base}/events?limit=1000`)).events;
+  const targetPrompt = events.filter((e) => e.kind === "session/prompt").at(-1).raw.params.prompt;
+  assert.deepEqual(targetPrompt.at(-1), {
+    type: "image",
+    mimeType: image.mimeType,
+    data: image.data,
+  });
+  // A payload above the old 1 MiB HTTP ceiling survives unchanged.
+  const largeImage = { ...image, data: Buffer.alloc(900000, 1).toString("base64") };
+  draft = await client.request(`${base}/draft`);
+  await client.request(`${base}/draft`, "PUT", {
+    revision: draft.revision,
+    text: "large",
+    images: [largeImage],
+    pendingSubmission: null,
+  });
+  assert.deepEqual((await client.request(`${base}/draft`)).images, [largeImage]);
+  await imageDesktop.action({ type: "conversation.delete", conversationId: c.id, confirmed: true });
+  imageDesktop.dispose();
+});
+
+test("Agent without image capability receives no image Prompt", async () => {
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {});
+  const base = `/v1/conversations/${c.id}`;
+  const image = { name: "x.png", mimeType: "image/png", data: "iVBORw0KGgo=" };
+  const turn = await client.request(`${base}/turns`, "POST", {
+    requestId: randomUUID(),
+    harnessId: "desktop-mock",
+    message: "",
+    images: [image],
+  });
+  await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
+  assert.equal((await client.request(`/v1/turns/${turn.id}`)).state, "ERROR");
+  const events = (await client.request(`${base}/events?limit=1000`)).events;
+  assert.ok(
+    events.some(
+      (e) => e.kind === "runtime.input_error" && e.payload.message.includes("图片输入能力"),
+    ),
+  );
+  assert.ok(!events.some((e) => e.kind === "session/prompt"));
+  await client.request(base, "DELETE", { confirmed: true });
+});

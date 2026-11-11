@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { DesktopApi, DesktopRequest, DesktopState } from "../contracts";
 import { Confirm } from "./Confirm";
 import { call, type DesktopDraft } from "./drafts";
+import { ImagePreviews, useImageInput } from "./Images";
 import { Copy } from "./Markdown";
 import { Select } from "./Select";
 
@@ -104,6 +105,14 @@ export function Composer({
     !!handoff ||
     inputDelivery.length > 0 ||
     (!switching && source?.status === "INTERRUPTED");
+  const imageInput = useImageInput(
+    draft,
+    !draft.loaded || draft.busy || !!draft.value.pendingSubmission,
+  );
+  const imageSupported = session
+    ? object(object(object(session.capabilities).initialize).agentCapabilities).promptCapabilities
+    : null;
+  const imageUnsupported = !!session && object(imageSupported).image !== true;
   const act = useCallback(
     async (request: DesktopRequest) => {
       if (actionLock.current) return;
@@ -147,7 +156,14 @@ export function Composer({
     textarea.current?.focus();
   };
   const send = () => {
-    if (disabled || !draft.text.trim() || !harness) return;
+    if (
+      disabled ||
+      imageInput.reading ||
+      (draft.images.length > 0 && imageUnsupported) ||
+      !draft.hasContent ||
+      !harness
+    )
+      return;
     const { name, confirmText } = slashIntent(draft.text, commands);
     if (confirmText) {
       setMenuDismissed(true);
@@ -362,6 +378,16 @@ export function Composer({
         </div>
       )}
       <div className="composer">
+        <ImagePreviews
+          images={draft.images}
+          disabled={draft.busy || imageInput.reading || !!draft.value.pendingSubmission}
+          remove={(index) => draft.updateImages(draft.images.filter((_, i) => i !== index))}
+        />
+        {(imageInput.error || (draft.images.length > 0 && imageUnsupported)) && (
+          <p className="composer-note error" role="alert">
+            {imageInput.error || "当前 Agent 未声明图片输入能力，请选择支持图片的 Harness。"}
+          </p>
+        )}
         {menu && (
           <div ref={slashMenu} className="slash-menu" role="listbox" aria-label="当前 ACP 命令">
             {matches.length ? (
@@ -401,6 +427,7 @@ export function Composer({
           disabled={!draft.loaded}
           readOnly={draft.busy || !!draft.value.pendingSubmission}
           value={draft.text}
+          onPaste={imageInput.paste}
           onChange={(event) => {
             draft.update(event.target.value);
             setCursor(event.target.selectionStart);
@@ -449,6 +476,7 @@ export function Composer({
           }}
         />
         <div className="composer-footer">
+          {imageInput.picker}
           <Select
             aria-label="Harness"
             value={harness}
@@ -582,7 +610,13 @@ export function Composer({
             className="send"
             aria-label="发送"
             title="发送 · Enter"
-            disabled={disabled || !draft.text.trim() || !harness}
+            disabled={
+              disabled ||
+              imageInput.reading ||
+              (draft.images.length > 0 && imageUnsupported) ||
+              !draft.hasContent ||
+              !harness
+            }
             onClick={send}
           >
             {draft.busy ? "提交中…" : "↑ 发送"}

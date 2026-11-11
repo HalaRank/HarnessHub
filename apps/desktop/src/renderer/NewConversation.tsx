@@ -4,6 +4,7 @@ import type { DesktopApi, DesktopRequest, DesktopState } from "../contracts";
 import { inputAction, slashIntent } from "./Composer";
 import { Confirm } from "./Confirm";
 import { call, DesktopActionError, DesktopDraft } from "./drafts";
+import { ImagePreviews, useImageInput } from "./Images";
 import { Select } from "./Select";
 
 export type NewConversationValue = { projectId: string; workspace: string };
@@ -47,6 +48,10 @@ export function NewConversation({
   } | null>(null);
   const project = state.snapshot?.projects.find((p) => p.id === value.projectId);
   const connected = state.status === "connected";
+  const imageInput = useImageInput(
+    draft,
+    busy || !draft.loaded || creationUnknown || !!prepared.current,
+  );
   const previousConversation =
     state.snapshot?.conversations.find(
       (c) => c.id === state.conversationId && c.selectedHarnessId,
@@ -94,7 +99,8 @@ export function NewConversation({
     creationUnknown ||
     !draft.loaded ||
     !connected ||
-    !text.trim() ||
+    !draft.hasContent ||
+    imageInput.reading ||
     !selectedHarness ||
     (!!value.projectId && !project) ||
     (!project && !value.workspace.startsWith("/")) ||
@@ -139,8 +145,10 @@ export function NewConversation({
       if (!prepared.current.submitted) {
         await editor.load();
         editor.update(text);
+        editor.updateImages(draft.images);
         await editor.flush();
         draft.update("");
+        draft.updateImages([]);
         await draft.flush();
         prepared.current.submitted = true;
         // The real Conversation and its CAS draft exist before submitting any Turn.
@@ -262,11 +270,22 @@ export function NewConversation({
             void submit();
           }}
         >
+          <ImagePreviews
+            images={draft.images}
+            disabled={busy || imageInput.reading || !!prepared.current}
+            remove={(index) => draft.updateImages(draft.images.filter((_, i) => i !== index))}
+          />
+          {imageInput.error && (
+            <p className="composer-note error" role="alert">
+              {imageInput.error}
+            </p>
+          )}
           <textarea
             ref={textarea}
             aria-label="消息输入"
             placeholder="描述你想完成的任务…"
             value={text}
+            onPaste={imageInput.paste}
             disabled={busy || !connected || !draft.loaded}
             rows={3}
             onChange={(e) => draft.update(e.target.value)}
@@ -296,6 +315,7 @@ export function NewConversation({
             }}
           />
           <div className="composer-footer">
+            {imageInput.picker}
             <Select
               aria-label="Harness"
               value={selectedHarness}

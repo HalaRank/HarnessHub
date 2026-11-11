@@ -38,88 +38,114 @@ after(() => {
   console.log(`Standalone Conversation evidence: ${temp}`);
 });
 
-test("schema 6 upgrade preserves dependent history, drafts and preferences, backs up and restores FK enforcement", async () => {
-  const migrations = resolve("packages/storage/migrations");
-  const legacy = join(temp, "legacy-migrations");
-  cpSync(migrations, legacy, { recursive: true });
-  const journalPath = join(legacy, "meta/_journal.json");
-  const journal = JSON.parse(readFileSync(journalPath));
-  journal.entries = journal.entries.slice(0, 6);
-  writeFileSync(journalPath, JSON.stringify(journal));
-  const file = join(temp, "migration", "harnesshub.db");
-  let store = await openStore(file, legacy);
-  const project = store.addProject(temp, "preserved project").value;
-  const conversation = store.addConversation(project.id, "preserved history").value;
-  const runtime = new RuntimeStore(store);
-  const session = runtime.addSession(conversation.id, "mock", temp, randomUUID());
-  const turn = runtime.addTurn(conversation.id, "mock", randomUUID(), "hash");
-  runtime.updateTurn(turn.id, {
-    nativeSessionId: session.id,
-    state: "COMPLETED",
-    endedAt: Date.now(),
-  });
-  const event = runtime.append({
-    conversationId: conversation.id,
-    nativeSessionId: session.id,
-    turnId: turn.id,
-    harnessId: "mock",
-    kind: "agent_message_chunk",
-    payload: { content: { type: "text", text: "native history" } },
-    raw: { original: "preserved" },
-    origin: "agent",
-    purpose: "user",
-  });
-  store.saveDraft(conversation.id, { revision: 0, text: "saved draft", pendingSubmission: null });
-  store.savePreferences({ lastConversationId: conversation.id });
-  const tables = [
-    "projects",
-    "conversations",
-    "native_sessions",
-    "turns",
-    "conversation_events",
-    "conversation_drafts",
-    "ui_preferences",
-  ];
-  const before = tables.map((table) => store.sqlite.prepare(`SELECT * FROM ${table}`).all());
-  store.close();
-
-  store = await openStore(file, migrations);
-  try {
-    assert.deepEqual(
-      tables.map((table) => store.sqlite.prepare(`SELECT * FROM ${table}`).all()),
-      before,
-    );
-    assert.equal(store.getConversation(conversation.id).projectId, project.id);
-    assert.equal(new RuntimeStore(store).events(conversation.id, 0, 100)[0].id, event.id);
-    assert.equal(store.sqlite.pragma("foreign_keys", { simple: true }), 1);
-    assert.deepEqual(store.sqlite.pragma("foreign_key_check"), []);
-    assert.throws(() => store.addConversation("missing-project"), /Project not found/);
-    const standalone = store.addConversation(null, undefined, undefined, temp).value;
-    store.saveDraft(standalone.id, {
-      revision: 0,
-      text: "ungrouped draft",
-      pendingSubmission: null,
+for (const legacyVersion of [6, 8])
+  test(`schema ${legacyVersion} upgrade preserves dependent history, drafts and preferences, backs up and restores FK enforcement`, async () => {
+    const migrations = resolve("packages/storage/migrations");
+    const legacy = join(temp, `legacy-migrations-${legacyVersion}`);
+    cpSync(migrations, legacy, { recursive: true });
+    const journalPath = join(legacy, "meta/_journal.json");
+    const journal = JSON.parse(readFileSync(journalPath));
+    journal.entries = journal.entries.slice(0, legacyVersion);
+    writeFileSync(journalPath, JSON.stringify(journal));
+    const migrationDir = join(temp, `migration-${legacyVersion}`);
+    const file = join(migrationDir, "harnesshub.db");
+    let store = await openStore(file, legacy);
+    const project = store.addProject(temp, "preserved project").value;
+    const conversation = store.addConversation(project.id, "preserved history").value;
+    const runtime = new RuntimeStore(store);
+    const session = runtime.addSession(conversation.id, "mock", temp, randomUUID());
+    const turn = runtime.addTurn(conversation.id, "mock", randomUUID(), "hash");
+    runtime.updateTurn(turn.id, {
+      nativeSessionId: session.id,
+      state: "COMPLETED",
+      endedAt: Date.now(),
     });
-    store.savePreferences({ lastConversationId: standalone.id, lastProjectId: null });
-    store.sqlite.prepare("DELETE FROM projects WHERE id=?").run(project.id);
-    assert.deepEqual(
-      store.listConversations().map((value) => value.id),
-      [standalone.id],
+    const event = runtime.append({
+      conversationId: conversation.id,
+      nativeSessionId: session.id,
+      turnId: turn.id,
+      harnessId: "mock",
+      kind: "agent_message_chunk",
+      payload: { content: { type: "text", text: "native history" } },
+      raw: { original: "preserved" },
+      origin: "agent",
+      purpose: "user",
+    });
+    // Seed the legacy schema through its actual columns, before the image migration exists.
+    store.sqlite
+      .prepare(
+        "INSERT INTO conversation_drafts (conversation_id,text,revision,pending_submission) VALUES (?, ?, 1, NULL)",
+      )
+      .run(conversation.id, "saved draft");
+    if (legacyVersion >= 8)
+      store.sqlite
+        .prepare(
+          "INSERT INTO new_conversation_drafts (id,text,revision) VALUES ('desktop', 'first message', 2)",
+        )
+        .run();
+    store.savePreferences({ lastConversationId: conversation.id });
+    const tables = [
+      "projects",
+      "conversations",
+      "native_sessions",
+      "turns",
+      "conversation_events",
+      "conversation_drafts",
+      "ui_preferences",
+      ...(legacyVersion >= 8 ? ["new_conversation_drafts"] : []),
+    ];
+    const before = tables.map((table) =>
+      store.sqlite
+        .prepare(`SELECT * FROM ${table}`)
+        .all()
+        .map((row) =>
+          ["conversation_drafts", "new_conversation_drafts"].includes(table)
+            ? { ...row, images: "[]" }
+            : row,
+        ),
     );
-    assert.equal(store.draft(standalone.id).text, "ungrouped draft");
-    assert.equal(store.preferences().lastProjectId, null);
-    assert.equal(store.preferences().lastConversationId, standalone.id);
-    assert.equal(
-      store.sqlite.prepare("SELECT count(*) AS count FROM conversation_events").get().count,
-      0,
-    );
-  } finally {
     store.close();
-  }
-  const backup = readdirSync(join(temp, "migration")).find((name) => name.includes(".backup-"));
-  assert.ok(backup);
-  assert.equal(statSync(join(temp, "migration", backup)).mode & 0o777, 0o600);
-});
+
+    store = await openStore(file, migrations);
+    try {
+      assert.deepEqual(
+        tables.map((table) => store.sqlite.prepare(`SELECT * FROM ${table}`).all()),
+        before,
+      );
+      assert.equal(store.getConversation(conversation.id).projectId, project.id);
+      assert.deepEqual(store.draft(conversation.id).images, []);
+      assert.deepEqual(store.newConversationDraft().images, []);
+      if (legacyVersion >= 8) assert.equal(store.newConversationDraft().text, "first message");
+      assert.equal(new RuntimeStore(store).events(conversation.id, 0, 100)[0].id, event.id);
+      assert.equal(store.sqlite.pragma("foreign_keys", { simple: true }), 1);
+      assert.deepEqual(store.sqlite.pragma("foreign_key_check"), []);
+      assert.throws(() => store.addConversation("missing-project"), /Project not found/);
+      const standalone = store.addConversation(null, undefined, undefined, temp).value;
+      store.saveDraft(standalone.id, {
+        revision: 0,
+        text: "ungrouped draft",
+        pendingSubmission: null,
+      });
+      store.savePreferences({ lastConversationId: standalone.id, lastProjectId: null });
+      store.sqlite.prepare("DELETE FROM projects WHERE id=?").run(project.id);
+      assert.deepEqual(
+        store.listConversations().map((value) => value.id),
+        [standalone.id],
+      );
+      assert.equal(store.draft(standalone.id).text, "ungrouped draft");
+      assert.equal(store.preferences().lastProjectId, null);
+      assert.equal(store.preferences().lastConversationId, standalone.id);
+      assert.equal(
+        store.sqlite.prepare("SELECT count(*) AS count FROM conversation_events").get().count,
+        0,
+      );
+    } finally {
+      store.close();
+    }
+    const backup = readdirSync(migrationDir).find((name) => name.includes(".backup-"));
+    assert.ok(backup);
+    assert.equal(statSync(join(migrationDir, backup)).mode & 0o777, 0o600);
+  });
 
 test("standalone creation validates the explicit path, uses it for both ACP cwd values and persists without a project", async () => {
   start();

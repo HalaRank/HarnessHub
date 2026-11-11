@@ -1,0 +1,16 @@
+{
+  "platform": "win32",
+  "arch": "x64",
+  "electron": "45.2.3",
+  "checks": [
+    "Real Windows wsl.exe UTF-16 discovery",
+    "Sandboxed Electron window, real WSL bootstrap auto-start and Windows localhost HTTP/WS",
+    "Windows upload button/file selection",
+    "Windows clipboard Ctrl+V image",
+    "Thumbnails decoded and removal saved",
+    "Image-only send deduplicated and native ACP completed",
+    "History preview and cleared draft",
+    "New-conversation image paste and first-message send"
+  ],
+  "passed": true
+}

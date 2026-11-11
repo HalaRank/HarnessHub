@@ -65,6 +65,7 @@ export class PendingInputs {
     return next;
   }
   accept(id: string, input: z.infer<typeof turnInput>) {
+    if (input.images?.length) throw new AppError(400, "图片请在空闲会话中提交。");
     if (!input.delivery) throw new AppError(400, "Follow-up input requires a delivery mode");
     const runtime = this.runtime;
     const previous = runtime.data.inputs().find((item) => item.requestId === input.requestId);

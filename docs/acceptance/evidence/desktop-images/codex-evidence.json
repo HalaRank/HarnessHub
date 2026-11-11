@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "harness": "codex",
+  "workspace": "/tmp/hhu-real-image-g2zf4x",
+  "imageCapability": true,
+  "state": "ERROR",
+  "text": "",
+  "error": "ACP session/new timed out before any image Prompt was sent"
+}

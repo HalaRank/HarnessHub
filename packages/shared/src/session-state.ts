@@ -1,14 +1,19 @@
 import { z } from "zod";
+import { imageAttachments, sameImages } from "./images";
 import { type RuntimeStatus, turnInput } from "./runtime";
 
 export const draftInput = z
   .object({
     revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
     text: z.string().max(100000),
+    images: imageAttachments.optional(),
     pendingSubmission: turnInput.nullable().default(null),
   })
   .strict()
-  .refine((d) => !d.pendingSubmission || d.text === "" || d.pendingSubmission.message === d.text);
+  .refine((d) => !d.pendingSubmission || d.text === "" || d.pendingSubmission.message === d.text)
+  .refine(
+    (d) => !d.pendingSubmission || !d.images || sameImages(d.images, d.pendingSubmission.images),
+  );
 export type Draft = z.infer<typeof draftInput> & { conversationId: string };
 export const navigationShortcuts = {
   quit: "",

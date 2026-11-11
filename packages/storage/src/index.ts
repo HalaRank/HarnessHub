@@ -2,7 +2,13 @@ import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { Activity, ChangeEvent, Draft, Preferences } from "@harnesshub/shared";
-import { AppError, activeStates, NEW_CONVERSATION_TITLE, problemStates } from "@harnesshub/shared";
+import {
+  AppError,
+  activeStates,
+  NEW_CONVERSATION_TITLE,
+  problemStates,
+  sameImages,
+} from "@harnesshub/shared";
 import { privateDir, secureFile } from "@harnesshub/shared/paths";
 import Database from "better-sqlite3";
 import { and, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
@@ -90,6 +96,7 @@ export class Store {
     return {
       conversationId: "desktop-new",
       text: row?.text ?? "",
+      images: row?.images ?? [],
       revision: row?.revision ?? 0,
       pendingSubmission: null,
     };
@@ -101,7 +108,12 @@ export class Store {
       const previous = this.newConversationDraft();
       if (input.revision !== previous.revision)
         throw new AppError(409, "New conversation draft changed in another window");
-      const value = { id: "desktop", text: input.text, revision: previous.revision + 1 };
+      const value = {
+        id: "desktop",
+        text: input.text,
+        images: input.images ?? previous.images ?? [],
+        revision: previous.revision + 1,
+      };
       this.db
         .insert(schema.newConversationDrafts)
         .values(value)
@@ -389,7 +401,14 @@ export class Store {
       const current = this.draft(conversationId);
       if (current.revision !== input.revision)
         throw new AppError(409, "Draft changed in another client; local text was not overwritten");
-      const row = { ...input, conversationId, revision: current.revision + 1 };
+      const row = {
+        ...input,
+        images: input.images ?? current.images ?? [],
+        conversationId,
+        revision: current.revision + 1,
+      };
+      if (row.pendingSubmission && !sameImages(row.images, row.pendingSubmission.images))
+        throw new AppError(409, "草稿含图片，请在 Desktop 检查并提交完整附件。");
       this.db
         .insert(schema.drafts)
         .values(row)
@@ -403,6 +422,7 @@ export class Store {
     if (draft.pendingSubmission?.requestId === requestId)
       this.saveDraft(conversationId, {
         text: "",
+        images: [],
         revision: draft.revision,
         pendingSubmission: null,
       });

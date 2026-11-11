@@ -75,8 +75,13 @@ async function main() {
   let stopping = false;
   let instance: Instance;
   const app = new Hono();
-  // A reserved draft carries text plus the same pending message; allow schema-sized UTF-8 text.
-  app.use("*", bodyLimit({ maxSize: 1024 * 1024 }));
+  // Draft reservations include a second copy of the same base64 attachments.
+  app.use("*", async (c, next) => {
+    const images = /^\/v1\/(?:new-conversation-draft|conversations\/[^/]+\/(?:draft|turns))$/.test(
+      c.req.path,
+    );
+    return bodyLimit({ maxSize: images ? 30 * 1024 * 1024 : 1024 * 1024 })(c, next);
+  });
   app.use("*", async (c, next) => {
     // CLI clients have no browser Origin. Reject browser access, including WS upgrades.
     if (c.req.header("origin")) return c.json({ error: "Browser origins are not allowed" }, 403);

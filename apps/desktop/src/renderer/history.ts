@@ -1,9 +1,10 @@
-import type { ConversationEvent } from "@harnesshub/shared";
+import { type ConversationEvent, type ImageAttachment, imageAttachments } from "@harnesshub/shared";
 import { object, pretty, projectEvent } from "@harnesshub/shared/event-projection";
 export type Message = {
   id: string;
   role: string;
   text: string;
+  images?: ImageAttachment[];
   kind: "text" | "activity" | "notice";
   turn: string | null;
   session?: string | null;
@@ -85,7 +86,10 @@ export class DesktopTranscript {
     );
     const text =
       event.kind === "user.message" ? p.text : chunk ? object(p.content).text : projection.text;
-    if (typeof text === "string" && text.length) {
+    if (
+      typeof text === "string" &&
+      (text.length || (event.kind === "user.message" && Array.isArray(p.images) && p.images.length))
+    ) {
       const role =
         event.kind === "user.message" || event.kind === "user_message_chunk"
           ? "You"
@@ -108,6 +112,9 @@ export class DesktopTranscript {
           id: event.id,
           role,
           text,
+          ...(event.kind === "user.message"
+            ? { images: imageAttachments.safeParse(p.images).data ?? [] }
+            : {}),
           turn: event.turnId,
           session: event.nativeSessionId,
           kind:

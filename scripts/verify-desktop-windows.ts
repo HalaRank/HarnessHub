@@ -114,6 +114,7 @@ try {
     command: node,
     args: [resolve("tests/fixtures/mock-acp/server.mjs")],
     envOverrides: {
+      ...(process.env.HHU_DESKTOP_IMAGES_ONLY === "1" ? { HHU_MOCK_IMAGES: "1" } : {}),
       HHU_MOCK_COMMANDS: JSON.stringify([
         { name: "silent", description: "Real ACP published mock command" },
       ]),
@@ -170,6 +171,7 @@ try {
         : {}),
       realHandoff: process.env.HHU_DESKTOP_HANDOFF === "1",
       newConversationOnly: process.env.HHU_DESKTOP_NEW_ONLY === "1",
+      imagesOnly: process.env.HHU_DESKTOP_IMAGES_ONLY === "1",
     }),
   );
   // Run official Electron executable from a separately extracted, checksum-verified archive.

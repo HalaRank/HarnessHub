@@ -38,6 +38,7 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
       await client.request(`${base}/draft`, "PUT", {
         revision: request.revision,
         text: request.input.message,
+        images: request.input.images ?? [],
         pendingSubmission: request.input,
       });
       try {

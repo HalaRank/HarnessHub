@@ -36,6 +36,10 @@ export const changes = sqliteTable("metadata_changes", {
 });
 
 export const drafts = sqliteTable("conversation_drafts", {
+  images: text("images", { mode: "json" })
+    .$type<import("@harnesshub/shared").ImageAttachment[]>()
+    .notNull()
+    .default([]),
   conversationId: text("conversation_id")
     .primaryKey()
     .references(() => conversations.id, { onDelete: "cascade" }),
@@ -46,6 +50,10 @@ export const drafts = sqliteTable("conversation_drafts", {
   >(),
 });
 export const newConversationDrafts = sqliteTable("new_conversation_drafts", {
+  images: text("images", { mode: "json" })
+    .$type<import("@harnesshub/shared").ImageAttachment[]>()
+    .notNull()
+    .default([]),
   id: text("id").primaryKey(),
   text: text("text").notNull().default(""),
   revision: integer("revision").notNull().default(0),

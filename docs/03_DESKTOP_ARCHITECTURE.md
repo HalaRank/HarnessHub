@@ -1,5 +1,7 @@
 # Desktop 架构决策 D1：Windows 客户端 + WSL2 执行环境
 
+2026-11-11 用户新增 Desktop 图片选择与 Ctrl+V 粘贴。新建页及已有会话发送 ACP image content block，按原生 promptCapabilities.image 检查能力，图片草稿落同一 WSL SQLite，schema 9。实现、Windows 验证和真实 Harness 未验证边界见[图片补充验收](acceptance/desktop-phase-4-images.md)。
+
 2026-11-10 用户要求归档对话从项目列表中隐藏。Desktop 项目树始终仅展示未归档对话；“查看归档”打开独立模态窗口，集中搜索、查看和恢复归档对话，并显示原属项目。实现及真实 Windows 验证见 [归档窗口补充验收](acceptance/desktop-phase-4-archive-window.md)。
 
 2026-11-10 用户补充 Desktop 会话行重命名/归档、免命名新建页、项目与工作树起始分支选择，以及独立会话置底和顶层缩进。实现与本轮验证见 [补充验收](acceptance/desktop-phase-4-new-conversation.md)。新建页消息草稿使用同一 WSL SQLite 的 CAS 存储，schema 8。

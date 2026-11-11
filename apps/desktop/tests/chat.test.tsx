@@ -50,6 +50,7 @@ function editorBackend() {
         drafts.set(key, {
           ...draft,
           text: "",
+          images: [],
           pendingSubmission: null,
           revision: draft.revision + 2,
         });

@@ -7,6 +7,7 @@ import { app, type BrowserWindow } from "electron";
 import { openDesktopWindow } from "../src/main/window";
 import { runWsl, WslBridge } from "../src/main/wsl";
 import { realHandoffSmoke } from "./windows-handoff";
+import { imageSmoke } from "./windows-images";
 import { newConversationSmoke } from "./windows-new-conversation";
 import { workspaceSmoke } from "./windows-workspace";
 
@@ -20,6 +21,7 @@ const config = JSON.parse(readFileSync(join(app.getAppPath(), "smoke-config.json
   realHarnesses?: string[];
   realHandoff?: boolean;
   newConversationOnly?: boolean;
+  imagesOnly?: boolean;
 };
 mkdirSync(join(config.output, "electron-user-data"), { recursive: true });
 app.setPath("userData", join(config.output, "electron-user-data"));
@@ -162,6 +164,11 @@ void app.whenReady().then(async () => {
       state.snapshot?.conversations.find((c) => c.id === config.conversationId)?.workspacePath,
       config.workspace,
     );
+    if (config.imagesOnly) {
+      checks.push(...(await imageSmoke(first, opened.connection, config.output)));
+      evidence.passed = true;
+      return;
+    }
     if (config.newConversationOnly) {
       checks.push(
         ...(await newConversationSmoke(first, opened.connection, config.output, {

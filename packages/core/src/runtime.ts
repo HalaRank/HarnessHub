@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type {
+  ContentBlock,
   InitializeResponse,
   NewSessionResponse,
   RequestPermissionRequest,
@@ -19,6 +20,8 @@ import {
   type ChangeEvent,
   type ConversationEvent,
   type HarnessProfile,
+  type ImageAttachment,
+  imageAttachments,
   type NativeCommands,
   nativeCommandList,
   type RuntimeStatus,
@@ -482,6 +485,8 @@ export class Runtime {
     const sourceId = conversation.activeNativeSessionId;
     const switching = !!sourceId && this.data.session(sourceId).harnessId !== input.harnessId;
     const current = this.live.get(conversationId);
+    if (input.images?.length && current && !switching)
+      this.prompt(current, input.message, input.images);
     if (input.nativeCommand) {
       const command = input.nativeCommand;
       if (
@@ -524,6 +529,7 @@ export class Runtime {
       "user.message",
       {
         text: input.message,
+        ...(input.images?.length ? { images: input.images } : {}),
         requestId: input.requestId,
         ...(input.nativeCommand ? { nativeCommand: input.nativeCommand } : {}),
       },
@@ -565,10 +571,38 @@ export class Runtime {
       const h = this.handoffs.reserve(turn.id, input.message, sourceId);
       this.handoffs.data.patch(h.id, { sourceEventEnd: event.seq - 1 });
       void this.handoffs.generate(h.id);
-    } else void this.track(conversationId, this.run(turn.id, input.message, !!input.nativeCommand));
+    } else
+      void this.track(
+        conversationId,
+        this.run(turn.id, input.message, !!input.nativeCommand, input.images),
+      );
     return this.data.turn(turn.id);
   }
-  async run(turnId: string, message: string, nativeCommand = false) {
+  imagesForTurn(turnId: string): ImageAttachment[] {
+    const turn = this.data.turn(turnId);
+    if (!turn.startEventSeq) return [];
+    const event = this.data.events(turn.conversationId, turn.startEventSeq - 1, 1)[0];
+    const payload = event?.payload as { images?: unknown } | undefined;
+    return imageAttachments.parse(payload?.images ?? []);
+  }
+  prompt(live: Live, message: string, images: ImageAttachment[] = []): ContentBlock[] {
+    if (images.length && live.initialize?.agentCapabilities?.promptCapabilities?.image !== true)
+      throw new AppError(409, "当前 Agent 未声明 ACP 图片输入能力，请选择支持图片的 Harness。");
+    return [
+      ...(message ? [{ type: "text" as const, text: message }] : []),
+      ...images.map((image) => ({
+        type: "image" as const,
+        mimeType: image.mimeType,
+        data: image.data,
+      })),
+    ];
+  }
+  async run(
+    turnId: string,
+    message: string,
+    nativeCommand = false,
+    images: ImageAttachment[] = [],
+  ) {
     const turn = this.data.turn(turnId);
     let live: Live | undefined;
     let submitted = false;
@@ -583,10 +617,11 @@ export class Runtime {
       }
       this.data.updateTurn(turnId, { state: "RUNNING" });
       this.status(turn.conversationId, "RUNNING");
+      const prompt = this.prompt(live, message, images);
       submitted = true;
       const response = await live.worker?.agent.request("session/prompt", {
         sessionId: live.session?.sessionId ?? "",
-        prompt: [{ type: "text", text: message }],
+        prompt,
       });
       if (!response) throw new Error("Worker unavailable");
       if (this.data.turn(turnId).endedAt !== null) return;
@@ -606,8 +641,18 @@ export class Runtime {
         response.stopReason === "cancelled" ? "CANCELLED" : "COMPLETED",
         response.stopReason,
       );
-    } catch {
+    } catch (error) {
       if (this.data.turn(turnId).endedAt !== null) return;
+      if (!submitted && error instanceof AppError)
+        this.event(
+          live ?? null,
+          turn.conversationId,
+          "runtime.input_error",
+          { message: error.message },
+          null,
+          "runtime",
+          turnId,
+        );
       const state = submitted ? "UNCERTAIN" : "ERROR";
       if (live)
         this.finish(live, state, submitted ? "prompt_result_unknown" : "preparation_failed");

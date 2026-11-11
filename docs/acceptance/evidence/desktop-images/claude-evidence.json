@@ -1,0 +1,10 @@
+{
+  "passed": false,
+  "harness": "claude",
+  "workspace": "/tmp/hhu-real-image-4c3W3T",
+  "imageCapability": true,
+  "state": "UNCERTAIN",
+  "text": "",
+  "cleanup": "Isolated Worker received normal SIGTERM after verifying cwd and process-group identity. Daemon stopped. SQLite UNCERTAIN history retained.",
+  "error": "Native ACP response -32000 Authentication required"
+}

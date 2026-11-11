@@ -57,6 +57,13 @@
       "when": 1794295644496,
       "tag": "0007_absurd_sally_floyd",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794363464153,
+      "tag": "0008_solid_william_stryker",
+      "breakpoints": true
     }
   ]
 }

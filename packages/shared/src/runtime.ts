@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { imageAttachments } from "./images";
 
 export const runtimeStates = [
   "IDLE",
@@ -33,14 +34,16 @@ export const turnInput = z
   .object({
     requestId: z.string().uuid(),
     harnessId: z.string().min(1).max(80),
-    message: z.string().min(1).max(100000),
+    message: z.string().max(100000),
+    images: imageAttachments.optional(),
     delivery: z.enum(["steer", "queue"]).optional(),
     nativeCommand: z
       .object({ nativeSessionId: z.string().uuid(), name: z.string() })
       .strict()
       .optional(),
   })
-  .strict();
+  .strict()
+  .refine((input) => input.message.length > 0 || !!input.images?.length, "Message is empty");
 export const decisionInput = z.object({ optionId: z.string().min(1) }).strict();
 export const settingInput = z.union([
   z.object({ kind: z.literal("mode"), modeId: z.string().min(1) }).strict(),
