@@ -503,7 +503,7 @@ export class Store {
       activity: this.activity(),
       pendingInputs: new RuntimeStore(this)
         .inputs()
-        .filter((i) => ["SENDING", "UNCERTAIN"].includes(i.state)),
+        .filter((i) => ["QUEUED", "HELD", "ERROR", "SENDING", "UNCERTAIN"].includes(i.state)),
       cursor:
         this.db.select({ seq: sql<number>`coalesce(max(seq), 0)` }).from(schema.changes).get()
           ?.seq ?? 0,

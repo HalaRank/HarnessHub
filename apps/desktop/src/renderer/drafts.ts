@@ -2,6 +2,7 @@ import {
   type Draft,
   type ImageAttachment,
   imageAttachments,
+  type PendingInput,
   sameImages,
   type Turn,
 } from "@harnesshub/shared";
@@ -172,6 +173,7 @@ export class DesktopDraft {
   async submit(
     harnessId: string,
     nativeCommand?: NonNullable<Draft["pendingSubmission"]>["nativeCommand"],
+    delivery?: "steer" | "queue",
   ) {
     if (
       this.busy ||
@@ -194,38 +196,44 @@ export class DesktopDraft {
         message: this.text,
         ...(this.images.length ? { images: this.images } : {}),
         ...(nativeCommand ? { nativeCommand } : {}),
+        ...(delivery ? { delivery } : {}),
       };
       // Retain the ID in memory even if the IPC response itself is lost.
       const revision = this.value.revision;
       this.value = { ...this.value, pendingSubmission: input };
-      const turn = await call<Turn>(this.api, {
+      const turn = await call<Turn | PendingInput>(this.api, {
         type: "turn.submit",
         conversationId: this.conversationId,
         revision,
         input,
       });
-      this.result = `已发送 · ${turn.state === "UNCERTAIN" ? "执行结果不确定" : "请求已记录"}`;
+      this.result = ["QUEUED", "HELD"].includes(turn.state)
+        ? turn.state === "HELD"
+          ? "已保存到暂停队列"
+          : "已加入队列"
+        : `已发送 · ${turn.state === "UNCERTAIN" ? "执行结果不确定" : "请求已记录"}`;
       await this.reload();
     } catch (error) {
       this.error = `提交未完成：${String(error)}。若有未确认 requestId，请先查询；不会自动重发。`;
-      // Only an explicit rejection can release a local reservation. Unknown outcomes
-      // retain it for lookup, even when Runtime has already consumed the SQLite draft.
-      if (error instanceof DesktopActionError && [400, 409].includes(error.status ?? 0)) {
-        this.value = { ...this.value, pendingSubmission: null };
-        try {
-          const latest = await call<Draft>(this.api, {
-            type: "draft.load",
-            conversationId: this.conversationId,
-          });
-          if (latest.text === this.text && sameImages(latest.images, this.images))
-            this.value = latest;
-        } catch {
-          /* Keep the old CAS revision and local text. */
-        }
-      }
+      await this.releaseRejected(error);
     } finally {
       this.busy = false;
       this.changed();
+    }
+  }
+  private async releaseRejected(error: unknown) {
+    // Only an explicit rejection can release a local reservation. Unknown outcomes
+    // retain it for lookup, even when Runtime has already consumed the SQLite draft.
+    if (!(error instanceof DesktopActionError && [400, 409].includes(error.status ?? 0))) return;
+    this.value = { ...this.value, pendingSubmission: null };
+    try {
+      const latest = await call<Draft>(this.api, {
+        type: "draft.load",
+        conversationId: this.conversationId,
+      });
+      if (latest.text === this.text && sameImages(latest.images, this.images)) this.value = latest;
+    } catch {
+      /* Keep the old CAS revision and local text. */
     }
   }
   async lookup() {
@@ -235,7 +243,7 @@ export class DesktopDraft {
     this.busy = true;
     this.changed();
     try {
-      const turn = await call<Turn>(this.api, {
+      const turn = await call<Turn | PendingInput>(this.api, {
         type: "request.lookup",
         conversationId: this.conversationId,
         requestId: pending.requestId,
@@ -257,6 +265,53 @@ export class DesktopDraft {
       await this.reload();
     } catch (error) {
       this.error = `请求仍未确认：${String(error)}。未重发；请检查历史和工作区。`;
+    } finally {
+      this.busy = false;
+      this.changed();
+    }
+  }
+  async retry() {
+    const pending = this.value.pendingSubmission;
+    if (!pending || this.busy) return;
+    // Read-only reconciliation always precedes an explicit network retry.
+    try {
+      await call<Turn | PendingInput>(this.api, {
+        type: "request.lookup",
+        conversationId: this.conversationId,
+        requestId: pending.requestId,
+      });
+      await this.lookup();
+      return;
+    } catch (error) {
+      if (!(error instanceof DesktopActionError && error.status === 404)) {
+        this.error = `查询失败，原请求仍保留：${String(error)}`;
+        this.changed();
+        return;
+      }
+    }
+    if (this.busy || this.value.pendingSubmission?.requestId !== pending.requestId) return;
+    this.busy = true;
+    this.invalidateLoads();
+    this.changed();
+    try {
+      const latest = await call<Draft>(this.api, {
+        type: "draft.load",
+        conversationId: this.conversationId,
+      });
+      if (latest.text !== pending.message || !sameImages(latest.images, pending.images))
+        throw new Error("服务器草稿已变更，请先检查原请求和草稿");
+      await call<Turn | PendingInput>(this.api, {
+        type: "turn.submit",
+        conversationId: this.conversationId,
+        revision: latest.revision,
+        input: pending,
+      });
+      this.error = "";
+      this.result = "原请求已记录";
+      await this.reload();
+    } catch (error) {
+      this.error = `原请求重试未确认：${String(error)}`;
+      await this.releaseRejected(error);
     } finally {
       this.busy = false;
       this.changed();

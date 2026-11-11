@@ -87,7 +87,15 @@ export type PendingInput = {
   requestId: string;
   conversationId: string;
   input: z.infer<typeof turnInput>;
-  state: "QUEUED" | "HELD" | "SENDING" | "SENT" | "ERROR" | "UNCERTAIN" | "CANCELLED";
+  state:
+    | "QUEUED"
+    | "HELD"
+    | "SENDING"
+    | "SENT"
+    | "ERROR"
+    | "UNCERTAIN"
+    | "ACKNOWLEDGED"
+    | "CANCELLED";
   turnId: string | null;
   reason: string;
 };

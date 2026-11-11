@@ -51,13 +51,17 @@ before(async () => {
     ["plain", ""],
     ["idle", "idle"],
     ["unknown", "disconnect"],
+    ["images", "yes"],
   ])
     await api("/v1/harness-profiles", "POST", {
       id,
       name: id,
       command: "node",
       args: [resolve("tests/fixtures/mock-acp/server.mjs")],
-      envOverrides: steering ? { HHU_MOCK_STEERING: steering } : {},
+      envOverrides: {
+        ...(steering ? { HHU_MOCK_STEERING: steering } : {}),
+        ...(id === "images" ? { HHU_MOCK_IMAGES: "1" } : {}),
+      },
     });
 });
 after(() => {
@@ -171,6 +175,23 @@ test("Agents without steering advertise a visible queue fallback and receive no 
   );
 });
 
+test("image follow-ups retain their attachment and wait for a new Turn", async () => {
+  const context = await setup("images");
+  const image = { name: "queued.png", mimeType: "image/png", data: "iVBORw0KGgo=" };
+  const value = { ...input(context, "steer", ""), images: [image] };
+  await send(context, value);
+  await done(context.turn);
+  const sent = await state(context, value.requestId, "SENT");
+  assert.equal((await done({ id: sent.turnId })).state, "COMPLETED");
+  const events = await history(context);
+  assert.equal(events.filter((e) => e.raw?.method === "_session/steering").length, 0);
+  const prompt = events.filter((e) => e.raw?.method === "session/prompt").at(-1);
+  assert.deepEqual(
+    prompt.raw.params.prompt.filter((block) => block.type === "image"),
+    [{ type: "image", mimeType: image.mimeType, data: image.data }],
+  );
+});
+
 test("Esc cancellation holds queued work until explicit resume and retains cancel tail events", async () => {
   const context = await setup("steer", "wait");
   const value = input(context, "queue", "after cancellation");
@@ -248,6 +269,23 @@ test("Lost steering acknowledgement becomes UNCERTAIN, survives restart, and is 
   await state(context, value.requestId, "UNCERTAIN");
   const events = await history(context);
   assert.equal(events.filter((event) => event.raw?.method === "_session/steering").length, 1);
+  const old = (await api(`/v1/conversations/${context.c.id}/sessions`))[0];
+  await api(`/v1/conversations/${context.c.id}/session/recover`, "POST", {
+    nativeSessionId: old.id,
+    confirmed: true,
+    acknowledgeUncertain: true,
+    ...(old.exitConfirmed ? {} : { externalWorkerStopped: true }),
+  });
+  await state(context, value.requestId, "ACKNOWLEDGED");
+  await send(context, value);
+  assert.equal(
+    (await history(context)).filter((event) => event.raw?.method === "_session/steering").length,
+    1,
+  );
+  assert.equal((await api(`/v1/conversations/${context.c.id}`)).runtimeStatus, "IDLE");
+  cli("daemon", "stop");
+  cli("daemon", "start");
+  await state(context, value.requestId, "ACKNOWLEDGED");
 });
 
 test("Daemon crash holds unsubmitted queue entries and reconnect GET never dispatches them", async () => {
@@ -264,6 +302,69 @@ test("Daemon crash holds unsubmitted queue entries and reconnect GET never dispa
     (await history(context)).filter((event) => event.raw?.method === "session/prompt").length,
     1,
   );
+  const old = (await api(`/v1/conversations/${context.c.id}/sessions`))[0];
+  const recovery = { nativeSessionId: old.id, confirmed: true, acknowledgeUncertain: true };
+  assert.equal(
+    (await response(`/v1/conversations/${context.c.id}/session/recover`, "POST", recovery)).status,
+    409,
+  );
+  const recovered = await api(`/v1/conversations/${context.c.id}/session/recover`, "POST", {
+    ...recovery,
+    externalWorkerStopped: true,
+  });
+  assert.notEqual(recovered.id, old.id);
+  assert.equal((await api(`/v1/turns/${context.turn.id}`)).state, "UNCERTAIN");
+  assert.equal((await api(`/v1/conversations/${context.c.id}`)).runtimeStatus, "IDLE");
+  await state(context, value.requestId, "HELD");
+  assert.equal(
+    (await history(context)).filter((event) => event.raw?.method === "session/prompt").length,
+    1,
+  );
+  const later = input(context, "queue", "wait behind paused message");
+  assert.equal((await send(context, later)).state, "HELD");
+  assert.equal(
+    (await api("/v1/snapshot")).pendingInputs.find((i) => i.requestId === later.requestId).state,
+    "HELD",
+  );
+  await api(`/v1/conversations/${context.c.id}/inputs/resume`, "POST");
+  await state(context, value.requestId, "SENT");
+  const last = await state(context, later.requestId, "SENT");
+  await done({ id: last.turnId });
+  assert.deepEqual(
+    (await history(context))
+      .filter((event) => event.kind === "user.message")
+      .map((event) => event.payload.text),
+    ["wait", "must remain held", "wait behind paused message"],
+  );
+});
+
+test("confirmed Worker exit allows explicit continuation while keeping old uncertain results and request deduplication", async () => {
+  const context = await setup("plain", "crash");
+  await done(context.turn);
+  const old = await until(async () => {
+    const session = (await api(`/v1/conversations/${context.c.id}/sessions`))[0];
+    return session?.exitConfirmed && session;
+  });
+  const recovery = { nativeSessionId: old.id, confirmed: true, acknowledgeUncertain: true };
+  const replies = await Promise.all(
+    [1, 2].map(() =>
+      response(`/v1/conversations/${context.c.id}/session/recover`, "POST", recovery),
+    ),
+  );
+  assert.deepEqual(replies.map((reply) => reply.status).sort(), [200, 409]);
+  assert.equal((await api(`/v1/turns/${context.turn.id}`)).state, "UNCERTAIN");
+  assert.equal((await api(`/v1/conversations/${context.c.id}/sessions`)).length, 2);
+  const next = await api(`/v1/conversations/${context.c.id}/turns`, "POST", {
+    harnessId: context.harnessId,
+    requestId: randomUUID(),
+    message: "continue explicitly",
+  });
+  await done(next);
+  const prompts = (await history(context)).filter(
+    (event) => event.raw?.method === "session/prompt",
+  );
+  assert.equal(prompts.length, 2);
+  assert.equal((await api(`/v1/requests/${context.turn.requestId}`)).state, "UNCERTAIN");
 });
 
 test("Harness switching holds the queue and duplicate explicit resumes cannot dispatch twice", async () => {

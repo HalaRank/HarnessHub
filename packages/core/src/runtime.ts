@@ -57,6 +57,7 @@ export class Runtime {
   readonly pending = new Map<string, Pending>();
   closing = false;
   readonly deleting = new Set<string>();
+  private readonly recovering = new Set<string>();
   private readonly operations = new Map<Promise<unknown>, string>();
   private track<T>(id: string, operation: Promise<T>): Promise<T> {
     this.operations.set(operation, id);
@@ -66,6 +67,7 @@ export class Runtime {
   }
   assertAvailable(id: string) {
     if (this.deleting.has(id)) throw new AppError(409, "Conversation deletion is in progress");
+    if (this.recovering.has(id)) throw new AppError(409, "Conversation recovery is in progress");
     this.store.assertWorkspaceAvailable(this.store.getConversation(id).workspacePath);
   }
   private assertDeletable(id: string) {
@@ -735,7 +737,23 @@ export class Runtime {
     // Retain the ended Live until an explicit recovery, Handoff or close operation.
     // In particular, exit does not resolve an UNCERTAIN Turn or input delivery.
   }
-  async recoverSession(conversationId: string, nativeSessionId: string) {
+  async recoverSession(
+    conversationId: string,
+    nativeSessionId: string,
+    options: {
+      acknowledgeUncertain?: true | undefined;
+      externalWorkerStopped?: true | undefined;
+    } = {},
+  ) {
+    if (options.acknowledgeUncertain)
+      return this.track(
+        conversationId,
+        this.continueSession(
+          conversationId,
+          nativeSessionId,
+          options.externalWorkerStopped === true,
+        ),
+      );
     this.assertAvailable(conversationId);
     const conversation = this.store.getConversation(conversationId);
     const live = this.live.get(conversationId);
@@ -771,6 +789,68 @@ export class Runtime {
     });
     this.status(conversationId, "IDLE");
     return this.data.session(next.id);
+  }
+  private async continueSession(
+    conversationId: string,
+    nativeSessionId: string,
+    externalWorkerStopped: boolean,
+  ) {
+    this.assertAvailable(conversationId);
+    const conversation = this.store.getConversation(conversationId);
+    const old = this.data.session(nativeSessionId);
+    const live = this.live.get(conversationId);
+    if (
+      this.closing ||
+      conversation.activeNativeSessionId !== old.id ||
+      old.conversationId !== conversationId ||
+      !["UNCERTAIN", "INTERRUPTED"].includes(conversation.runtimeStatus) ||
+      this.data.active(conversationId).length ||
+      this.data.pending(conversationId).length ||
+      live?.configuring ||
+      (live && live.id !== old.id) ||
+      this.inputs.isProcessing(conversationId) ||
+      this.inputs.list(conversationId).some((i) => i.state === "SENDING") ||
+      this.handoffs.data.open(conversationId) ||
+      (conversation.selectedHarnessId && conversation.selectedHarnessId !== old.harnessId)
+    )
+      throw new AppError(
+        409,
+        "Wait for outstanding operations and resolve the Harness switch before continuing",
+      );
+    // A previous Daemon's PID is insufficient evidence to terminate its processes.
+    // The user must check those tasks externally when no owned handle remains.
+    if (!live && !this.data.workerExitConfirmed(old.id) && !externalWorkerStopped)
+      throw new AppError(409, "Confirm external Worker tasks have stopped before continuing");
+    this.recovering.add(conversationId);
+    try {
+      if (live) await this.closeSession(conversationId, true);
+      if (this.closing) throw new AppError(503, "Runtime is stopping");
+      this.store.db.transaction(() => {
+        this.inputs.hold(conversationId, "Context restarted; explicitly resume saved messages");
+        this.inputs.acknowledge(conversationId);
+        this.event(null, conversationId, "runtime.uncertainty_acknowledged", {
+          previousNativeSessionId: old.id,
+          externalWorkerStopped,
+          workerExitConfirmed: this.data.workerExitConfirmed(old.id),
+          message:
+            "User checked the workspace and acknowledged the previous unknown outcome. Original requests remain recorded and will not be replayed.",
+        });
+        this.status(conversationId, "INTERRUPTED");
+      });
+      // createLive synchronously reserves the new Live before its first await.
+      this.recovering.delete(conversationId);
+      const next = await this.createLive(conversationId, old.harnessId, true);
+      this.event(next, conversationId, "runtime.context_restarted", {
+        previousNativeSessionId: old.id,
+        nativeSessionRecovered: false,
+        message:
+          "User continued with a new native context. Original history is preserved; saved messages await explicit submission.",
+      });
+      this.status(conversationId, "IDLE");
+      return this.data.session(next.id);
+    } finally {
+      this.recovering.delete(conversationId);
+    }
   }
   permission(
     live: Live,

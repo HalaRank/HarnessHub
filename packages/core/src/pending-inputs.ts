@@ -38,6 +38,15 @@ export class PendingInputs {
   uncertain(id: string) {
     return this.list(id).some((input) => input.state === "UNCERTAIN");
   }
+  acknowledge(id: string) {
+    for (const input of this.list(id))
+      if (input.state === "UNCERTAIN")
+        this.update(
+          input,
+          "ACKNOWLEDGED",
+          "User acknowledged unknown outcome; original input will not be replayed",
+        );
+  }
   private update(
     input: PendingInput,
     state: PendingInput["state"],
@@ -65,7 +74,6 @@ export class PendingInputs {
     return next;
   }
   accept(id: string, input: z.infer<typeof turnInput>) {
-    if (input.images?.length) throw new AppError(400, "图片请在空闲会话中提交。");
     if (!input.delivery) throw new AppError(400, "Follow-up input requires a delivery mode");
     const runtime = this.runtime;
     const previous = runtime.data.inputs().find((item) => item.requestId === input.requestId);
@@ -107,7 +115,11 @@ export class PendingInputs {
       requestId: input.requestId,
       conversationId: id,
       input,
-      state: "QUEUED",
+      state:
+        conversation.runtimeStatus === "INTERRUPTED" ||
+        this.list(id).some((item) => item.state === "HELD")
+          ? "HELD"
+          : "QUEUED",
       turnId: live?.turnId ?? null,
       reason:
         input.delivery === "steer" && !supportsSteering(live)
@@ -115,7 +127,11 @@ export class PendingInputs {
           : "Waiting for delivery",
     };
     runtime.store.db.transaction(() => {
-      this.update(record, "QUEUED", record.reason);
+      this.update(
+        record,
+        record.state,
+        record.state === "HELD" ? "Queue paused; explicitly resume held messages" : record.reason,
+      );
       runtime.store.consumeDraft(id, input.requestId);
     });
     void this.drain(id);
@@ -130,9 +146,12 @@ export class PendingInputs {
     if (
       this.runtime.closing ||
       this.uncertain(id) ||
-      this.runtime.store.getConversation(id).runtimeStatus === "UNCERTAIN"
+      ["UNCERTAIN", "INTERRUPTED"].includes(this.runtime.store.getConversation(id).runtimeStatus)
     )
-      throw new AppError(409, "Cannot resume while stopping or delivery is UNCERTAIN");
+      throw new AppError(
+        409,
+        "Resolve interrupted context or unknown delivery before resuming the queue",
+      );
     for (const input of this.list(id))
       if (input.state === "HELD") this.update(input, "QUEUED", "Explicitly resumed by user");
     void this.drain(id);
@@ -156,8 +175,14 @@ export class PendingInputs {
     this.processing.add(id);
     try {
       for (;;) {
-        const input = this.list(id).find((item) => item.state === "QUEUED");
-        if (!input || this.runtime.closing || this.runtime.deleting.has(id) || this.uncertain(id))
+        const input = this.list(id).find((item) => ["QUEUED", "HELD"].includes(item.state));
+        if (
+          !input ||
+          input.state === "HELD" ||
+          this.runtime.closing ||
+          this.runtime.deleting.has(id) ||
+          this.uncertain(id)
+        )
           return;
         const runtime = this.runtime;
         const live = runtime.live.get(id);
@@ -173,11 +198,12 @@ export class PendingInputs {
         if (
           runtime.handoffs.data.open(id) ||
           live?.configuring ||
-          ["CANCELLING", "UNCERTAIN"].includes(conversation.runtimeStatus)
+          ["CANCELLING", "UNCERTAIN", "INTERRUPTED"].includes(conversation.runtimeStatus)
         )
           return;
         const steer =
           input.input.delivery === "steer" &&
+          !input.input.images?.length &&
           !input.input.nativeCommand &&
           supportsSteering(live) &&
           live?.session &&

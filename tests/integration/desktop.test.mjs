@@ -1223,3 +1223,81 @@ test("Agent without image capability receives no image Prompt", async () => {
   assert.ok(!events.some((e) => e.kind === "session/prompt"));
   await client.request(base, "DELETE", { confirmed: true });
 });
+
+test("Desktop sends while working and explicitly resumes its visible queue after cancellation", async () => {
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {});
+  const base = `/v1/conversations/${c.id}`;
+  const connection = new DesktopConnection({ connect: bridge }, 100);
+  await connection.connect("Ubuntu-test");
+  try {
+    await waitFor(
+      () =>
+        connection.getState().status === "connected" &&
+        connection.getState().snapshot?.conversations.some((item) => item.id === c.id),
+    );
+    await connection.select(c.id);
+    const submit = async (message, delivery) => {
+      const draft = await connection.action({ type: "draft.load", conversationId: c.id });
+      const saved = await connection.action({
+        type: "draft.save",
+        conversationId: c.id,
+        draft: { revision: draft.revision, text: message, pendingSubmission: null },
+      });
+      return connection.action({
+        type: "turn.submit",
+        conversationId: c.id,
+        revision: saved.revision,
+        input: {
+          requestId: randomUUID(),
+          harnessId: "desktop-mock",
+          message,
+          ...(delivery ? { delivery } : {}),
+        },
+      });
+    };
+    const turn = await submit("wait");
+    await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).state === "RUNNING");
+    const first = await submit("follow-up", "steer");
+    const removed = await submit("remove this", "queue");
+    assert.equal(first.state, "QUEUED");
+    assert.match(first.reason, /steering unavailable/);
+    await waitFor(() =>
+      connection.getState().snapshot.pendingInputs.some((i) => i.requestId === first.requestId),
+    );
+    await connection.action({
+      type: "inputs.remove",
+      conversationId: c.id,
+      requestId: removed.requestId,
+    });
+    await connection.action({ type: "turn.cancel", conversationId: c.id, turnId: turn.id });
+    await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
+    assert.equal(
+      (
+        await connection.action({
+          type: "request.lookup",
+          conversationId: c.id,
+          requestId: first.requestId,
+        })
+      ).state,
+      "HELD",
+    );
+    await connection.action({ type: "inputs.resume", conversationId: c.id });
+    const sent = await waitFor(async () => {
+      const input = (await client.request(`${base}/inputs`)).find(
+        (item) => item.requestId === first.requestId,
+      );
+      return input.state === "SENT" && input;
+    });
+    await waitFor(async () => (await client.request(`/v1/turns/${sent.turnId}`)).endedAt);
+    const events = (await client.request(`${base}/events?limit=1000`)).events;
+    assert.equal(events.filter((e) => e.raw?.method === "session/prompt").length, 2);
+    assert.equal(
+      events.filter((e) => e.kind === "user.message" && e.payload.text === "follow-up").length,
+      1,
+    );
+    assert.equal((await connection.action({ type: "draft.load", conversationId: c.id })).text, "");
+  } finally {
+    connection.dispose();
+    await client.request(base, "DELETE", { confirmed: true });
+  }
+});

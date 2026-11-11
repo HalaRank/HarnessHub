@@ -17,9 +17,11 @@ export function inputAction(
   event: { key: string; shiftKey: boolean; isComposing?: boolean; keyCode?: number },
   composing: boolean,
   menu: boolean,
-): "send" | "complete" | "none" {
+  running = false,
+): "send" | "queue" | "complete" | "none" {
   if (composing || event.isComposing || event.keyCode === 229) return "none";
   if (menu && !event.shiftKey && (event.key === "Enter" || event.key === "Tab")) return "complete";
+  if (running && event.key === "Tab" && !event.shiftKey) return "queue";
   return event.key === "Enter" && !event.shiftKey ? "send" : "none";
 }
 export function slashIntent(text: string, commands: NativeCommand[] | undefined) {
@@ -38,8 +40,13 @@ export function Composer({
   draft: DesktopDraft;
 }) {
   const [, render] = useState(0);
-  const [plain, setPlain] = useState<{ text: string; harness: string } | null>(null);
+  const [plain, setPlain] = useState<{
+    text: string;
+    harness: string;
+    delivery?: "steer" | "queue" | undefined;
+  } | null>(null);
   const [recover, setRecover] = useState(false);
+  const [externalStopped, setExternalStopped] = useState(false);
   const actionLock = useRef(false);
   const prepareAttempt = useRef("");
   const [error, setError] = useState("");
@@ -89,21 +96,25 @@ export function Composer({
         ?.scrollIntoView({ block: "nearest" });
   }, [menu, selected]);
   const busy = acting || draft.busy || activeStates.has(conversation.runtimeStatus);
+  const running = ["PREPARING", "RUNNING", "WAITING_APPROVAL"].includes(conversation.runtimeStatus);
   const inputDelivery =
     state.snapshot?.pendingInputs?.filter((i) => i.conversationId === conversation.id) ?? [];
   const uncertainInput = inputDelivery.some((i) => i.state === "UNCERTAIN");
   const uncertain = conversation.runtimeStatus === "UNCERTAIN" || uncertainInput;
+  const sending = inputDelivery.some((i) => i.state === "SENDING");
+  const steering = object(object(object(source?.capabilities).initialize)._meta).steering;
+  const canSteer = object(steering).supported === true && draft.images.length === 0;
   const connected = state.status === "connected";
   const handoff = context?.handoffs.find((h) => !["COMMITTED", "CANCELLED"].includes(h.status));
   const disabled =
     !connected ||
     !draft.loaded ||
-    busy ||
+    acting ||
+    draft.busy ||
+    conversation.runtimeStatus === "CANCELLING" ||
     uncertain ||
     !!draft.value.pendingSubmission ||
-    !!context?.approvals.length ||
     !!handoff ||
-    inputDelivery.length > 0 ||
     (!switching && source?.status === "INTERRUPTED");
   const imageInput = useImageInput(
     draft,
@@ -155,7 +166,7 @@ export function Composer({
     setSelected(0);
     textarea.current?.focus();
   };
-  const send = () => {
+  const send = (delivery?: "steer" | "queue") => {
     if (
       disabled ||
       imageInput.reading ||
@@ -164,13 +175,26 @@ export function Composer({
       !harness
     )
       return;
+    delivery ??= running
+      ? "steer"
+      : inputDelivery.some((i) => ["QUEUED", "HELD", "SENDING"].includes(i.state))
+        ? "queue"
+        : undefined;
     const { name, confirmText } = slashIntent(draft.text, commands);
     if (confirmText) {
       setMenuDismissed(true);
-      setPlain({ text: draft.text, harness });
+      setPlain({
+        text: draft.text,
+        harness,
+        delivery,
+      });
       return;
     }
-    void draft.submit(harness, name && session ? { nativeSessionId: session.id, name } : undefined);
+    void draft.submit(
+      harness,
+      name && session ? { nativeSessionId: session.id, name } : undefined,
+      delivery,
+    );
   };
   const native = object(object(session?.capabilities).session);
   const config = Array.isArray(native.configOptions) ? native.configOptions.map(object) : [];
@@ -197,7 +221,7 @@ export function Composer({
           confirm={() => {
             if (disabled || draft.text !== plain.text || harness !== plain.harness) return;
             setPlain(null);
-            void draft.submit(plain.harness);
+            void draft.submit(plain.harness, undefined, plain.delivery);
           }}
         >
           <p>
@@ -207,33 +231,26 @@ export function Composer({
           <pre>{plain.text}</pre>
         </Confirm>
       )}
-      {!switching && source?.status === "INTERRUPTED" && (
+      {!switching && source && (source.status === "INTERRUPTED" || uncertain) && (
         <div className="banner" role="status">
           旧原生上下文已断开；原始聊天和工具历史仍保留。
-          {source.endedAt !== null && source.exitConfirmed ? (
-            <button
-              type="button"
-              disabled={busy || uncertain || !connected || !!handoff || !!context?.approvals.length}
-              onClick={() => setRecover(true)}
-            >
-              使用新原生上下文继续
-            </button>
-          ) : (
-            <p>Worker 退出尚未确认，暂不能继续。</p>
-          )}
+          {!source.exitConfirmed && <p>Worker 退出尚未确认，请先检查并结束旧任务。</p>}
+          <button
+            type="button"
+            disabled={busy || !connected || !!handoff || !!context?.approvals.length || sending}
+            onClick={() => {
+              setExternalStopped(false);
+              setRecover(true);
+            }}
+          >
+            使用新原生上下文继续
+          </button>
         </div>
       )}
       {recover && source && (
         <Confirm
           title="使用新原生上下文继续"
-          disabled={
-            busy ||
-            uncertain ||
-            !connected ||
-            switching ||
-            !source.exitConfirmed ||
-            source.endedAt === null
-          }
+          disabled={busy || !connected || switching || (!source.exitConfirmed && !externalStopped)}
           cancel={() => setRecover(false)}
           confirm={() => {
             setRecover(false);
@@ -242,10 +259,24 @@ export function Composer({
               conversationId: conversation.id,
               nativeSessionId: source.id,
               confirmed: true,
+              acknowledgeUncertain: true,
+              ...(externalStopped ? { externalWorkerStopped: true as const } : {}),
             });
           }}
         >
-          <p>将创建新的 NativeSession。旧原生上下文不会恢复，历史记录保留；不会自动发送草稿。</p>
+          <p>
+            请检查聊天历史和工作区。确认后创建新原生上下文，保留历史和草稿。旧任务执行结果继续记录为不确定，待发队列保持暂停。
+          </p>
+          {!source.exitConfirmed && (
+            <label className="recovery-check">
+              <input
+                type="checkbox"
+                checked={externalStopped}
+                onChange={(e) => setExternalStopped(e.target.checked)}
+              />
+              我已检查并结束旧 Worker 及其后台任务
+            </label>
+          )}
         </Confirm>
       )}
       {switching && (
@@ -318,14 +349,56 @@ export function Composer({
           </section>
         );
       })}
-      {inputDelivery.length > 0 && (
-        <div className="banner error" role="status">
+      {(uncertainInput || sending) && (
+        <div className={uncertainInput ? "banner error" : "banner"} role="status">
           {uncertainInput ? "输入投递结果不确定（UNCERTAIN）" : "输入投递等待确认（SENDING）"}。原
           Turn 的结果独立保留；请检查历史，不会自动重发。
-          {inputDelivery.map((i) => (
-            <div key={i.requestId}>requestId · {i.requestId}</div>
-          ))}
+          {inputDelivery
+            .filter((i) => ["SENDING", "UNCERTAIN"].includes(i.state))
+            .map((i) => (
+              <div key={i.requestId}>requestId · {i.requestId}</div>
+            ))}
         </div>
+      )}
+      {inputDelivery.some((i) => ["QUEUED", "HELD", "ERROR"].includes(i.state)) && (
+        <section className="input-queue" aria-label="待发消息">
+          {inputDelivery.some((i) => i.state === "HELD") && (
+            <button
+              type="button"
+              disabled={acting || !connected || uncertain || sending}
+              onClick={() => void act({ type: "inputs.resume", conversationId: conversation.id })}
+            >
+              恢复暂停队列
+            </button>
+          )}
+          {inputDelivery
+            .filter((i) => ["QUEUED", "HELD", "ERROR"].includes(i.state))
+            .map((input) => (
+              <div className="queued-input" key={input.requestId}>
+                <span title={input.reason}>
+                  {input.state === "HELD"
+                    ? "已暂停"
+                    : input.state === "ERROR"
+                      ? "发送失败"
+                      : "排队中"}
+                </span>
+                <p>{input.input.message || `${input.input.images?.length ?? 0} 张图片`}</p>
+                <button
+                  type="button"
+                  disabled={acting || !connected}
+                  onClick={() =>
+                    void act({
+                      type: "inputs.remove",
+                      conversationId: conversation.id,
+                      requestId: input.requestId,
+                    })
+                  }
+                >
+                  移除
+                </button>
+              </div>
+            ))}
+        </section>
       )}
       {uncertain && !uncertainInput && (
         <div className="banner error">
@@ -370,6 +443,13 @@ export function Composer({
             查询请求状态
           </button>
           <Copy text={draft.text} api={api} />
+          <button
+            type="button"
+            disabled={!connected || draft.busy || uncertain}
+            onClick={() => void draft.retry()}
+          >
+            检查后重试原请求
+          </button>
         </div>
       )}
       {draft.result && (
@@ -421,7 +501,11 @@ export function Composer({
         <textarea
           ref={textarea}
           aria-label="消息输入"
-          placeholder="发送消息 · Enter 发送，Shift+Enter 换行"
+          placeholder={
+            running
+              ? `Enter ${canSteer ? "追加指令" : "排队"} · Tab 排队 · Shift+Enter 换行`
+              : "发送消息 · Enter 发送，Shift+Enter 换行"
+          }
           rows={2}
           maxLength={100000}
           disabled={!draft.loaded}
@@ -466,6 +550,7 @@ export function Composer({
               },
               Date.now() - compositionEnd.current < 80,
               menu && matches.length > 0,
+              running && draft.hasContent,
             );
             if (action !== "none") event.preventDefault();
             if (action === "complete") {
@@ -473,6 +558,7 @@ export function Composer({
               if (command) choose(command);
             }
             if (action === "send") send();
+            if (action === "queue") send("queue");
           }}
         />
         <div className="composer-footer">
@@ -608,8 +694,8 @@ export function Composer({
           <button
             type="button"
             className="send"
-            aria-label="发送"
-            title="发送 · Enter"
+            aria-label={running ? (canSteer ? "追加指令" : "加入队列") : "发送"}
+            title={`${running ? (canSteer ? "追加指令" : "加入队列") : "发送"} · Enter`}
             disabled={
               disabled ||
               imageInput.reading ||
@@ -617,10 +703,25 @@ export function Composer({
               !draft.hasContent ||
               !harness
             }
-            onClick={send}
+            onClick={() => send()}
           >
-            {draft.busy ? "提交中…" : "↑ 发送"}
+            {draft.busy ? "提交中…" : running ? (canSteer ? "追加指令" : "加入队列") : "↑ 发送"}
           </button>
+          {running && canSteer && (
+            <button
+              type="button"
+              disabled={
+                disabled ||
+                !draft.hasContent ||
+                imageInput.reading ||
+                (draft.images.length > 0 && imageUnsupported)
+              }
+              title="排队 · Tab"
+              onClick={() => send("queue")}
+            >
+              排队
+            </button>
+          )}
         </div>
       </div>
       <p className="composer-note">{conversation.workspacePath} · 关闭窗口不会停止后台任务</p>

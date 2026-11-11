@@ -132,10 +132,15 @@ export function runtimeRoutes(app: Hono, runtime: Runtime) {
   });
   app.post("/v1/conversations/:id/session/recover", async (c) => {
     const input = z
-      .object({ nativeSessionId: z.string().uuid(), confirmed: z.literal(true) })
+      .object({
+        nativeSessionId: z.string().uuid(),
+        confirmed: z.literal(true),
+        acknowledgeUncertain: z.literal(true).optional(),
+        externalWorkerStopped: z.literal(true).optional(),
+      })
       .strict()
       .parse(await c.req.json());
-    return c.json(await runtime.recoverSession(c.req.param("id"), input.nativeSessionId));
+    return c.json(await runtime.recoverSession(c.req.param("id"), input.nativeSessionId, input));
   });
   app.post("/v1/conversations/:id/session/stop", async (c) => {
     const input = closeInput.parse(await c.req.json());

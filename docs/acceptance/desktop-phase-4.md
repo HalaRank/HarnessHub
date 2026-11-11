@@ -146,3 +146,7 @@ Windows Node 构建成功，最终文件复制到仓库 `dist/desktop/releases/0
 ## 图片上传与粘贴
 
 2026-11-11 用户新增图片选择和 Ctrl+V 粘贴，覆盖新建页、已有会话、草稿、原生 ACP 投递和历史预览。实现与验证见[图片补充验收](desktop-phase-4-images.md)。
+
+## 2026-11-11 消息发送修正
+
+中断后显式继续、Desktop 运行中追加与排队、未确认请求重试及测试结果见 [消息排队与中断后继续](message-delivery-recovery.md)。

@@ -134,6 +134,8 @@ URL、JSON 字段以代码实现及 Zod Schema 为最终契约；以上是职责
 
 2026-11-09 用户修正会话删除语义。确认删除 Conversation 即授权取消运行和待审批任务、关闭其所属 Worker，并在必要时升级终止不响应的受控进程。Daemon 预留该会话，暂停队列，等待初始化、配置、交接、输入投递及事件写入收尾，再事务删除应用历史和草稿。FAILED Handoff 与持久化 UNCERTAIN 可在此显式路径删除。进程退出或异步写入仍未收尾时保留数据供重试。Daemon 重启后缺少受控句柄的历史进程无法据 PID 推测并终止，删除历史也不构成其执行结果证明。Project 级联删除继续沿用全部子会话的预检。
 
+2026-11-11 用户要求修正中断后发送与运行中排队。Conversation 可在用户检查历史和工作区、明确确认旧任务已停止后创建新原生上下文，保留旧 Turn 的 UNCERTAIN 与原始投递记录。用户核查未知投递后追加 ACKNOWLEDGED 事件，旧 requestId 继续去重。跨 Daemon 缺少受控 Worker 句柄时，外部停止确认与真实退出证据分别记录。继续操作保留草稿，暂停队列等待明确恢复。Desktop 与 TUI 均支持运行中 Enter 追加指令及 Tab 排队，依据实际 ACP 能力降级。详见 [消息发送与恢复验收](acceptance/message-delivery-recovery.md)。
+
 ## 7. 通用 ACP Runtime / Profile
 
 Profile 只保存 `id/name/command/args/envOverrides` 和少量确有必要的原生事件/能力适配声明。内置四个，另外允许自定义 ACP Agent 注册（**不是**任意第三方执行代码插件平台）。

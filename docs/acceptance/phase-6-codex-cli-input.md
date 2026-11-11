@@ -61,3 +61,7 @@ Enter 追加、Tab 排队以及历史搜索和回复复制采用 Codex CLI 的�
 - `python3 tests/e2e/slash-terminal.py /home/clj/.local/bin/bun /home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js` 通过，日志和证据见真实验证段。
 - 完整入口通过后，补齐 Ctrl+T 从 Changes 返回聊天的行为及专项检查，后端源码无后续修改。最终再跑 typecheck、lint、build 与全部 86 项 TUI 回归，86/86、1117 个断言通过，日志 `/tmp/hhu-codex-release-ui.log`。最终构建的 Linux PTY 复核也通过，证据 `/tmp/hhu-slash-pty-vrc2539e`，日志 `/tmp/hhu-codex-release-pty.log`。
 - 开发中的旧键位回归先失败，已将操作改为新的可见入口，并保留原行为断言。早期完整入口的集成段曾为 93/94，PTY 用导航提示作为输入焦点的就绪条件，合并 Enter 与后续文字导致草稿检查失败。脚本现明确等待 Shift+Enter 编辑提示后输入，定向 Phase 4 为 8/8，随后完整入口为上述 180/180。没有删除或跳过故障用例。
+
+## 2026-11-11 消息发送修正
+
+中断后显式继续、Desktop 运行中追加与排队、未确认请求重试及测试结果见 [消息排队与中断后继续](message-delivery-recovery.md)。

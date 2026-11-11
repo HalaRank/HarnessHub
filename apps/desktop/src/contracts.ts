@@ -87,6 +87,8 @@ export const desktopRequest = z.discriminatedUnion("type", [
     input: turnInput,
   }),
   action({ type: z.literal("request.lookup"), conversationId, requestId: z.string().uuid() }),
+  action({ type: z.literal("inputs.resume"), conversationId }),
+  action({ type: z.literal("inputs.remove"), conversationId, requestId: z.string().uuid() }),
   action({ type: z.literal("turn.cancel"), conversationId, turnId: z.string().uuid() }),
   action({
     type: z.literal("approval.decide"),
@@ -109,6 +111,8 @@ export const desktopRequest = z.discriminatedUnion("type", [
     conversationId,
     nativeSessionId: z.string().uuid(),
     confirmed: z.literal(true),
+    acknowledgeUncertain: z.literal(true).optional(),
+    externalWorkerStopped: z.literal(true).optional(),
   }),
   action({ type: z.literal("session.settings"), conversationId, setting: settingInput }),
   action({ type: z.literal("handoff.action"), conversationId, input: handoffAction }),

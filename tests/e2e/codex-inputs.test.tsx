@@ -8,7 +8,7 @@ import { createMockKeys } from "@opentui/core/testing";
 import { testRender } from "@opentui/solid";
 import { flushDrafts } from "../../apps/tui/src/draft-session";
 import { App } from "../../apps/tui/src/index";
-import { connect } from "../../packages/shared/src/client";
+import { Client, connect } from "../../packages/shared/src/client";
 import type {
   Conversation,
   ConversationEvent,
@@ -204,6 +204,84 @@ test("folding never bypasses confirmation for unadvertised slash text", async ()
     screen.mockInput.pressEscape();
     await frame(screen, "[粘贴 #1 · 6 行]");
   } finally {
+    await screen.dispose();
+    await flushDrafts();
+  }
+});
+
+test("interrupted execution offers explicit continuation and preserves the draft until a new Enter", async () => {
+  const { screen, c } = await setup();
+  try {
+    await screen.mockInput.typeText("crash");
+    screen.mockInput.pressEnter();
+    await until(
+      async () =>
+        (await api<Conversation>(`/v1/conversations/${c.id}`)).runtimeStatus === "UNCERTAIN",
+    );
+    await until(() => editor(screen).focused && editor(screen).plainText === "");
+    await screen.mockInput.typeText("continue after checking workspace");
+    screen.mockInput.pressEnter();
+    await frame(screen, "继续中断的会话");
+    screen.mockInput.pressArrow("down");
+    screen.mockInput.pressEnter();
+    await until(
+      async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).runtimeStatus === "IDLE",
+    );
+    await until(() => editor(screen).focused);
+    expect(editor(screen).plainText).toBe("continue after checking workspace");
+    expect(
+      (await events(c)).filter(
+        (event) => (event.raw as { method?: string } | null)?.method === "session/prompt",
+      ),
+    ).toHaveLength(1);
+    screen.mockInput.pressEnter();
+    await until(
+      async () =>
+        (await events(c)).filter((event) => event.kind === "runtime.turn_finished").length === 2,
+    );
+    expect(
+      (await events(c)).filter(
+        (event) => (event.raw as { method?: string } | null)?.method === "session/prompt",
+      ),
+    ).toHaveLength(2);
+  } finally {
+    await screen.dispose();
+    await flushDrafts();
+  }
+});
+
+test("retrying a lost normal-turn acknowledgement while running preserves its original delivery mode", async () => {
+  const { screen, c } = await setup();
+  const original = Client.prototype.request;
+  let lost = false;
+  Client.prototype.request = async function <T>(...args: Parameters<typeof original>): Promise<T> {
+    const value = await original.call(this, ...args);
+    if (!lost && args[0] === `/v1/conversations/${c.id}/turns` && args[1] === "POST") {
+      lost = true;
+      throw new Error("test lost acknowledgement");
+    }
+    return value as T;
+  };
+  try {
+    await screen.mockInput.typeText("wait");
+    screen.mockInput.pressEnter();
+    await frame(screen, "test lost acknowledgement");
+    await frame(screen, "RUNNING");
+    await until(() => editor(screen).focused);
+    screen.mockInput.pressEnter();
+    await until(() => editor(screen).focused && editor(screen).plainText === "");
+    expect(
+      (await events(c)).filter(
+        (e) => (e.raw as { method?: string } | null)?.method === "session/prompt",
+      ),
+    ).toHaveLength(1);
+    expect(await inputs(c)).toHaveLength(0);
+    screen.mockInput.pressEscape();
+    await until(
+      async () => (await api<Conversation>(`/v1/conversations/${c.id}`)).runtimeStatus === "IDLE",
+    );
+  } finally {
+    Client.prototype.request = original;
     await screen.dispose();
     await flushDrafts();
   }

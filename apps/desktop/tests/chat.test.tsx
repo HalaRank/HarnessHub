@@ -55,7 +55,12 @@ function editorBackend() {
           revision: draft.revision + 2,
         });
         submissions++;
-        const turn = { conversationId: key, requestId: request.input.requestId, state: "RUNNING" };
+        const turn = {
+          conversationId: key,
+          requestId: request.input.requestId,
+          state: request.input.delivery ? "QUEUED" : "RUNNING",
+          ...(request.input.delivery ? { input: request.input } : {}),
+        };
         if (request.input.message.startsWith("/path"))
           expect(request.input.nativeCommand).toBeUndefined();
         requests.set(request.input.requestId, turn);
@@ -91,8 +96,61 @@ test("Enter sends, Shift+Enter preserves newline, IME/229 and composition confir
   expect(inputAction({ key: "Enter", shiftKey: false }, true, false)).toBe("none");
   for (const key of ["Enter", "Tab"])
     expect(inputAction({ key, shiftKey: false }, false, true)).toBe("complete");
+  expect(inputAction({ key: "Tab", shiftKey: false }, false, false, true)).toBe("queue");
+  expect(inputAction({ key: "Tab", shiftKey: true }, false, false, true)).toBe("none");
+  expect(inputAction({ key: "Tab", shiftKey: false }, true, false, true)).toBe("none");
   for (const key of ["c", "v", "a", "z", "y"])
     expect(inputAction({ key, shiftKey: false }, false, false)).toBe("none");
+});
+
+test("Desktop queues follow-ups with their delivery mode and reconciles lost acknowledgements without repeating delivery", async () => {
+  const backend = editorBackend();
+  const draft = new DesktopDraft(backend.api, id);
+  await draft.load();
+  draft.update("first follow-up");
+  await draft.submit("mock", undefined, "queue");
+  expect(draft.result).toBe("已加入队列");
+  expect(draft.text).toBe("");
+  backend.loseAck();
+  draft.update("second follow-up");
+  await draft.submit("mock", undefined, "queue");
+  const pending = draft.value.pendingSubmission;
+  expect(pending?.delivery).toBe("queue");
+  await draft.retry();
+  expect(backend.count()).toBe(2);
+  expect(draft.value.pendingSubmission).toBeNull();
+  expect(draft.result).toContain("QUEUED");
+});
+
+test("explicit retry of a request missing from the journal retains its original request ID", async () => {
+  const backend = editorBackend();
+  const sent: string[] = [];
+  let disconnected = true;
+  const api: DesktopApi = {
+    ...backend.api,
+    request: async (request) => {
+      if (request.type === "turn.submit") {
+        sent.push(request.input.requestId);
+        if (disconnected) {
+          disconnected = false;
+          throw new Error("disconnected before acceptance");
+        }
+      }
+      return backend.api.request(request);
+    },
+  };
+  const draft = new DesktopDraft(api, id);
+  await draft.load();
+  draft.update("keep exact payload");
+  await draft.submit("mock", undefined, "queue");
+  const requestId = draft.value.pendingSubmission?.requestId;
+  await draft.retry();
+  expect(requestId).toBeDefined();
+  expect(sent).toHaveLength(2);
+  expect(sent[0]).toBe(requestId);
+  expect(sent[1]).toBe(requestId);
+  expect(backend.count()).toBe(1);
+  expect(draft.value.pendingSubmission).toBeNull();
 });
 test("composer keeps one native model and approval selector, with legacy fallbacks and Chinese labels", async () => {
   const backend = editorBackend();
@@ -616,7 +674,7 @@ test("RC-02/03 Desktop shows explicit context recovery and independently blocks 
   expect(render()).toContain("使用新原生上下文继续");
   session.exitConfirmed = false;
   expect(render()).toContain("Worker 退出尚未确认");
-  expect(render()).not.toContain("使用新原生上下文继续");
+  expect(render()).toContain("使用新原生上下文继续");
   // Even a stale IDLE Conversation cannot enable submission over the input journal.
   const uncertain = {
     ...current,

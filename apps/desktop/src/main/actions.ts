@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import type { Approval, Draft, Turn } from "@harnesshub/shared";
 import { type Client, HttpError } from "@harnesshub/shared/client";
 import type { DesktopRequest } from "../contracts";
@@ -31,18 +32,22 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
     case "draft.save":
       return client.request(`${base}/draft`, "PUT", request.draft);
     case "turn.submit": {
-      if (request.input.delivery) throw new Error("Desktop 当前仅支持空闲会话提交。");
       const draft = await client.request<Draft>(`${base}/draft`);
-      if (draft.pendingSubmission)
+      if (draft.pendingSubmission && !isDeepStrictEqual(draft.pendingSubmission, request.input))
         throw new HttpError(409, "有未确认请求，请先查询原 requestId；不会重发。");
-      await client.request(`${base}/draft`, "PUT", {
-        revision: request.revision,
-        text: request.input.message,
-        images: request.input.images ?? [],
-        pendingSubmission: request.input,
-      });
+      if (!draft.pendingSubmission)
+        await client.request(`${base}/draft`, "PUT", {
+          revision: request.revision,
+          text: request.input.message,
+          images: request.input.images ?? [],
+          pendingSubmission: request.input,
+        });
       try {
-        return await client.request(`${base}/turns`, "POST", request.input);
+        return await client.request(
+          `${base}/${request.input.delivery ? "inputs" : "turns"}`,
+          "POST",
+          request.input,
+        );
       } catch (error) {
         // Only explicit validation/conflict responses prove rejection. Transport errors,
         // timeouts and server errors keep the durable reservation for read-only recovery.
@@ -63,6 +68,10 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
       if (value.conversationId !== request.conversationId) throw new Error("请求不属于此会话。");
       return value;
     }
+    case "inputs.resume":
+      return client.request(`${base}/inputs/resume`, "POST");
+    case "inputs.remove":
+      return client.request(`${base}/inputs/${request.requestId}`, "DELETE");
     case "turn.cancel": {
       const turn = await client.request<Turn>(`/v1/turns/${request.turnId}`);
       if (turn.conversationId !== request.conversationId || turn.state === "UNCERTAIN")
@@ -85,6 +94,8 @@ export async function performAction(client: Client, request: DesktopRequest): Pr
       return client.request(`${base}/session/recover`, "POST", {
         nativeSessionId: request.nativeSessionId,
         confirmed: request.confirmed,
+        acknowledgeUncertain: request.acknowledgeUncertain,
+        externalWorkerStopped: request.externalWorkerStopped,
       });
     case "session.settings":
       return client.request(`${base}/settings`, "POST", request.setting);

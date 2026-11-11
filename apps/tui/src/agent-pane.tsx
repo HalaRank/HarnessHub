@@ -76,6 +76,7 @@ export function AgentPane(props: {
   const [approvals, setApprovals] = createSignal<Approval[]>([]),
     [turnId, setTurnId] = createSignal<string | null>(null);
   const [pendingInputs, setPendingInputs] = createSignal<PendingInput[]>([]);
+  const [recoverOpen, setRecoverOpen] = createSignal(false);
   const [queueOpen, setQueueOpen] = createSignal(false);
   const [messageHistory, setMessageHistory] = createSignal<string[]>([]);
   const [historySearch, setHistorySearch] = createSignal<string | null>(null);
@@ -421,10 +422,11 @@ export function AgentPane(props: {
       props.onHelp?.();
       return;
     }
-    if (key.name === "escape" && (queueOpen() || historySearch() !== null)) {
+    if (key.name === "escape" && (queueOpen() || recoverOpen() || historySearch() !== null)) {
       key.preventDefault();
       key.stopPropagation();
       setQueueOpen(false);
+      setRecoverOpen(false);
       setHistorySearch(null);
       props.setForm("message");
       return;
@@ -576,11 +578,30 @@ export function AgentPane(props: {
       if (selectionFailure) throw new Error(selectionFailure);
       if (
         props.conversation.runtimeStatus === "UNCERTAIN" ||
-        pendingInputs().some((i) => ["SENDING", "UNCERTAIN"].includes(i.state))
-      )
-        throw new Error("输入投递或执行结果未确认；请检查历史，不会自动重发。");
+        pendingInputs().some((i) => i.state === "UNCERTAIN")
+      ) {
+        if (
+          props.conversation.runtimeStatus === "UNCERTAIN" &&
+          activeSession() &&
+          !openHandoffRecord()
+        ) {
+          setRecoverOpen(true);
+          props.setForm("details");
+          return;
+        }
+        throw new Error("输入投递尚未确认；请检查历史或 Message Queue。");
+      }
       const message = messageText();
       if (!message.trim()) return;
+      if (
+        activeSession()?.status === "INTERRUPTED" &&
+        activeSession()?.harnessId === harness() &&
+        !openHandoffRecord()
+      ) {
+        setRecoverOpen(true);
+        props.setForm("details");
+        return;
+      }
       const token = message.split(/\s/, 1)[0] ?? "";
       const command = commands()?.find((c) => `/${c.name}` === token);
       if (!raw && message.startsWith("/") && !command) {
@@ -591,12 +612,20 @@ export function AgentPane(props: {
       }
       draft.update(message);
       const session = commandSession();
-      const submission = await draft.prepare(
-        harness(),
+      const pending = draft.value.pendingSubmission;
+      const nativeCommand =
         !raw && command && session
           ? { nativeSessionId: session.id, name: command.name }
-          : undefined,
-        delivery ?? draft.value.pendingSubmission?.delivery ?? (isRunning() ? "steer" : undefined),
+          : undefined;
+      const hasQueuedInputs = pendingInputs().some((i) =>
+        ["QUEUED", "HELD", "SENDING"].includes(i.state),
+      );
+      const nextDelivery =
+        delivery ?? (isRunning() ? "steer" : hasQueuedInputs ? "queue" : undefined);
+      const submission = await draft.prepare(
+        harness(),
+        pending ? pending.nativeCommand : nativeCommand,
+        pending ? pending.delivery : nextDelivery,
       );
       try {
         const result = await request<Turn | PendingInput>(
@@ -768,11 +797,11 @@ export function AgentPane(props: {
       <Show when={["INTERRUPTED", "UNCERTAIN"].includes(props.conversation.runtimeStatus)}>
         <text fg={ui.warning}>
           {props.conversation.runtimeStatus === "UNCERTAIN"
-            ? "Execution result unknown. Inspect history and workspace; no task will be replayed."
+            ? "执行结果不确定。检查历史和工作区后，输入消息并按 Enter 打开继续会话入口。"
             : activeSession()?.status === "INTERRUPTED"
               ? activeSession()?.exitConfirmed
-                ? "旧原生上下文已结束；使用 ACP settings 中的恢复入口显式创建新上下文。"
-                : "Worker 退出尚未确认；旧上下文不可用。"
+                ? "旧原生上下文已结束；输入消息并按 Enter 可打开继续会话入口。"
+                : "旧 Worker 状态待核查；输入消息并按 Enter 可打开继续会话入口。"
               : "Previous native context ended. The next message starts a new native session."}
         </text>
       </Show>
@@ -1026,6 +1055,57 @@ export function AgentPane(props: {
             {"\nCommands → Message Queue to inspect messages"}
           </text>
         </box>
+      </Show>
+      <Show when={recoverOpen() && props.form === "details"}>
+        <Panel title="继续中断的会话" hint="Enter 选择 · Esc 返回草稿" height="55%">
+          <text fg={ui.warning} wrapMode="char">
+            请检查历史和工作区。确认后创建新原生上下文，保留聊天历史和草稿。旧请求的未知结果继续留存，待发队列保持暂停。
+          </text>
+          <Show when={!activeSession()?.exitConfirmed}>
+            <text fg={ui.warning} wrapMode="char">
+              旧 Worker 退出尚未确认。请先结束旧 Worker 及其后台任务，再选择继续。
+            </text>
+          </Show>
+          <select
+            {...listStyle}
+            id="continue-interrupted-session"
+            focused={!busy()}
+            flexGrow={1}
+            options={[
+              { name: "返回并检查历史", description: "保留当前草稿", value: "back" },
+              {
+                name: activeSession()?.exitConfirmed
+                  ? "已检查工作区，创建新上下文继续"
+                  : "已检查并结束旧任务，创建新上下文继续",
+                description: "创建后再次按 Enter 发送草稿",
+                value: "continue",
+              },
+            ]}
+            onSelect={(_index, option) => {
+              if (option?.value !== "continue") {
+                setRecoverOpen(false);
+                props.setForm("message");
+                return;
+              }
+              void run(async () => {
+                const session = activeSession();
+                if (!session) return;
+                draft.update(messageText());
+                await draft.flush();
+                await request(`/v1/conversations/${conversationId}/session/recover`, "POST", {
+                  nativeSessionId: session.id,
+                  confirmed: true,
+                  acknowledgeUncertain: true,
+                  ...(!session.exitConfirmed ? { externalWorkerStopped: true } : {}),
+                });
+                await refreshSessions();
+                await refreshInputs();
+                setRecoverOpen(false);
+                props.setForm("message");
+              });
+            }}
+          />
+        </Panel>
       </Show>
       <Show when={queueOpen() && props.form === "details"}>
         <Panel title="Message queue" hint="Enter choose · Esc return to message" height="65%">
