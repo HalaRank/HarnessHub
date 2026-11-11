@@ -2,7 +2,7 @@
 
 HarnessHub 是 Linux x64 / WSL2 的本地 TUI。全局命令是 **`hhu`**。
 
-当前开发版本 **0.6.3（Desktop Phase 4，协议 1；SQLite migrations 8）**。Windows NSIS/ZIP、安装升级与数据保留指南见 [Desktop 指南](docs/DESKTOP.md)，本阶段验收见 [Desktop Phase 4](docs/acceptance/desktop-phase-4.md)。
+当前开发版本 **0.6.4（Desktop Phase 4，协议 1；SQLite migrations 9）**。Windows NSIS/ZIP、安装升级与数据保留指南见 [Desktop 指南](docs/DESKTOP.md)，本阶段验收见 [Desktop Phase 4](docs/acceptance/desktop-phase-4.md)。
 
 原 Phase 6 审计修复版 0.6.1：修复最终独立审计的 Worktree 文件安全、Worker 后代管理、上下文/设置状态、安装一致性及测试断言。Worktree 清理改为保留式移动，不自动物理删除文件；安装采用完整独立发布目录。原审计与修复验证分别见 [独立审计报告](docs/acceptance/official-final-audit.md) 和 [审计修复记录](docs/acceptance/phase-6-audit-remediation.md)。Windows 双终端人工验收及真实 Harness 未验证项仍须单独完成，**尚未宣布 MVP 全部通过**。
 
@@ -12,7 +12,7 @@ Linux x64 / WSL2 现提供独立发行包构建和安装流程，随包携带 No
 
 Windows 用户可从 [GitHub Releases](https://github.com/HalaRank/HarnessHub/releases) 下载同版本的 `HarnessHub-<版本>-windows-x64-unsigned-setup.exe` 安装，或下载 ZIP 解压运行。所选 WSL2 发行版仍需安装该 Release 的 Linux 后端包，无需源码或系统 Node/Bun；完整步骤见 [Windows 下载与安装](docs/DESKTOP.md#从-github-下载)。匹配版本的 Tag 会在两个平台验证通过后生成含全部安装包的 draft Release，维护者发布后下载才可用。当前 Windows 包未签名。
 
-**v0.6.3 已发布**：[Windows 安装器](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned-setup.exe) · [Windows ZIP](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.3/HarnessHub-0.6.3-windows-x64-unsigned.zip) · [全部资产与 WSL 后端](https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.3)。
+**v0.6.4 下载**：[Windows 安装器](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.4/HarnessHub-0.6.4-windows-x64-unsigned-setup.exe) · [Windows ZIP](https://github.com/HalaRank/HarnessHub/releases/download/v0.6.4/HarnessHub-0.6.4-windows-x64-unsigned.zip) · [全部资产与 WSL 后端](https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.4)。
 
 以下为开发者源码安装：
 

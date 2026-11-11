@@ -79,7 +79,7 @@ try:
     time.sleep(0.3)
     # This shortcut opens a fresh form only if registration closed the first one.
     os.write(second[1], b"/Add Project\r")
-    read_until(second, b"Add existing project")
+    read_until(second, b"Register a local workspace directory")
     os.write(second[1], b"\x1b")
     time.sleep(0.15)
     quit_child(second)
