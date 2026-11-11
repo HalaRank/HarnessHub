@@ -180,23 +180,40 @@ export function NewConversation({
       </div>
       <div className="composer-area">
         <div className="new-conversation-options">
-          <label htmlFor="new-project">
-            <span>项目</span>
+          <div className="new-project-picker">
+            {!!value.projectId && (
+              <button
+                type="button"
+                className="clear-project"
+                aria-label="清除项目选择"
+                title="清除项目选择"
+                disabled={busy || !!prepared.current}
+                onClick={() => {
+                  change({ ...value, projectId: "" });
+                  textarea.current?.focus();
+                }}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            )}
             <Select
               id="new-project"
               aria-label="项目"
+              title="更改项目"
               value={value.projectId}
               disabled={busy || !!prepared.current}
               onChange={(e) => change({ ...value, projectId: e.target.value })}
             >
+              <option value="" disabled hidden>
+                选择项目
+              </option>
               {state.snapshot?.projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
-              <option value="">独立会话</option>
             </Select>
-          </label>
+          </div>
           {project && (
             <>
               <label htmlFor="new-branch">

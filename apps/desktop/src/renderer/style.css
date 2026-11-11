@@ -1420,6 +1420,32 @@ dialog :where(pre) {
   border-color: transparent;
   max-width: 200px;
 }
+.new-project-picker {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 16px;
+  background: var(--raised);
+}
+.new-project-picker select {
+  min-width: 0;
+  border-radius: 16px;
+}
+.new-project-picker .clear-project {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border-radius: 16px;
+  color: var(--muted);
+  font-size: 18px;
+}
+.clear-project:hover:not(:disabled) {
+  color: var(--text);
+}
 .worktree-toggle {
   cursor: pointer;
 }

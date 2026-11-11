@@ -46,6 +46,7 @@ test("new conversation uses the product logo, project sentence and inline worksp
     "HarnessHub",
     "中构建什么",
     'aria-label="项目"',
+    'aria-label="清除项目选择"',
     'aria-label="分支"',
     'aria-label="创建工作树"',
     'aria-label="消息输入"',
@@ -54,6 +55,28 @@ test("new conversation uses the product logo, project sentence and inline worksp
     expect(html).toContain(text);
   expect(html).not.toContain("会话名称");
   expect(html).not.toContain("<dialog");
+  expect(html).not.toContain("独立会话</option>");
+  expect(html).not.toContain('aria-label="Linux Workspace"');
+});
+test("cleared project shows a workspace input and a project picker without a standalone option", () => {
+  const html = renderToStaticMarkup(
+    <NewConversation
+      api={api}
+      state={state}
+      value={{ projectId: "", workspace: "/existing/workspace" }}
+      draft={newConversationDraft(api)}
+      change={() => {}}
+      created={async () => {}}
+      busyChanged={() => {}}
+    />,
+  );
+  expect(html).toContain('aria-label="Linux Workspace"');
+  expect(html).toContain('value="/existing/workspace"');
+  expect(html).toContain('<option value="" disabled="" hidden="" selected="">选择项目</option>');
+  expect(html).not.toContain("独立会话</option>");
+  expect(html).not.toContain('aria-label="清除项目选择"');
+  expect(html).not.toContain('aria-label="分支"');
+  expect(html).not.toContain('aria-label="创建工作树"');
 });
 test("conversation row has only rename and archive actions tied to the row title", () => {
   const conversation = {

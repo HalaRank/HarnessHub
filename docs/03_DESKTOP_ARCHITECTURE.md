@@ -1,5 +1,7 @@
 # Desktop 架构决策 D1：Windows 客户端 + WSL2 执行环境
 
+2026-11-11 用户要求新建会话直接叉掉所选项目。输入框上方改为带 × 的项目选择控件，点击或键盘激活 × 清除选择并展示 Linux 工作目录，草稿及已填目录保留；项目菜单移除“独立会话”，可重新选择已有项目。首次发送继续复用既有项目 / 独立 Conversation 创建流程。验收见[项目选择清除](acceptance/desktop-phase-4-clear-project.md)。
+
 2026-11-11 用户新增 Desktop 图片选择与 Ctrl+V 粘贴。新建页及已有会话发送 ACP image content block，按原生 promptCapabilities.image 检查能力，图片草稿落同一 WSL SQLite，schema 9。实现、Windows 验证和真实 Harness 未验证边界见[图片补充验收](acceptance/desktop-phase-4-images.md)。
 
 2026-11-10 用户要求归档对话从项目列表中隐藏。Desktop 项目树始终仅展示未归档对话；“查看归档”打开独立模态窗口，集中搜索、查看和恢复归档对话，并显示原属项目。实现及真实 Windows 验证见 [归档窗口补充验收](acceptance/desktop-phase-4-archive-window.md)。

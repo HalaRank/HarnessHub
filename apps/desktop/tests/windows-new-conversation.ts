@@ -37,6 +37,49 @@ export async function newConversationSmoke(
   await click(win, '.project-heading button[aria-label="新建会话"]');
   await waitFor(() => js("document.querySelector('textarea')?.value === '切换页面仍保存首条消息'"));
   console.log("New page restored the first-message SQLite draft after switching conversations");
+  const selectedProject = await js("document.querySelector('select[aria-label=项目]').value");
+  const conversationCount = connection.getState().snapshot?.conversations.length;
+  assert.equal(
+    await js(
+      "Array.from(document.querySelector('select[aria-label=项目]').options).some(o => o.textContent === '独立会话')",
+    ),
+    false,
+  );
+  await waitFor(() => js("!document.querySelector('input[aria-label=创建工作树]').disabled"));
+  await click(win, 'input[aria-label="创建工作树"]');
+  writeFileSync(
+    join(output, "desktop-project-chip.png"),
+    (await win.webContents.capturePage()).toPNG(),
+  );
+  await click(win, '[aria-label="清除项目选择"]');
+  await waitFor(() => js("!!document.querySelector('input[aria-label=\"Linux Workspace\"]')"));
+  assert.equal(await js("document.querySelector('select[aria-label=项目]').value"), "");
+  assert.equal(await js("!!document.querySelector('select[aria-label=分支]')"), false);
+  assert.equal(await js("!!document.querySelector('input[aria-label=创建工作树]')"), false);
+  assert.equal(await js("document.querySelector('textarea').value"), "切换页面仍保存首条消息");
+  assert.equal(await js("document.activeElement === document.querySelector('textarea')"), true);
+  assert.equal(connection.getState().snapshot?.conversations.length, conversationCount);
+  const chooseProject = () =>
+    js(
+      `(() => { const s = document.querySelector('select[aria-label=项目]'); s.value = ${JSON.stringify(selectedProject)}; s.dispatchEvent(new Event('change', {bubbles:true})); })()`,
+    );
+  await chooseProject();
+  await waitFor(() => js("!document.querySelector('input[aria-label=创建工作树]')?.disabled"));
+  assert.equal(await js("document.querySelector('input[aria-label=创建工作树]').checked"), false);
+  await js("document.querySelector('[aria-label=清除项目选择]').focus()");
+  win.webContents.sendInputEvent({ type: "keyDown", keyCode: "Enter" });
+  win.webContents.sendInputEvent({ type: "char", keyCode: "\r" });
+  win.webContents.sendInputEvent({ type: "keyUp", keyCode: "Enter" });
+  await waitFor(() => js("!!document.querySelector('input[aria-label=\"Linux Workspace\"]')"));
+  win.setSize(720, 780);
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.equal(await js("document.documentElement.scrollWidth <= innerWidth"), true);
+  writeFileSync(
+    join(output, "desktop-project-cleared-narrow.png"),
+    (await win.webContents.capturePage()).toPNG(),
+  );
+  win.setSize(1440, 940);
+  await chooseProject();
   await waitFor(() => js("!document.querySelector('input[aria-label=创建工作树]').disabled"));
   await click(win, 'input[aria-label="创建工作树"]');
   assert.equal(await js("document.querySelector('select[aria-label=分支]').disabled"), false);
@@ -250,6 +293,41 @@ export async function newConversationSmoke(
     (await sharedHistory()).some((e) => e.kind === "runtime.turn_finished"),
   );
   assert.equal((await sharedHistory()).filter((e) => e.kind === "user.message").length, 1);
+  await click(win, '.project-heading button[aria-label="新建会话"]');
+  await waitFor(() => js("!!document.querySelector('[aria-label=清除项目选择]')"));
+  await click(win, '[aria-label="清除项目选择"]');
+  await waitFor(() => js("!!document.querySelector('input[aria-label=\"Linux Workspace\"]')"));
+  assert.equal(
+    await js("document.querySelector('input[aria-label=\"Linux Workspace\"]').value"),
+    shared.workspacePath,
+  );
+  await fill(win, "清除项目后直接发送 smoke");
+  await click(win, '[aria-label="发送消息"]');
+  await waitFor(() => js("!document.querySelector('.new-conversation')"));
+  const clearedId = connection.getState().conversationId;
+  assert.ok(clearedId);
+  const cleared = connection.getState().snapshot?.conversations.find((c) => c.id === clearedId);
+  assert.ok(cleared);
+  assert.equal(cleared.projectId, null);
+  assert.equal(cleared.workspacePath, shared.workspacePath);
+  assert.equal(cleared.workspaceMode, "shared");
+  await waitFor(() =>
+    connection.getState().interaction?.sessions.some((s) => s.cwd === cleared.workspacePath),
+  );
+  await waitFor(async () => {
+    const history = (await connection.action({
+      type: "history",
+      conversationId: clearedId,
+      after: 0,
+    })) as { events: ConversationEvent[] };
+    assert.equal(history.events.filter((e) => e.kind === "user.message").length, 1);
+    return history.events.some((e) => e.kind === "runtime.turn_finished");
+  });
+  await connection.action({
+    type: "conversation.delete",
+    conversationId: clearedId,
+    confirmed: true,
+  });
   await connection.action({
     type: "conversation.delete",
     conversationId: sharedId,
@@ -263,6 +341,8 @@ export async function newConversationSmoke(
   });
   if (original) await connection.select(original);
   return [
+    "Project chip clears by click or keyboard, preserves the message and workspace, resets branch/Worktree controls and supports reselecting without a standalone menu option",
+    "Cleared project sends exactly one standalone Turn using the explicit Linux workspace and its real native cwd",
     "New page shows HarnessHub logo/project sentence and inline project, real branch and Worktree controls without a title dialog",
     "Unsent first-message draft survives leaving and reopening the new page through SQLite",
     "Double send creates one user Turn, automatic title and native cwd in the real managed Worktree",
