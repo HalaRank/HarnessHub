@@ -255,6 +255,8 @@ test("restored TUI keeps the project tree on the left and opens chat on the righ
     for (const [width, height] of [
       [150, 35],
       [100, 30],
+      [89, 30],
+      [80, 24],
       [70, 24],
       [35, 12],
       [150, 35],
@@ -266,12 +268,11 @@ test("restored TUI keeps the project tree on the left and opens chat on the righ
       const input = editor(screen);
       const history = screen.renderer.root.findDescendantById("native-history");
       if (!main || !input || !history) throw new Error("Missing conversation controls");
-      if (width >= 90) {
-        if (!sidebar) throw new Error("Missing project tree");
-        expect(sidebar.x + sidebar.width).toBeLessThan(main.x);
-        const treeRow = screen.renderer.root.findDescendantById(conversationKey(conversation.id));
-        expect(treeRow?.x).toBeLessThan(main.x);
-      } else expect(sidebar).toBeUndefined();
+      if (!sidebar) throw new Error("Missing persistent project tree");
+      expect(sidebar.width).toBeGreaterThanOrEqual(12);
+      expect(sidebar.x + sidebar.width).toBeLessThan(main.x);
+      const treeRow = screen.renderer.root.findDescendantById(conversationKey(conversation.id));
+      expect(treeRow?.x).toBeLessThan(main.x);
       expect(main.x + main.width).toBeLessThanOrEqual(width);
       expect(input.x).toBeGreaterThanOrEqual(main.x);
       expect(history.x).toBeGreaterThanOrEqual(main.x);
@@ -314,5 +315,53 @@ test("restored TUI keeps the project tree on the left and opens chat on the righ
     expect(editor(screen)?.plainText).toBe("Keep this local draft");
   } finally {
     await screen.dispose();
+  }
+});
+
+test("80-column launch and reopen keep the tree visible beside the selected conversation", async () => {
+  const { project, conversation } = await setup("Persistent sidebar");
+  const second = await api<Conversation>(`/v1/projects/${project.id}/conversations`, "POST", {
+    title: "Second sidebar chat",
+  });
+  await api("/v1/preferences", "PATCH", {
+    showSidebar: true,
+    lastProjectId: project.id,
+    lastConversationId: conversation.id,
+  });
+  for (let launch = 0; launch < 2; launch++) {
+    const screen = await testRender(() => <App onExit={() => {}} />, { width: 80, height: 30 });
+    try {
+      await waitFor(screen, () => !!editor(screen));
+      const sidebar = screen.renderer.root.findDescendantById("workspace-sidebar");
+      const main = screen.renderer.root.findDescendantById("conversation-main");
+      const tree = screen.renderer.root.findDescendantById("project-tree") as ScrollBoxRenderable;
+      if (!sidebar || !main) throw new Error("Missing split layout on startup");
+      expect(sidebar.x + sidebar.width).toBeLessThan(main.x);
+      tree.scrollChildIntoView(conversationKey(second.id));
+      await screen.renderOnce();
+      await clickControl(screen, conversationKey(second.id));
+      await waitFor(screen, () => screen.captureCharFrame().includes("Second sidebar chat"));
+      expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBe(sidebar);
+      expect(screen.renderer.root.findDescendantById("conversation-main")).toBe(main);
+      writeFileSync(
+        join(temp, `persistent-sidebar-80-launch-${launch}.txt`),
+        screen.captureCharFrame(),
+      );
+      writeFileSync(
+        join(temp, `persistent-sidebar-80-launch-${launch}.json`),
+        JSON.stringify(screen.captureSpans()),
+      );
+      await waitFor(
+        screen,
+        async () =>
+          (await api<{ lastConversationId: string }>("/v1/preferences")).lastConversationId ===
+          second.id,
+      );
+      expect(
+        (await conversations()).find((c) => c.id === second.id)?.activeNativeSessionId,
+      ).toBeNull();
+    } finally {
+      await screen.dispose();
+    }
   }
 });

@@ -238,6 +238,9 @@ test("project arrows collapse independently; names expand/select; hover, selecte
     expect(screen.renderer.root.findDescendantById(conversationKey(one.a.id))).toBeTruthy();
     screen.resize(72, 30);
     await screen.renderOnce();
+    expect(screen.renderer.root.findDescendantById("project-tree")).toBeTruthy();
+    await invoke(screen, "Toggle Sidebar");
+    await screen.renderOnce();
     expect(screen.renderer.root.findDescendantById("project-tree")).toBeFalsy();
     await invoke(screen, "Toggle Sidebar");
     await waitFor(async () => {

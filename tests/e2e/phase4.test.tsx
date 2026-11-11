@@ -654,7 +654,7 @@ test("Enter sends once, Kitty Shift+Enter and Ctrl+J insert newlines without sub
   }
 }, 20000);
 
-test("command palette searches projects and conversations, responsive sidebar hides and configured shortcuts work", async () => {
+test("command palette searches projects and conversations, only explicit sidebar toggles hide it and configured shortcuts work", async () => {
   const { p, c } = await setup("Palette project");
   const b = await api<Conversation>(`/v1/projects/${p.id}/conversations`, "POST", {
     title: "Unique Palette Beta",
@@ -688,8 +688,14 @@ test("command palette searches projects and conversations, responsive sidebar hi
     });
     screen.resize(72, 28);
     await screen.renderOnce();
+    expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeTruthy();
+    screen.mockInput.pressKey("v", { ctrl: true });
+    await screen.renderOnce();
     expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeFalsy();
     screen.resize(150, 45);
+    await screen.renderOnce();
+    expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeFalsy();
+    screen.mockInput.pressKey("v", { ctrl: true });
     await waitFor(async () => {
       await screen.renderOnce();
       return !!screen.renderer.root.findDescendantById("workspace-sidebar");
@@ -1384,7 +1390,7 @@ test("conversation header uses two rows with title, path, Agent, model and statu
   }
 });
 
-test("compact layout gives transcript most rows; input grows and narrow sidebar collapses", async () => {
+test("compact layout gives transcript most rows; input grows and narrow sidebar stays visible", async () => {
   await setup("Layout refinement");
   const screen = await testRender(() => <App onExit={() => {}} />, {
     width: 120,
@@ -1419,7 +1425,7 @@ test("compact layout gives transcript most rows; input grows and narrow sidebar 
     expect(input.height).toBe(3);
     screen.resize(70, 24);
     await screen.renderOnce();
-    expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeFalsy();
+    expect(screen.renderer.root.findDescendantById("workspace-sidebar")).toBeTruthy();
     expect(input.plainText).toBe("one\ntwo\nthree");
     expect(history.y + history.height).toBeLessThanOrEqual(input.y);
     screen.resize(120, 30);

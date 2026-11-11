@@ -163,7 +163,7 @@ ACP Client 应实现协议要求的文件/终端请求与权限回调；所有�
 
 ## 10. TUI 规范
 
-Project → Conversation 树形侧边栏，可隐藏，窄终端自动收起；全局命令面板搜索项目、会话和操作；显示后台执行、待审批、故障、Handoff。主要区域 Chat/Changes，Markdown 与代码高亮，原生 Plan/TODO、可观察思考，Unknown events 可展开 raw。
+Project → Conversation 树形侧边栏默认持续显示在左侧，右侧显示会话内容；仅用户显式切换可隐藏侧栏，窄终端不再自动收起（2026-11-10 用户澄清）。全局命令面板搜索项目、会话和操作；显示后台执行、待审批、故障、Handoff。主要区域 Chat/Changes，Markdown 与代码高亮，原生 Plan/TODO、可观察思考，Unknown events 可展开 raw。
 
 工具：按 2026-11-04 用户修正，采用紧凑摘要：标题单行截断，原生文本/终端输出默认最多展示末尾三行，超出显示省略行数；真实状态和原生审批选项仍显示。Ctrl+T 进入历史后 Enter 展开命令、正文和内联 Diff，手动选择优先，不因状态转换而改变。普通聊天（含展开状态）不打印事件编号、terminal/review ID、参数或结果的协议 JSON；这些数据仅在 Source / Raw 视图查看，完整原始事件仍保留。Changes 独立页；支持复制原始 Markdown。
 

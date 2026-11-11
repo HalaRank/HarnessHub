@@ -86,18 +86,8 @@ export function App(props: {
   const [showSidebar, setShowSidebar] = createSignal(true);
   const [keyOverrides, setKeyOverrides] = createSignal<Shortcuts>({});
   const keys = () => shortcuts(keyOverrides());
-  const [narrowSidebar, setNarrowSidebar] = createSignal(false);
-  const sidebarVisible = () => showSidebar() && (dimensions().width >= 90 || narrowSidebar());
-  const toggleSidebar = () => {
-    if (dimensions().width < 90) {
-      const visible = sidebarVisible();
-      setShowSidebar(true);
-      setNarrowSidebar(!visible);
-    } else setShowSidebar((value) => !value);
-  };
-  createEffect(() => {
-    if (dimensions().width >= 90) setNarrowSidebar(false);
-  });
+  // Only an explicit user action hides the tree; resizing keeps both panes visible.
+  const toggleSidebar = () => setShowSidebar((value) => !value);
   const [action, setAction] = createSignal<AgentAction>({ id: 0, name: "" });
   const [changesView, setChangesView] = createSignal(false);
   const views = new Map<string, ViewState>();
@@ -833,11 +823,12 @@ export function App(props: {
         </Show>
       </box>
       <box flexGrow={1} minHeight={0} flexDirection="row" gap={1}>
-        <Show when={sidebarVisible()}>
+        <Show when={showSidebar()}>
           <box
             id="workspace-sidebar"
-            width={Math.min(34, Math.floor(dimensions().width * 0.28))}
+            width={Math.min(34, Math.max(12, Math.floor(dimensions().width * 0.28)))}
             minWidth={0}
+            flexShrink={0}
             border
             borderColor={ui.border}
             backgroundColor={ui.panel}

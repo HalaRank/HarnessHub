@@ -49,13 +49,13 @@ def conversations():
     return api("/v1/snapshot")["conversations"]
 
 
-def launch(directory, args):
+def launch(directory, args, columns=160):
     pid, descriptor = pty.fork()
     if pid == 0:
         os.chdir(directory)
         os.environ["TERM"] = "xterm-256color"
         os.execv(bun, [bun, cli, *args])
-    fcntl.ioctl(descriptor, termios.TIOCSWINSZ, struct.pack("HHHH", 35, 160, 0, 0))
+    fcntl.ioctl(descriptor, termios.TIOCSWINSZ, struct.pack("HHHH", 35, columns, 0, 0))
     child = {"pid": pid, "fd": descriptor, "output": bytearray(), "done": False}
     children.append(child)
     return child
@@ -140,11 +140,16 @@ try:
     assert conversations()[-1]["workspacePath"] == launch_paths[1]
     until(second, lambda: api("/v1/preferences")["lastConversationId"] == conversations()[-1]["id"], "second standalone not selected")
     quit_tui(second)
+    third = launch(launch_paths[1], [], columns=80)
+    until(third, lambda: "Projects" in visible(third) and "not initialized" in visible(third),
+          "80-column launch must show the project tree beside chat without a sidebar toggle")
+    assert api("/v1/preferences")["showSidebar"] is True
+    quit_tui(third)
     assert len(api("/v1/snapshot")["projects"]) == 1
     assert api("/v1/health")["pid"] == instance["pid"]
     for conversation in conversations():
         assert api("/v1/conversations/" + conversation["id"] + "/sessions") == []
-    evidence = {"root": root, "linuxPty": True, "projectN": True, "uppercaseN": True, "chatInputPreserved": True, "ctrlNPaths": launch_paths, "implicitProjects": 0, "agentRequests": 0, "daemonSurvives": True}
+    evidence = {"root": root, "linuxPty": True, "projectN": True, "uppercaseN": True, "chatInputPreserved": True, "ctrlNPaths": launch_paths, "persistentSidebarColumns": 80, "implicitProjects": 0, "agentRequests": 0, "daemonSurvives": True}
     with open(root + "/evidence.json", "w", encoding="utf8") as target:
         json.dump(evidence, target, ensure_ascii=False, indent=2)
     print(json.dumps(evidence))
