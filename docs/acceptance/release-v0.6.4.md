@@ -12,22 +12,36 @@
 
 ## 本地检查
 
-完整日志保存在 `/tmp/hhu-release-v0.6.4/`。
+日志和校验结果见 [evidence/release-v0.6.4](evidence/release-v0.6.4/)，完整现场保存在 `/tmp/hhu-release-v0.6.4/`。
+入库日志统一为 LF 并移除行末空白；测试内容与结果保留，原始下载日志另存上述现场目录。
 
 - `bun install --ignore-scripts`、`bun install --frozen-lockfile --ignore-scripts`、`bun run version:check`：通过。
 - `bun run typecheck`、`bun run lint`、`git diff --check`：通过；lint 检查 173 个文件。
 - `TMPDIR=/home/clj/.cache/hhu-release-v0.6.4/tmp bun run desktop:test`：退出 0，实际构建后端和 Desktop，70 项 Desktop 单元测试与 19 项 Node 集成测试通过，0 失败。
 - `bun run test`：后端 / CLI 构建成功，Node 集成测试初轮 121/122 通过。唯一失败为真实 PTY 验收按连续文本匹配标题，但增量重绘保留了屏幕上的部分字符，输出流并不含完整标题。`tests/e2e/terminal.py` 改为等待同一项目注册表单的完整说明文案，保留 Tab 补全、重复注册、双客户端保活与退出断言；未改产品代码。
 - `HARNESSHUB_BUN="$(command -v bun)" node --test tests/integration/phase1.test.mjs`：修正后 11/11 通过，含原失败 PTY 项。其余 111 项 Node 集成测试已在初轮通过。
-- 标准测试脚本中的完整 TUI 测试清单单独执行：125/125 通过，0 失败。合计 122 项 Node、125 项 TUI、70 项 Desktop 单元与 19 项 Desktop 集成测试已分别验证通过；远端发布流程仍须完整执行 `bun run test`。
+- 标准测试脚本中的完整 TUI 测试清单单独执行：125/125 通过，0 失败。合计 122 项 Node、125 项 TUI、70 项 Desktop 单元与 19 项 Desktop 集成测试已分别验证通过。远端发布流程随后完整执行 `bun run test`，122 项 Node 与 125 项 TUI 全部通过。
 
-## 发布状态与验收边界
+## 远端构建与公开发布
 
-尚未创建发布提交、Tag 或 v0.6.4 Release。远端目前最新公开版仍为 v0.6.3；文档中 v0.6.4 直链须在公开发布后使用。
+2026-11-11 09:34:56 UTC，已公开发布 [HarnessHub v0.6.4](https://github.com/HalaRank/HarnessHub/releases/tag/v0.6.4)，共 8 个资产，非 draft / prerelease。匿名访问 `releases/latest` 返回 HTTP 200 并解析到此版本。
 
-发布流程沿用 `.github/workflows/linux-release.yml`：从不可变版本 Tag 构建 Linux 与 Windows，执行隔离安装和 Windows 安装器验证，两平台汇总校验通过后创建 draft，再核对资产并公开发布。
+- 不可变 Tag 提交：`79106a5667faa47bbcaa3df2887abe3de0a6c689`。Linux manifest 的 sourceCommit 一致，sourceDirty=false，lockfile SHA256 与 Tag 内容一致；随包 Node 24.18.0 / Bun 1.4.4。
+- [Actions 42994846240](https://github.com/HalaRank/HarnessHub/actions/runs/42994846240)：Linux、Windows 和 draft 三个 job 全部 success。Linux typecheck、lint、完整回归、独立包构建及 11 项隔离安装检查通过；Windows 4 项发布边界测试、NSIS/ZIP 构建及真实安装器检查通过；两平台汇总实际读取资产并执行 SHA256 校验通过。
+- Linux 隔离检查包含无系统 Node/Bun 的离线安装、篡改拒绝、真实 Codex/Claude 无 Prompt initialize、运行锁、Bridge 身份、Mock ACP 工作区/权限/取消/去重、真实 PTY 保活、无关入口保护与重装保留历史，不代表真实登录模型工作流通过。
+- Windows runner 验证 ZIP 和 NSIS 的载荷一致、安装/实际窗口启动、测试客户端异常退出与重启、重装保留数据、卸载及再次安装。未提供旧版本夹具，本轮升级检查为同版本重装；runner 不具备 WSL，不代表完整 Windows → WSL 工作流通过。
+- 发布前通过认证下载 5 份元数据，核对元数据自身 SHA256、两平台校验条目与 GitHub 资产 digest、Windows manifest 的大小/哈希。发布后匿名完整下载 install.sh、Linux manifest、两平台 SHA256 文件及 Windows manifest，全部 HTTP 200、大小和哈希一致，见 `public-verification.json`。
+- 本机未额外完整下载或安装 3 个大包。大包完整性依据 CI 对实际文件的汇总校验、平台安装验收及 GitHub digest 交叉核对，不将元数据下载视为大包全量下载。
 
-本轮尚未执行 v0.6.4 Windows 安装器、Linux 独立包隔离安装或公开下载验证。发布前须补录 Actions 地址、Tag 提交、平台结果、资产哈希及公开访问结果。
+| 资产 | 字节数 | SHA256 |
+| --- | ---: | --- |
+| Windows setup.exe | 110769370 | `eec96ab775e7f30200932a0f9e58bf37f10ecc6c8deb89d15401d24adb9519ab` |
+| Windows ZIP | 153524792 | `08b1356b4d082a1b84648681e074783021a953903a23b86511c1533aa29e6f15` |
+| Linux tar.gz | 428447736 | `bc5fed3165f1ac3237692747b289f60cf512184fc345eaeb83878fa9f08d99e9` |
+
+后续 main 的发布证据和下载文档补录不改变此 Tag 或已发布资产。
+
+## 验收边界
 
 真实 Harness 图片识别、物理 IME、多显示器 DPI 和完整 Windows → WSL → 真实模型工作流沿用各专项记录的未验证边界，不以 Mock 或 CI 安装器结果代替。
 

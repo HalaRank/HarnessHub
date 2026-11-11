@@ -1,0 +1,174 @@
+$ bun scripts/test.ts
+$ bun scripts/build.ts
+Built HarnessHub CLI (Bun) and Daemon (Node)
+✔ cleanup rejects assume-unchanged and skip-worktree without losing hidden edits (467.128342ms)
+✔ a file written after preflight survives retained cleanup and interrupted move reconciliation (6971.357171ms)
+✔ no-pipe descendant blocks stop until explicit force (10635.563725ms)
+✔ no-pipe descendant exits cooperatively (1440.48904ms)
+✔ retry after degraded target preparation failure delivers the fresh report exactly once (300.52045ms)
+✔ explicit native close and clean restart persist a visible lost-context boundary (2098.757919ms)
+Audit remediation evidence: /tmp/hhu-audit-fixes-9UV5MC
+✔ timed-out native settings block new Turns until late response or confirmed stop (22235.962425ms)
+✔ failed partial installation preserves the entire previous runnable release (4362.179626ms)
+✔ real smoke evidence rejects later-Turn tools, failed outputs and input-only cwd (1.121132ms)
+✔ confirmed project deletion closes idle Workers and cascades archived history and drafts, preserving files and other projects (729.345371ms)
+✔ project deletion reserves all children during cooperative close and refuses new work or metadata rebinding (1324.523802ms)
+✔ an active child blocks the whole project before any idle sibling is stopped; archiving keeps it running (492.023294ms)
+✔ unconfirmed Worker exit retains project history and releases reservations for an explicit retry (5392.525453ms)
+✔ confirmed Conversation deletion cancels running work and approvals, terminates unresponsive owned Workers and removes UNCERTAIN history (7808.762621ms)
+✔ deleting an initializing Worker reserves the Conversation, settles async writers and never dispatches its Prompt (1728.548541ms)
+✔ deleting during native configuration closes the pending RPC before removing its Conversation (1758.428188ms)
+Deletion integration evidence: /tmp/hhu-deletion-NbDSl2
+✔ deleting failed, generating, preparing-target and delivering Handoffs closes both owned sides and releases reservations (6024.823456ms)
+✔ Enter follow-up uses advertised steering, keeps one active turn and deduplicates request IDs (1604.447743ms)
+✔ Tab queue persists FIFO and sends each follow-up once after normal completion (1601.533482ms)
+✔ Agents without steering advertise a visible queue fallback and receive no steering request (1511.523918ms)
+✔ image follow-ups retain their attachment and wait for a new Turn (1488.817493ms)
+✔ Esc cancellation holds queued work until explicit resume and retains cancel tail events (345.206313ms)
+✔ Follow-ups while waiting for native permission never approve it and queue removal is explicit (254.416221ms)
+✔ Idle steering race waits for original prompt completion and starts one host-owned next turn (1511.375704ms)
+✔ Lost steering acknowledgement becomes UNCERTAIN, survives restart, and is never replayed (4257.429519ms)
+✔ Daemon crash holds unsubmitted queue entries and reconnect GET never dispatches them (2187.307781ms)
+✔ confirmed Worker exit allows explicit continuation while keeping old uncertain results and request deduplication (547.419859ms)
+✔ Harness switching holds the queue and duplicate explicit resumes cannot dispatch twice (1550.663058ms)
+Input evidence /tmp/hhu-inputs-2626sd
+✔ a request ID reserved by the queue cannot be reused as a normal turn in another conversation (278.682497ms)
+✔ new conversations inherit the last selected Harness across projects, standalone and store reopen (41.61994ms)
+✔ simultaneous CLI starts share one authenticated Node Daemon, with empty global state (1171.921151ms)
+✔ Project/Conversation CRUD validates actual paths, canonicalizes duplicates, and preserves files (110.934219ms)
+✔ real WS invalidations commit before broadcast; reconnect recovers missed changes (36.737352ms)
+✔ SQLite uses WAL, foreign keys, schema version, and private permissions (2.817826ms)
+✔ graceful stop and fresh Node process recover real SQLite history (1372.898244ms)
+✔ kernel lock recovers after Daemon crash and stale instance metadata is safely replaced (1165.176769ms)
+✔ doctor reports real runtime and native binding; CLI errors are explicit (1129.890014ms)
+✔ pending migrations back up existing database; newer schema is refused intact (13.091283ms)
+✖ built hhu cold-starts from home in two real PTYs; closing clients keeps the Daemon alive (14896.328977ms)
+✔ actual client subscription reconnects across Daemon restart and refreshes SQLite without command replay (1819.998787ms)
+Phase-1 test evidence: /tmp/hhu-phase1-VxDoNI
+✔ migration upgrades a real Phase-1 database without losing projects/conversations (1236.052626ms)
+✔ SDK initialization, both cwd values, native settings, ordered raw streams and unknown events (364.162539ms)
+✔ concurrent duplicate prompts execute once; different content and overlapping Turns are rejected (390.175333ms)
+✔ native concurrent permissions block, validate optionId, and accept only one racing decision (381.923402ms)
+✔ cancel expires approvals and commits native trailing chunks before completion (347.445734ms)
+✔ independent Conversation sequences, committed WS events, pagination and real watcher reconnect (541.655342ms)
+✔ Worker crash and lost stdio become UNCERTAIN without replay or usable stale approvals (551.642378ms)
+✔ daemon stop refuses active Turns; explicit cancel-active waits for tail and closes idle Workers (1900.08095ms)
+✔ uncooperative cancellation keeps Daemon alive; forced stop needs explicit confirmation (5539.753237ms)
+✔ Daemon crash recovers persisted history, expires approvals and never resumes/replays a Turn (1395.642545ms)
+✔ cancel during initialization never submits a prompt; unavailable executables leave traceable errors (583.709112ms)
+✔ application logs contain no prompts, native tool output or profile environment values (0.520277ms)
+✔ negotiated session/close blocks racing prompts and closes before Worker termination (480.239572ms)
+Phase-2 test evidence: /tmp/hhu-phase2-XDoWSC
+✔ incremental Phase 2 migration preserves history and privately stored legacy profiles (1144.980014ms)
+✔ automatic titles use the first message once, persist and respect explicit names (2734.862107ms)
+✔ parallel projects have separate native sessions, cwd, events, cancellation and background approvals (425.529292ms)
+✔ shared workspaces allow concurrent Turns and emit file-conflict warning without a global lock (623.222229ms)
+✔ draft CAS, durable request reservation, duplicate clients and preferences survive restart (3109.174136ms)
+✔ two clients reconnect across real WS disconnects, page long history in order and never send a Prompt (3500.225403ms)
+✔ Daemon SIGKILL expires background approvals, marks idle sessions INTERRUPTED and active execution UNCERTAIN (2103.578535ms)
+✔ invalid project roots are never recreated; rebinding updates only stopped Conversation workspaces (356.012268ms)
+✔ Profiles inherit native credentials, reject new credential overrides and disclose only legacy key names (264.34385ms)
+✔ large Unicode drafts obey schema bounds; CAS races and metadata deletion preserve user files (94.967437ms)
+Phase-3 test evidence: /tmp/hhu-phase3-PCLJuM
+✔ Changes returns actual staged, unstaged, untracked, rename, delete and binary data (497.927848ms)
+✔ Changes uses bound workspace, handles non-repositories and rejects arbitrary paths (358.968285ms)
+✔ oversized Git output is an explicit error and does not silently truncate (74.591204ms)
+✔ sidebar and validated shortcut preferences persist across daemon restart in private SQLite (1801.833604ms)
+✔ Bun and Node clients reach only the local Daemon even with proxy environment variables (484.908526ms)
+✔ archive/restore survives restart; confirmed deletion removes app relations and preserves workspace (2841.668796ms)
+✔ confirmed Conversation deletion stops active or UNCERTAIN work while project deletion keeps its preflight guard (1481.50171ms)
+Phase-4 integration evidence: /tmp/hhu-phase4-Lo9gky
+✔ built TUI handles raw Ctrl+C and OS SIGINT; exiting leaves the running Worker intact (1976.618148ms)
+✔ A → B → A creates three native sessions, same Harness reuses, pending selection has zero model calls and cancels (977.129744ms)
+✔ two clients duplicate target submissions use one reservation/report/Prompt; cross-content and overlapping requests are rejected (672.235251ms)
+✔ generation failure holds target, explicit cancel never sends; explicit retry stays on same request (392.485871ms)
+✔ degraded continuation requires confirmation, uses prior saved report and observable history without another user message (719.445534ms)
+✔ target Session creation failure preserves source and report; target RPC rejection is UNCERTAIN and never resends (768.762919ms)
+✔ source running, approval and cancellation block target execution; internal report permissions remain native user decisions (1115.912367ms)
+✔ isolated worktrees bind actual cwd, preserve on Conversation deletion, reject dirty/ignored files and preserve branch on safe cleanup (2681.426716ms)
+✔ non-Git projects refuse worktree creation; ownership/branch mismatches refuse cleanup (240.899388ms)
+✔ shared Conversations remain parallel with conflict warning and never mix native history (1478.394812ms)
+✔ switch after source shutdown exposes its cause and requires explicit degraded confirmation (2437.605367ms)
+✔ restart preserves saved report through unavailable-source retry and requires explicit confirmation without replaying source (2457.88591ms)
+✔ daemon recovery never commits/replays GENERATING or DELIVERING and blocks UNCERTAIN request actions (6475.847536ms)
+✔ interrupted worktree creation is not treated as usable; unregistered directories are never removed (3857.964608ms)
+✔ real schema 5 SQL migrates all existing data to the current schema with backup and explicit session binding (1782.078324ms)
+✔ real concurrent Git path/branch conflicts and partial creation never bind a Conversation or delete pre-existing data (10151.760423ms)
+✔ actual isolated daemon crashes during GENERATING and DELIVERING recover UNCERTAIN with no Prompt replay (3765.010001ms)
+Phase-5 integration evidence: /tmp/hhu-phase5-INZXOC
+✔ unexpected source report tools preserve native evidence and require explicit risk/degraded confirmation (543.387732ms)
+HarnessHub: EEXIST: file already exists, open '/tmp/hhu-phase6-VmVX9Z/conversation.md'
+✔ conversation export separates readable records from raw ACP debug data (1199.606598ms)
+✔ private data and actual multi-generation log rotation retain user-only permissions (2.610304ms)
+HarnessHub: Invalid JSON input (contents omitted)
+✔ failed migration rolls back all SQL, preserves the schema and a restorable private backup (40.346064ms)
+✔ unsafe SQLite/sidecar symlinks are rejected before touching external files; permissions are repaired (1.93183ms)
+✔ structured secrets are redacted in raw, normalized and debug export; native prose remains exact (417.607871ms)
+✔ an adapter exiting before its stubborn descendant closes stdio cannot report cleanup success (10414.379829ms)
+✔ explicit doctor handshake sends initialize/session/new without any prompt (1029.612937ms)
+✔ WS rejects browser Origins and incorrect tokens; client rejects an instance identity substitution (7.429782ms)
+✔ cancel-active safely cancels a FAILED Handoff and restart accepts new work without replay (2403.478354ms)
+✔ installer locks out an unresponsive instance even when instance metadata is missing (477.615851ms)
+✔ confirmed deletion terminates a retained Handoff source without stopping another Conversation (12420.343411ms)
+✔ slow Git creation/removal leaves Daemon responsive and reservations block rebind, shutdown and cleanup races (7900.949587ms)
+✔ user-level installation is atomic, runnable from Home and refuses an active old-version instance (5354.311737ms)
+Phase-6 integration evidence: /tmp/hhu-phase6-VmVX9Z
+✔ unborn repositories and locked Worktrees fail safely without deleting files or branches (384.450281ms)
+✔ RC-01 function: fsmonitor never executes; changes and files survive (167.947138ms)
+✔ RC-01 HTTP: fsmonitor never executes; changes and files survive (139.72671ms)
+✔ RC-01 Desktop: fsmonitor never executes; changes and files survive (124.75271ms)
+✔ RC-01 Worktree: fsmonitor never executes; changes and files survive (257.472509ms)
+✔ RC-02 confirmed idle exit persists end and Desktop explicitly creates a new native context (814.299198ms)
+✔ RC-02 recovery refuses stream-only without killing worker (384.475233ms)
+✔ RC-02 recovery refuses active without killing worker (221.519385ms)
+✔ RC-03 steer-turn-first: input outcome remains independent of completed Turn (20239.955855ms)
+✔ RC-03 steer-timeout-first: input outcome remains independent of completed Turn (20279.284311ms)
+✔ RC-03 steer-ack: input outcome remains independent of completed Turn (254.101313ms)
+✔ RC-03 steer-failed: input outcome remains independent of completed Turn (259.392936ms)
+✔ RC-03 Desktop and TUI reconnect to the same durable uncertain delivery after restart (1464.715429ms)
+✔ RC-04 crash recovery expires approvals atomically with replayable terminal events (3421.544576ms)
+✔ RC-01 include/filter/diff/textconv/environment commands cannot run; rename/untracked/ignore remain accurate (349.047324ms)
+✔ RC-01 status blocks submodule drivers and worktree checkout blocks branch-conditional filters (447.332719ms)
+✔ RC-02 child close is not process-group exit; confirmation waits for its descendant (403.979184ms)
+RC evidence: /tmp/hhu-rc-remediation-sEGYsi
+✔ RC-02 rejected Prompt followed by exit never unlocks an UNCERTAIN Turn (549.014317ms)
+✔ schema 6 upgrade preserves dependent history, drafts and preferences, backs up and restores FK enforcement (40.924244ms)
+✔ schema 8 upgrade preserves dependent history, drafts and preferences, backs up and restores FK enforcement (29.492208ms)
+Standalone Conversation evidence: /tmp/hhu-standalone-PKP2Fz
+✔ standalone creation validates the explicit path, uses it for both ACP cwd values and persists without a project (3392.572937ms)
+ℹ tests 122
+ℹ suites 0
+ℹ pass 121
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 305906.367518
+
+✖ failing tests:
+
+test at tests/integration/phase1.test.mjs:312:1
+✖ built hhu cold-starts from home in two real PTYs; closing clients keeps the Daemon alive (14896.328977ms)
+  Error: Command failed: python3 /home/clj/HarnessHub/HarnessHub/tests/e2e/terminal.py /home/clj/.local/lib/node_modules/bun/bin/bun.exe /home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js
+  Traceback (most recent call last):
+    File "/home/clj/HarnessHub/HarnessHub/tests/e2e/terminal.py", line 82, in <module>
+      read_until(second, b"Add existing project")
+      ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/home/clj/HarnessHub/HarnessHub/tests/e2e/terminal.py", line 43, in read_until
+      raise AssertionError("PTY did not display expected content: " + repr(output[-3000:]))
+  AssertionError: PTY did not display expected content: b';2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[3;14H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m \x1b[0m\x1b[3;15H\x1b[38;2;237;242;247m\x1b[48;2;24;33;43m\x1b[1mAdd existi\x1b[0m\x1b[3;26H\x1b[38;2;237;242;247m\x1b[48;2;24;33;43m\x1b[1mg project\x1b[0m\x1b[3;35H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m                                                                         \x1b[0m\x1b[3;108H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[4;13H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[4;15H\x1b[38;2;148;164;181m\x1b[48;2;24;33;43mRegister a local workspace directory\x1b[0m\x1b[4;51H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m                                                         \x1b[0m\x1b[4;108H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[5;13H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[5;14H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m \x1b[0m\x1b[5;15H\x1b[38;2;59;75;91m\x1b[48;2;28;39;51m\xe2\x95\xad\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x95\xae\x1b[0m\x1b[5;107H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m \x1b[0m\x1b[5;108H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[6;13H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[6;14H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m \x1b[0m\x1b[6;15H\x1b[38;2;59;75;91m\x1b[48;2;28;39;51m\xe2\x94\x82\x1b[0m\x1b[6;16H\x1b[38;2;237;242;247m\x1b[48;2;28;39;51m~/\x1b[0m\x1b[6;18H\x1b[38;2;255;255;255m\x1b[48;2;28;39;51m                                                                                        \x1b[0m\x1b[6;106H\x1b[38;2;59;75;91m\x1b[48;2;28;39;51m\xe2\x94\x82\x1b[0m\x1b[6;107H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m \x1b[0m\x1b[6;108H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[7;13H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[7;14H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m \x1b[0m\x1b[7;15H\x1b[38;2;59;75;91m\x1b[48;2;28;39;51m\xe2\x95\xb0\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x95\xaf\x1b[0m\x1b[7;107H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m \x1b[0m\x1b[7;108H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[8;13H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[8;15H\x1b[38;2;184;196;208m\x1b[48;2;24;33;43m\x1b[1mTab\x1b[0m\x1b[8;18H\x1b[38;2;148;164;181m\x1b[48;2;24;33;43m complete path   \x1b[0m\x1b[8;35H\x1b[38;2;184;196;208m\x1b[48;2;24;33;43m\x1b[1mEnter\x1b[0m\x1b[8;40H\x1b[38;2;148;164;181m\x1b[48;2;24;33;43m register   \x1b[0m\x1b[8;52H\x1b[38;2;184;196;208m\x1b[48;2;24;33;43m\x1b[1mEsc\x1b[0m\x1b[8;55H\x1b[38;2;148;164;181m\x1b[48;2;24;33;43m cancel\x1b[0m\x1b[8;62H\x1b[38;2;255;255;255m\x1b[48;2;24;33;43m                                              \x1b[0m\x1b[8;108H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x94\x82\x1b[0m\x1b[9;13H\x1b[38;2;59;75;91m\x1b[48;2;24;33;43m\xe2\x95\xb0\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x94\x80\xe2\x95\xaf\x1b[0m\x1b[0m\x1b]12;#ffffff\x07\x1b[1 q\x1b[6;18H\x1b[?25h\x1b[?2026l'
+
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:509:28)
+      at maybeClose (node:internal/child_process:1124:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: 'python3 /home/clj/HarnessHub/HarnessHub/tests/e2e/terminal.py /home/clj/.local/lib/node_modules/bun/bin/bun.exe /home/clj/HarnessHub/HarnessHub/dist/cli/hhu.js',
+    stdout: '',
+    stderr: `Traceback (most recent call last):\n  File "/home/clj/HarnessHub/HarnessHub/tests/e2e/terminal.py", line 82, in <module>\n    read_until(second, b"Add existing project")\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "/home/clj/HarnessHub/HarnessHub/tests/e2e/terminal.py", line 43, in read_until\n    raise AssertionError("PTY did not display expected content: " + repr(output[-3000:]))\nAssertionError: PTY did not display expected content: b';2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[3;14H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m \\x1b[0m\\x1b[3;15H\\x1b[38;2;237;242;247m\\x1b[48;2;24;33;43m\\x1b[1mAdd existi\\x1b[0m\\x1b[3;26H\\x1b[38;2;237;242;247m\\x1b[48;2;24;33;43m\\x1b[1mg project\\x1b[0m\\x1b[3;35H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m                                                                         \\x1b[0m\\x1b[3;108H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[4;13H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[4;15H\\x1b[38;2;148;164;181m\\x1b[48;2;24;33;43mRegister a local workspace directory\\x1b[0m\\x1b[4;51H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m                                                         \\x1b[0m\\x1b[4;108H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[5;13H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[5;14H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m \\x1b[0m\\x1b[5;15H\\x1b[38;2;59;75;91m\\x1b[48;2;28;39;51m\\xe2\\x95\\xad\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x95\\xae\\x1b[0m\\x1b[5;107H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m \\x1b[0m\\x1b[5;108H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[6;13H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[6;14H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m \\x1b[0m\\x1b[6;15H\\x1b[38;2;59;75;91m\\x1b[48;2;28;39;51m\\xe2\\x94\\x82\\x1b[0m\\x1b[6;16H\\x1b[38;2;237;242;247m\\x1b[48;2;28;39;51m~/\\x1b[0m\\x1b[6;18H\\x1b[38;2;255;255;255m\\x1b[48;2;28;39;51m                                                                                        \\x1b[0m\\x1b[6;106H\\x1b[38;2;59;75;91m\\x1b[48;2;28;39;51m\\xe2\\x94\\x82\\x1b[0m\\x1b[6;107H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m \\x1b[0m\\x1b[6;108H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[7;13H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[7;14H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m \\x1b[0m\\x1b[7;15H\\x1b[38;2;59;75;91m\\x1b[48;2;28;39;51m\\xe2\\x95\\xb0\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x95\\xaf\\x1b[0m\\x1b[7;107H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m \\x1b[0m\\x1b[7;108H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[8;13H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[8;15H\\x1b[38;2;184;196;208m\\x1b[48;2;24;33;43m\\x1b[1mTab\\x1b[0m\\x1b[8;18H\\x1b[38;2;148;164;181m\\x1b[48;2;24;33;43m complete path   \\x1b[0m\\x1b[8;35H\\x1b[38;2;184;196;208m\\x1b[48;2;24;33;43m\\x1b[1mEnter\\x1b[0m\\x1b[8;40H\\x1b[38;2;148;164;181m\\x1b[48;2;24;33;43m register   \\x1b[0m\\x1b[8;52H\\x1b[38;2;184;196;208m\\x1b[48;2;24;33;43m\\x1b[1mEsc\\x1b[0m\\x1b[8;55H\\x1b[38;2;148;164;181m\\x1b[48;2;24;33;43m cancel\\x1b[0m\\x1b[8;62H\\x1b[38;2;255;255;255m\\x1b[48;2;24;33;43m                                              \\x1b[0m\\x1b[8;108H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x94\\x82\\x1b[0m\\x1b[9;13H\\x1b[38;2;59;75;91m\\x1b[48;2;24;33;43m\\xe2\\x95\\xb0\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x94\\x80\\xe2\\x95\\xaf\\x1b[0m\\x1b[0m\\x1b]12;#ffffff\\x07\\x1b[1 q\\x1b[6;18H\\x1b[?25h\\x1b[?2026l'\n`
+  }
+error: script "test" exited with code 1

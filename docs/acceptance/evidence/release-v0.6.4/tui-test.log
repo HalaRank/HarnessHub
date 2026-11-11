@@ -1,0 +1,164 @@
+bun test v1.4.4 (38afee6c8)
+
+tests/e2e/slash-commands.test.tsx:
+(pass) shortcut validation rejects editor collisions, terminal aliases and nonexistent keys [3.15ms]
+(pass) slash trigger uses the actual cursor prefix and rejects paths, code and later lines [0.31ms]
+(pass) slash filters native names, Tab and Enter complete without a Turn; explicit send has one idempotent Prompt [1113.31ms]
+(pass) Esc closes suggestions first, then editor; unmatched Enter never creates a Turn [657.97ms]
+(pass) native new/model/quit are sent unchanged to ACP, never intercepted as HHU actions [1336.32ms]
+(pass) unpublished native commands never fall back to HHU operations [686.93ms]
+(pass) ordinary letters, Ctrl+D/Y, arrows, Shift+Enter and Ctrl+J retain editor semantics [581.05ms]
+(pass) command menu owns keys, restores draft/cursor and sidebar actions preserve both [855.12ms]
+(pass) Ctrl+C copies valid editor selection, then clears draft, then exits without stopping Daemon/session [661.55ms]
+(pass) bracketed paste /path is never auto-executed and requires explicit ordinary-text sending [822.28ms]
+(pass) snapshot replacement/empty clearing is isolated; two TUI subscribers and reopen rebuild state [1913.59ms]
+(pass) pending switch hides source commands; A → B → A creates fresh session and stale command submission is rejected [1710.81ms]
+(pass) uninitialized/unpublished/closed sessions show precise status and initialize never sends a Prompt [714.36ms]
+(pass) long popup supports keyboard scrolling, mouse completion, narrow resize and Unicode parameters [635.56ms]
+(pass) advertised command without output records actual ACP response and does not claim success [510.57ms]
+(pass) daemon restart reconnects without replay and old persisted command snapshots cannot execute [3314.26ms]
+Slash command evidence: /tmp/hhu-slash-ui-KXpM9L
+
+tests/e2e/ui-hierarchy.test.tsx:
+(pass) slash commands distinguish names, native hints and descriptions in both selection states [36.08ms]
+(pass) palette keeps path search and empty results safe at narrow terminal sizes [32.73ms]
+(pass) chrome text, descriptions and placeholders meet normal-text contrast [0.60ms]
+Command menu evidence: /tmp/hhu-command-ui-WxOpv6
+(pass) command menu groups actions, stays bounded on resize, and preserves exact execution targets [202.07ms]
+(pass) shared dialogs fit their containing conversation pane with the sidebar open [7.75ms]
+
+tests/e2e/phase5.test.tsx:
+(pass) internal report events remain available in Debug without appearing as user/agent chat; one expandable Handoff row preserves complete report and sources [259.17ms]
+(pass) failed Handoff keeps raw fallback out of collapsed and expanded chat while Source retains complete materials [324.50ms]
+(pass) TUI Harness selection persists pending state, explicit menu cancellation restores source, and first message performs one Handoff with retained draft CAS [2809.72ms]
+(pass) failed Handoff TUI exposes saved materials and requires explicit degraded confirmation before dispatch [1169.55ms]
+(pass) TUI creates automatically named independent Worktree from palette; safe cleanup is independent and asks for CLEAN confirmation [686.02ms]
+(pass) RC-03 TUI shows uncertain input delivery after completed Turn and preserves unsent editor text [804.28ms]
+(pass) RC-02 TUI explicitly continues with new context without sending its draft or Handoff [876.18ms]
+Phase-5 UI evidence: /tmp/hhu-phase5-ui-FLm8Ib
+
+tests/e2e/tui.test.tsx:
+(pass) Solid view registers real workspace and empty conversation through authenticated Daemon [799.93ms]
+(pass) project directory Tab completes common prefixes, spaces, Unicode and symlinks without submitting [77.84ms]
+(pass) minimal ACP view sends once, preserves native choices and waits for a user decision [1692.03ms]
+(pass) native tool success collapses by default and manual expansion survives updates [12.61ms]
+(pass) drafts stay isolated when switching Conversations and restore with recent selection and preference after TUI exit [1518.77ms]
+(pass) background approval is discoverable in another Project, survives TUI exit and reconnects to the same Worker [774.79ms]
+(pass) persisted unconfirmed submission is read on reopen and explicit retries retain one requestId [452.02ms]
+(pass) a failed save while leaving a Conversation remains available for the next exit flush [10.79ms]
+
+tests/e2e/shortcuts.test.ts:
+(pass) Codex CLI defaults reserve Esc interrupt, Ctrl+J newline and Ctrl+O response copy [4.41ms]
+(pass) explicit shortcut overrides remain available, can be unbound and reject editor collisions [3.37ms]
+(pass) Ctrl+H supports legacy BS without consuming DEL or modified Backspace [0.07ms]
+
+tests/e2e/chat-scroll.test.tsx:
+(pass) the 181st Guardian Review keeps context and the wheel reaches all history in both directions [965.48ms]
+(pass) each chat wheel event scrolls five lines in either direction, clamped at the edges [816.07ms]
+(pass) Esc returns from scrolled history to the newest message and resumes following [657.08ms]
+(pass) modal Esc preserves scroll; an explicit editor follow request returns to the latest message [591.08ms]
+
+tests/e2e/agent-output.test.tsx:
+(pass) Agent replies and public thinking have distinct gutters and headings without changing native text [456.84ms]
+(pass) styled streaming replies wrap and copy original Markdown while user backgrounds stay separate [187.45ms]
+(pass) native tool accents follow streaming status and approvals while preserving expansion and output [260.84ms]
+(pass) command syntax keeps its colors across tool states and narrow layouts [39.81ms]
+(pass) historical terminal and Guardian Review details stay folded without changing native events [54.47ms]
+(pass) tool summaries bound multiline commands and stdout without exposing protocol data [108.78ms]
+(pass) tool detail links toggle the clicked tool, preserve selection and survive updates and remounts [904.13ms]
+(pass) RC-04 expired approval replay clears TUI waiting and preserves the native pending tool [6.83ms]
+
+tests/e2e/chat-input-focus.test.tsx:
+(pass) message composer grows upward for newlines and wrapped text, then shrinks [1550.35ms]
+(pass) message placeholder clears on focus before IME composition and returns only outside editing [156.56ms]
+(pass) chat whitespace and input borders focus the editor; native clicks, scroll and modals stay intact [1682.96ms]
+
+tests/e2e/phase4.test.tsx:
+(pass) native projection preserves Markdown, public thinking, tools, plans, unknown events and source correspondence [1.75ms]
+(pass) Markdown headings, lists, quotes, tables, code indentation and colored Diff render with OpenTUI [243.00ms]
+(pass) user messages have full-width gray backgrounds without coloring Agent replies at wide and narrow widths [469.95ms]
+(pass) tool details default to collapsed, explicit expansion survives status and pane remount [22.45ms]
+(pass) tool detail clicks work while composing and respect modal ownership without submitting a turn [940.76ms]
+(pass) source viewer copies exact original Markdown, code and native tool output using OSC52 [11.98ms]
+(pass) unknown events expose raw and normalized payloads with event IDs and sequence numbers [40.22ms]
+{"phase4Performance":true,"chunks":20000,"projectionMs":26,"displaySegments":20,"historyRows":10000,"mountedRowLimit":60}
+(pass) long history has bounded mounted rows, incremental content, scroll lock, bottom following and scroll restore [369.59ms]
+(pass) App Esc returns chat to the bottom from navigation or the editor without discarding drafts; modals take priority [798.71ms]
+(pass) unmodified letters other than N never invoke navigation, Harness or transcript actions [280.11ms]
+(pass) Enter sends once, Kitty Shift+Enter and Ctrl+J insert newlines without submitting [894.36ms]
+(pass) command palette searches projects and conversations, only explicit sidebar toggles hide it and configured shortcuts work [478.57ms]
+(pass) two concurrently streaming Conversations switch without mixing output, losing drafts or cancelling Workers [1926.60ms]
+(pass) Changes panel reads actual workspace Git state and exposes an inline patch [696.20ms]
+(pass) Codex terminal metadata deltas render and copy without changing native payloads; tool Diff stays inline [60.87ms]
+(pass) rapidly returning to a Conversation waits for its departing editor's pending CAS save [46.95ms]
+(pass) long text segments keep surrogate pairs and original full-message copying intact [0.74ms]
+(pass) new messages cannot replace the history being read after the user scrolls up [169.18ms]
+(pass) refinement hides ACP control traffic, retains real errors and all raw sources [9.74ms]
+(pass) Ctrl+C clears draft, second Ctrl+C exits; selection takes precedence and does not cancel running Agent [865.69ms]
+(pass) mouse release copies multiline chat and code; double click selects a word and triple click selects a line [1126.63ms]
+(pass) archive, restore, Raw Events and delete confirmation synchronize between two TUI clients [1783.28ms]
+(pass) confirmed deletion cancels an active Conversation from the TUI, while closing the dialog keeps it running [949.77ms]
+(pass) Delete edits the draft while typing and deletion confirmation can be cancelled [469.02ms]
+(pass) two Delete presses confirm Conversation and Project deletion [353.63ms]
+(pass) conversation header uses two rows with title, path, Agent, model and status, wrapping safely when narrow [823.01ms]
+(pass) compact layout gives transcript most rows; input grows and narrow sidebar stays visible [306.68ms]
+(pass) action menu archives without confirmation, archive view isolates history, project deletion offers Cancel and Delete [1230.80ms]
+(pass) a deleted Conversation retires another client's dirty draft saver without blocking remaining drafts [15.33ms]
+(pass) clearing an unconfirmed draft persists empty input while retaining the reserved requestId [29.45ms]
+(pass) semantic projection classifies chat, activity, actions, notices, diagnostics and unknown extensions [1.21ms]
+(pass) diagnostic floods and legacy history replay produce the same clean chat without changing sources [145.71ms]
+(pass) public thinking, plans, tools, permission options and context/error notices render without metadata JSON [153.38ms]
+(pass) unknown visible text is concise by default, expandable, and linked to its full source [43.35ms]
+(pass) Raw Events Debug retains and copies full worker and authStatus sources hidden from chat [52.77ms]
+(pass) new Conversation stays empty after worker/auth startup, shows hello and reloads clean persisted history [1192.43ms]
+(pass) diagnostic-only chat has a clean empty state and a concise running indicator [5.30ms]
+Phase-4 UI evidence: /tmp/hhu-phase4-ui-0StulJ
+
+tests/e2e/codex-inputs.test.tsx:
+(pass) folded pastes expand for editing and send original text exactly once [886.56ms]
+(pass) folded drafts survive reopening as full editable text without submitting [625.13ms]
+(pass) queueing folded text persists the original payload without submitting a new Turn [729.61ms]
+(pass) folding never bypasses confirmation for unadvertised slash text [502.37ms]
+(pass) interrupted execution offers explicit continuation and preserves the draft until a new Enter [1139.66ms]
+(pass) retrying a lost normal-turn acknowledgement while running preserves its original delivery mode [678.47ms]
+(pass) Enter steers while running, Tab queues, Esc dismisses suggestions before interrupting and preserves a draft [1460.27ms]
+(pass) retired shortcuts leave editing keys available and HHU settings stay in the command palette [631.20ms]
+(pass) prompt history uses Up/Down and Ctrl+R while Ctrl+T opens transcript navigation [897.43ms]
+(pass) Agent/model remain visible and Ctrl+H switches without editing drafts or starting Handoff [1186.86ms]
+
+tests/e2e/new-conversation.test.tsx:
+(pass) Ctrl+N works without projects and restores an ungrouped conversation at the captured launch path [377.66ms]
+(pass) N uses the selected project or child, does not steal chat input, and Ctrl+N preserves the draft [498.43ms]
+(pass) conversation shortcuts do not create while a modal or chat history owns the keys [383.85ms]
+(pass) restored TUI keeps the project tree on the left and opens chat on the right across resize [444.43ms]
+(pass) 80-column launch and reopen keep the tree visible beside the selected conversation [265.60ms]
+New conversation evidence: /tmp/hhu-new-conversation-MOP6rq
+
+tests/e2e/paste-blocks.test.tsx:
+(pass) paste folding thresholds count lines and Unicode characters, not UTF-16 units [0.29ms]
+(pass) multiple paste blocks preserve original text, Unicode prefixes and literal labels [5.32ms]
+(pass) backspace deletes a whole block and undo/redo restore its full original payload [7.62ms]
+(pass) partial selections replace complete blocks without leaving placeholder fragments [9.80ms]
+(pass) replacing a selection with a paste, clearing and restoring drafts never leak markers [7.42ms]
+(pass) ordinary typing stays expanded and paste uses the terminal's existing ANSI sanitization [4.14ms]
+(pass) word deletion and forward delete treat folded text as an indivisible block [6.76ms]
+(pass) expansion can be undone and line-edit shortcuts never strand a partial marker [6.10ms]
+(pass) newline and line deletion cannot split a selected paste marker [5.07ms]
+
+tests/e2e/mouse-sidebar.test.tsx:
+(pass) sidebar spacing preserves names and keeps project headings more prominent [463.63ms]
+(pass) project arrows collapse independently; names expand/select; hover, selected highlight and keyboard/palette work [1318.01ms]
+(pass) large sidebar wheel is isolated from chat, selection and metadata refresh; offscreen rows are clickable [1079.13ms]
+(pass) mouse navigation preserves unsent drafts, scroll and manual tools; background Worker keeps its Turn [1758.35ms]
+(pass) Enter focuses the selected conversation at the draft end without sending it [743.06ms]
+(pass) chat area clicks focus the draft without sending or stealing modal focus [1430.41ms]
+(pass) sidebar click/drag and chat selection do not cross-trigger; Ctrl+C copies, clears then quits [1174.63ms]
+(pass) mouse rename targets the clicked conversation, supports cancel and syncs another TUI [765.94ms]
+(pass) row actions archive/restore/delete the intended ID without selecting a neighbor; delete still requires confirmation [1354.72ms]
+(pass) project directory reports an unavailable root without creating or modifying it [4.76ms]
+Mouse sidebar evidence: /tmp/hhu-mouse-sidebar-DCqLZv
+
+ 125 pass
+ 0 fail
+ 1733 expect() calls
+Ran 125 tests across 13 files. [90.85s]

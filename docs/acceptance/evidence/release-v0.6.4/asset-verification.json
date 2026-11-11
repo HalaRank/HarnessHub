@@ -1,0 +1,75 @@
+{
+  "verifiedAt": "2026-11-11T09:34:42.888246+00:00",
+  "releaseId": 441467778,
+  "sourceCommit": "79106a5667faa47bbcaa3df2887abe3de0a6c689",
+  "metadataAndGithubDigestsVerified": true,
+  "linux": {
+    "product": "HarnessHub",
+    "version": "0.6.4",
+    "protocolVersion": 1,
+    "platform": "linux",
+    "arch": "x64",
+    "libc": "glibc",
+    "runtimes": {
+      "node": "24.18.0",
+      "bun": "1.4.4"
+    },
+    "sourceCommit": "79106a5667faa47bbcaa3df2887abe3de0a6c689",
+    "sourceDirty": false,
+    "lockfileSha256": "031dd27e7e686c784e8ff148fcd6fca964eb517e5419c2b924e5555804357938"
+  },
+  "assets": [
+    {
+      "name": "harnesshub-0.6.4-linux-x64.tar.gz",
+      "size": 428447736,
+      "digest": "sha256:bc5fed3165f1ac3237692747b289f60cf512184fc345eaeb83878fa9f08d99e9",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/harnesshub-0.6.4-linux-x64.tar.gz"
+    },
+    {
+      "name": "HarnessHub-0.6.4-windows-x64-unsigned-setup.exe",
+      "size": 110769370,
+      "digest": "sha256:eec96ab775e7f30200932a0f9e58bf37f10ecc6c8deb89d15401d24adb9519ab",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/HarnessHub-0.6.4-windows-x64-unsigned-setup.exe"
+    },
+    {
+      "name": "HarnessHub-0.6.4-windows-x64-unsigned.zip",
+      "size": 153524792,
+      "digest": "sha256:08b1356b4d082a1b84648681e074783021a953903a23b86511c1533aa29e6f15",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/HarnessHub-0.6.4-windows-x64-unsigned.zip"
+    },
+    {
+      "name": "install.sh",
+      "size": 2945,
+      "digest": "sha256:38f66ac6b7a46cdb3795b9e605759b0de207d7b5e53d31b0617df0338ebebf15",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/install.sh"
+    },
+    {
+      "name": "release-manifest.json",
+      "size": 2466379,
+      "digest": "sha256:528162d19c65e304cc849fb786e81fe072a7bc5931d81d0251a4dd65a8a72e9e",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/release-manifest.json"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 265,
+      "digest": "sha256:4fefc26e0cbe00f234ffbbfea9dda15e3b0563334d052bf3249c786f1c7c41d0",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/SHA256SUMS.txt"
+    },
+    {
+      "name": "windows-x64-release-manifest.json",
+      "size": 785,
+      "digest": "sha256:3f0967613e49bb2935a18b4472c6c21bb51e59fefd58454d77f3df33528b8b69",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/windows-x64-release-manifest.json"
+    },
+    {
+      "name": "windows-x64-SHA256SUMS.txt",
+      "size": 222,
+      "digest": "sha256:db1428b087111c7bd48a287ec5bb59594ea15eae419bf11e5699d850382ce6e0",
+      "browser_download_url": "https://github.com/HalaRank/HarnessHub/releases/download/untagged-40a3f6d20f0caa4d55be/windows-x64-SHA256SUMS.txt"
+    }
+  ],
+  "releaseUrl": "https://github.com/HalaRank/HarnessHub/releases/tag/untagged-40a3f6d20f0caa4d55be",
+  "publishedAt": null,
+  "publicMetadataDownloads": [],
+  "largePackageDownloadVerifiedLocally": false
+}

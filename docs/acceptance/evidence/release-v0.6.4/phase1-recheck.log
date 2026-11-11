@@ -1,0 +1,20 @@
+✔ new conversations inherit the last selected Harness across projects, standalone and store reopen (34.784983ms)
+✔ simultaneous CLI starts share one authenticated Node Daemon, with empty global state (1240.816448ms)
+✔ Project/Conversation CRUD validates actual paths, canonicalizes duplicates, and preserves files (118.58701ms)
+✔ real WS invalidations commit before broadcast; reconnect recovers missed changes (39.267024ms)
+✔ SQLite uses WAL, foreign keys, schema version, and private permissions (3.82173ms)
+✔ graceful stop and fresh Node process recover real SQLite history (1494.325672ms)
+✔ kernel lock recovers after Daemon crash and stale instance metadata is safely replaced (1206.024573ms)
+✔ doctor reports real runtime and native binding; CLI errors are explicit (1247.351866ms)
+✔ pending migrations back up existing database; newer schema is refused intact (25.591958ms)
+✔ built hhu cold-starts from home in two real PTYs; closing clients keeps the Daemon alive (3257.318435ms)
+✔ actual client subscription reconnects across Daemon restart and refreshes SQLite without command replay (1825.712796ms)
+Phase-1 test evidence: /tmp/hhu-phase1-nUId9q
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11674.265651
