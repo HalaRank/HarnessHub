@@ -115,6 +115,7 @@ try {
     args: [resolve("tests/fixtures/mock-acp/server.mjs")],
     envOverrides: {
       ...(process.env.HHU_DESKTOP_IMAGES_ONLY === "1" ? { HHU_MOCK_IMAGES: "1" } : {}),
+      ...(process.env.HHU_DESKTOP_NEW_ONLY === "1" ? { HHU_MOCK_INIT_DELAY: "2500" } : {}),
       HHU_MOCK_COMMANDS: JSON.stringify([
         { name: "silent", description: "Real ACP published mock command" },
       ]),

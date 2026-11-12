@@ -160,7 +160,8 @@ export function Composer({
       prepareAttempt.current = "";
       return;
     }
-    if (!context || !harness || conversation.activeNativeSessionId || disabled) return;
+    // The first Turn prepares its own session before activeNativeSessionId is bound.
+    if (!context || !harness || conversation.activeNativeSessionId || disabled || busy) return;
     const key = `${conversation.id}:${harness}`;
     if (prepareAttempt.current === key) return;
     prepareAttempt.current = key;
@@ -171,6 +172,7 @@ export function Composer({
     context,
     harness,
     disabled,
+    busy,
     conversation.id,
     conversation.activeNativeSessionId,
   ]);

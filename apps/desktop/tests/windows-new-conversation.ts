@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Conversation, ConversationEvent, ProjectBranches } from "@harnesshub/shared";
+import { object } from "@harnesshub/shared/event-projection";
 import type { BrowserWindow } from "electron";
 import type { DesktopConnection } from "../src/main/connection";
 
@@ -116,6 +117,11 @@ export async function newConversationSmoke(
     return (await events()).some((e) => e.kind === "runtime.turn_finished");
   });
   assert.equal((await events()).filter((e) => e.kind === "user.message").length, 1);
+  assert.equal((await events()).filter((e) => object(e.raw).method === "session/prompt").length, 1);
+  assert.equal(
+    await js("document.querySelector('.composer-area')?.textContent.includes('active operation')"),
+    false,
+  );
   assert.equal(connection.getState().interaction?.sessions[0]?.cwd, conversation.workspacePath);
   const targetRow =
     "Array.from(document.querySelectorAll('.conversation-row')).find(r => r.querySelector('.conversation-item')?.getAttribute('aria-current') === 'page')";

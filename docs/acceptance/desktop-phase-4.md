@@ -150,3 +150,7 @@ Windows Node 构建成功，最终文件复制到仓库 `dist/desktop/releases/0
 ## 2026-11-11 消息发送修正
 
 中断后显式继续、Desktop 运行中追加与排队、未确认请求重试及测试结果见 [消息排队与中断后继续](message-delivery-recovery.md)。
+
+## 2026-11-12 首条消息准备竞态
+
+修复首条 Turn 初始化期间 Composer 重复准备会话导致的 active operation 报错。定位、回归测试及安装版待更新事项见[专项验收](desktop-phase-4-session-preparation.md)。
