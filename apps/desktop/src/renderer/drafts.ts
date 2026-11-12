@@ -71,6 +71,10 @@ export class DesktopDraft {
   private changed() {
     for (const listener of this.listeners) listener();
   }
+  clearResult() {
+    this.result = "";
+    this.changed();
+  }
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.queue.catch(() => {}).then(operation);
     this.queue = result;
@@ -211,7 +215,9 @@ export class DesktopDraft {
         ? turn.state === "HELD"
           ? "已保存到暂停队列"
           : "已加入队列"
-        : `已发送 · ${turn.state === "UNCERTAIN" ? "执行结果不确定" : "请求已记录"}`;
+        : turn.state === "UNCERTAIN"
+          ? "执行结果不确定"
+          : "消息已发出";
       await this.reload();
     } catch (error) {
       this.error = `提交未完成：${String(error)}。若有未确认 requestId，请先查询；不会自动重发。`;

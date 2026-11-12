@@ -867,8 +867,104 @@ textarea:focus {
 }
 .composer-footer {
   flex-wrap: wrap;
-  gap: 8px 16px;
-  padding-top: 8px;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+}
+.composer-options {
+  display: flex;
+  flex: 1 1 300px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-width: 0;
+}
+.composer-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.composer-actions button,
+.attach-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+}
+.composer-actions svg,
+.attach-file svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.composer-actions .composer-cancel,
+.attach-file {
+  width: 34px;
+  padding: 0;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.composer-cancel:hover:not(:disabled),
+.attach-file:hover:not(:disabled) {
+  color: var(--text);
+}
+.composer-queue {
+  color: var(--text);
+  white-space: nowrap;
+}
+.composer-queue kbd {
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.composer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  max-width: 800px;
+  min-height: 34px;
+  margin: 0 auto;
+}
+.composer-meta .composer-note {
+  flex: 1;
+  min-width: 0;
+  margin: 8px 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-feedback {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 70%;
+  margin-left: auto;
+  color: var(--success);
+  font-size: 12px;
+}
+.composer-feedback svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.composer-feedback.uncertain {
+  color: var(--error);
+}
+.composer-feedback span {
+  overflow-wrap: anywhere;
+}
+.composer-feedback button {
+  color: var(--muted);
+  padding: 2px 5px;
 }
 .composer-footer select {
   max-width: 180px;
@@ -880,7 +976,7 @@ textarea:focus {
   border-color: #535b67;
   background: var(--hover);
 }
-.composer-footer label {
+.composer-options label {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -1876,8 +1972,20 @@ dialog :where(pre) {
   padding: 0;
   border-radius: 50%;
 }
-.attach-image {
-  flex-shrink: 0;
+.file-attachment-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 88px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.file-attachment-preview svg {
+  width: 28px;
+  height: 28px;
 }
 
 .input-queue {

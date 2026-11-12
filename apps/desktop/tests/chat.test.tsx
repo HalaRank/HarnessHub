@@ -702,7 +702,7 @@ test("RC-02/03 Desktop shows explicit context recovery and independently blocks 
   );
   expect(html).toContain("输入投递结果不确定（UNCERTAIN）");
   expect(html).toContain("requestId");
-  expect(html).toMatch(/<button[^>]*disabled=""[^>]*>↑ 发送/);
+  expect(html).toMatch(/<button[^>]*aria-label="发送"[^>]*disabled=""/);
   expect(backend.count()).toBe(0);
 });
 

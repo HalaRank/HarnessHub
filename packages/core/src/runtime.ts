@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type {
   ContentBlock,
+  EmbeddedResourceResource,
   InitializeResponse,
   NewSessionResponse,
   RequestPermissionRequest,
@@ -17,11 +18,13 @@ import {
 } from "@harnesshub/acp";
 import {
   AppError,
+  attachmentInputError,
   type ChangeEvent,
   type ConversationEvent,
   type HarnessProfile,
   type ImageAttachment,
   imageAttachments,
+  isImageAttachment,
   type NativeCommands,
   nativeCommandList,
   type RuntimeStatus,
@@ -34,6 +37,30 @@ import type { z } from "zod";
 import { Handoffs } from "./handoff";
 import { projectRoot } from "./index";
 import { PendingInputs } from "./pending-inputs";
+
+function fileResource(file: ImageAttachment): EmbeddedResourceResource {
+  const resource = {
+    uri: `attachment:///${encodeURIComponent(file.name)}`,
+    mimeType: file.mimeType,
+  };
+  // Browsers also assign the MPEG transport-stream MIME type to TypeScript .ts files.
+  const textCandidate =
+    /^text\/|^application\/(?:octet-stream|json|xml|javascript|typescript|yaml)$|\+(?:json|xml)$/.test(
+      file.mimeType,
+    ) ||
+    (file.mimeType === "video/mp2t" && file.name.toLowerCase().endsWith(".ts"));
+  if (textCandidate) {
+    try {
+      const text = new TextDecoder("utf-8", { fatal: true }).decode(
+        Buffer.from(file.data, "base64"),
+      );
+      if (!text.includes("\0")) return { ...resource, text };
+    } catch {
+      // Non-UTF-8 bytes retain the original binary resource representation.
+    }
+  }
+  return { ...resource, blob: file.data };
+}
 
 export type Live = {
   id: string;
@@ -588,15 +615,26 @@ export class Runtime {
     return imageAttachments.parse(payload?.images ?? []);
   }
   prompt(live: Live, message: string, images: ImageAttachment[] = []): ContentBlock[] {
-    if (images.length && live.initialize?.agentCapabilities?.promptCapabilities?.image !== true)
-      throw new AppError(409, "当前 Agent 未声明 ACP 图片输入能力，请选择支持图片的 Harness。");
+    const error = attachmentInputError(
+      images,
+      live.initialize?.agentCapabilities?.promptCapabilities ?? {},
+    );
+    if (error) throw new AppError(409, error);
     return [
       ...(message ? [{ type: "text" as const, text: message }] : []),
-      ...images.map((image) => ({
-        type: "image" as const,
-        mimeType: image.mimeType,
-        data: image.data,
-      })),
+      ...images.map(
+        (image): ContentBlock =>
+          isImageAttachment(image)
+            ? {
+                type: "image" as const,
+                mimeType: image.mimeType,
+                data: image.data,
+              }
+            : {
+                type: "resource",
+                resource: fileResource(image),
+              },
+      ),
     ];
   }
   async run(

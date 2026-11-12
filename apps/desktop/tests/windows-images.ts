@@ -60,7 +60,7 @@ async function verifyImages(win: BrowserWindow, connection: DesktopConnection, o
   win.webContents.debugger.on("message", (_event, method, params) => {
     if (method === "Page.fileChooserOpened") fileNode = params.backendNodeId;
   });
-  await js("document.querySelector('[aria-label=添加图片]').click()");
+  await js("document.querySelector('[aria-label=添加附件]').click()");
   await until(() => !!fileNode);
   await win.webContents.debugger.sendCommand("DOM.setFileInputFiles", {
     files: [file],

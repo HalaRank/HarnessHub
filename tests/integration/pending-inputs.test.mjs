@@ -60,7 +60,7 @@ before(async () => {
       args: [resolve("tests/fixtures/mock-acp/server.mjs")],
       envOverrides: {
         ...(steering ? { HHU_MOCK_STEERING: steering } : {}),
-        ...(id === "images" ? { HHU_MOCK_IMAGES: "1" } : {}),
+        ...(id === "images" ? { HHU_MOCK_IMAGES: "1", HHU_MOCK_FILES: "1" } : {}),
       },
     });
 });
@@ -175,10 +175,16 @@ test("Agents without steering advertise a visible queue fallback and receive no 
   );
 });
 
-test("image follow-ups retain their attachment and wait for a new Turn", async () => {
+test("mixed attachment follow-ups retain their bytes and wait for a new Turn", async () => {
   const context = await setup("images");
   const image = { name: "queued.png", mimeType: "image/png", data: "iVBORw0KGgo=" };
-  const value = { ...input(context, "steer", ""), images: [image] };
+  const file = {
+    kind: "file",
+    name: "queued.pdf",
+    mimeType: "application/pdf",
+    data: Buffer.from("%PDF-1.7").toString("base64"),
+  };
+  const value = { ...input(context, "steer", ""), images: [image, file] };
   await send(context, value);
   await done(context.turn);
   const sent = await state(context, value.requestId, "SENT");
@@ -190,6 +196,10 @@ test("image follow-ups retain their attachment and wait for a new Turn", async (
     prompt.raw.params.prompt.filter((block) => block.type === "image"),
     [{ type: "image", mimeType: image.mimeType, data: image.data }],
   );
+  assert.deepEqual(prompt.raw.params.prompt.at(-1), {
+    type: "resource",
+    resource: { uri: "attachment:///queued.pdf", mimeType: file.mimeType, blob: file.data },
+  });
 });
 
 test("Esc cancellation holds queued work until explicit resume and retains cancel tail events", async () => {

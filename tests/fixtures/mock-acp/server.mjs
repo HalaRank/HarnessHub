@@ -34,7 +34,10 @@ const app = new AgentApp()
       ...(process.env.HHU_MOCK_STEERING ? { _meta: { steering: { supported: true } } } : {}),
       agentCapabilities: {
         loadSession: false,
-        promptCapabilities: process.env.HHU_MOCK_IMAGES ? { image: true } : {},
+        promptCapabilities: {
+          ...(process.env.HHU_MOCK_IMAGES ? { image: true } : {}),
+          ...(process.env.HHU_MOCK_FILES ? { embeddedContext: true } : {}),
+        },
         sessionCapabilities: { close: {} },
       },
     };

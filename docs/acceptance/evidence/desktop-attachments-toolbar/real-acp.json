@@ -1,0 +1,9 @@
+{
+  "workspace": "/tmp/hhu-attachments-real-3QDgmL",
+  "capabilities": {
+    "embeddedContext": true,
+    "image": true
+  },
+  "error": "Error: ACP operation timed out; it was not retried",
+  "workerExited": true
+}

@@ -17,18 +17,50 @@ export const imageAttachment = z
   })
   .strict()
   .refine((image) => imageBytes(image) <= MAX_IMAGE_BYTES, "单张图片不能超过 5 MiB");
-export type ImageAttachment = z.infer<typeof imageAttachment>;
+export const fileAttachment = z
+  .object({
+    kind: z.literal("file"),
+    name: z.string().min(1).max(255),
+    mimeType: z
+      .string()
+      .max(255)
+      .regex(/^[\w!#$&^.+-]+\/[\w!#$&^.+-]+$/),
+    data: z
+      .string()
+      .max(4 * Math.ceil(MAX_IMAGE_BYTES / 3))
+      .regex(/^[A-Za-z0-9+/]*={0,2}$/)
+      .refine((data) => data.length % 4 === 0),
+  })
+  .strict()
+  .refine((file) => imageBytes(file) <= MAX_IMAGE_BYTES, "单个文件不能超过 5 MiB");
+export type Attachment = z.infer<typeof imageAttachment> | z.infer<typeof fileAttachment>;
+// Keep the persisted images field and its public type compatible with existing drafts/events.
+export type ImageAttachment = Attachment;
+export const attachment = z.union([imageAttachment, fileAttachment]);
+export function isImageAttachment(file: Attachment): file is z.infer<typeof imageAttachment> {
+  return !("kind" in file);
+}
+export function attachmentInputError(
+  files: Attachment[],
+  capabilities: { image?: unknown; embeddedContext?: unknown },
+) {
+  if (files.some(isImageAttachment) && capabilities.image !== true)
+    return "当前 Agent 未声明 ACP 图片输入能力，请选择支持图片的 Harness。";
+  if (files.some((file) => !isImageAttachment(file)) && capabilities.embeddedContext !== true)
+    return "当前 Agent 未声明 ACP 文件输入能力，请选择支持文件的 Harness。";
+  return "";
+}
 export function imageBytes(image: { data: string }) {
   return (
     (image.data.length * 3) / 4 - (image.data.endsWith("==") ? 2 : image.data.endsWith("=") ? 1 : 0)
   );
 }
 export const imageAttachments = z
-  .array(imageAttachment)
-  .max(MAX_IMAGES, "每条消息最多添加 4 张图片")
+  .array(attachment)
+  .max(MAX_IMAGES, "每条消息最多添加 4 个附件")
   .refine(
     (images) => images.reduce((sum, image) => sum + imageBytes(image), 0) <= MAX_IMAGES_BYTES,
-    "图片合计不能超过 10 MiB",
+    "附件合计不能超过 10 MiB",
   );
 export function imageSource(image: ImageAttachment) {
   return `data:${image.mimeType};base64,${image.data}`;
@@ -39,7 +71,10 @@ export function sameImages(a: ImageAttachment[] = [], b: ImageAttachment[] = [])
     a.every((image, index) => {
       const other = b[index];
       return (
-        image.name === other?.name && image.mimeType === other.mimeType && image.data === other.data
+        image.name === other?.name &&
+        image.mimeType === other.mimeType &&
+        image.data === other.data &&
+        isImageAttachment(image) === isImageAttachment(other)
       );
     })
   );

@@ -1,0 +1,109 @@
+{
+  "errors": [],
+  "layouts": [
+    {
+      "width": 1100,
+      "overflow": false,
+      "buttons": [
+        {
+          "label": "取消任务",
+          "top": 151,
+          "right": 723
+        },
+        {
+          "label": "加入队列",
+          "top": 151,
+          "right": 831
+        },
+        {
+          "label": "追加指令",
+          "top": 151,
+          "right": 933
+        }
+      ]
+    },
+    {
+      "width": 850,
+      "overflow": false,
+      "buttons": [
+        {
+          "label": "取消任务",
+          "top": 151,
+          "right": 598
+        },
+        {
+          "label": "加入队列",
+          "top": 151,
+          "right": 706
+        },
+        {
+          "label": "追加指令",
+          "top": 151,
+          "right": 808
+        }
+      ]
+    },
+    {
+      "width": 520,
+      "overflow": false,
+      "buttons": [
+        {
+          "label": "取消任务",
+          "top": 216,
+          "right": 277
+        },
+        {
+          "label": "加入队列",
+          "top": 216,
+          "right": 385
+        },
+        {
+          "label": "追加指令",
+          "top": 216,
+          "right": 487
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "buttons": [
+        {
+          "label": "取消任务",
+          "top": 254,
+          "right": 147
+        },
+        {
+          "label": "加入队列",
+          "top": 254,
+          "right": 255
+        },
+        {
+          "label": "追加指令",
+          "top": 254,
+          "right": 357
+        }
+      ]
+    }
+  ],
+  "successAutoDismissed": true,
+  "attachments": [
+    {
+      "name": "需求.pdf",
+      "mimeType": "application/pdf",
+      "kind": "file"
+    },
+    {
+      "name": "hello.ts",
+      "mimeType": "video/mp2t",
+      "kind": "file"
+    },
+    {
+      "name": "image.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "mixedSubmission": true,
+  "dismissButtonWorks": true,
+  "uncertainRetained": true
+}

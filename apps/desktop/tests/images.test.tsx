@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { type Draft, imageAttachments, MAX_IMAGE_BYTES, turnInput } from "@harnesshub/shared";
+import {
+  attachmentInputError,
+  type Draft,
+  imageAttachments,
+  MAX_IMAGE_BYTES,
+  sameImages,
+  turnInput,
+} from "@harnesshub/shared";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { DesktopApi, DesktopRequest } from "../src/contracts";
 import { DesktopDraft } from "../src/renderer/drafts";
@@ -11,6 +18,37 @@ const image = {
   mimeType: "image/png" as const,
   data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0L8AAAAASUVORK5CYII=",
 };
+const file = {
+  kind: "file" as const,
+  name: "需求.pdf",
+  mimeType: "application/pdf",
+  data: "JVBERg==",
+};
+
+test("file attachments validate, negotiate separately and render inert document previews", () => {
+  expect(
+    turnInput.safeParse({
+      requestId: crypto.randomUUID(),
+      harnessId: "mock",
+      message: "",
+      images: [file],
+    }).success,
+  ).toBe(true);
+  expect(imageAttachments.safeParse([image, file]).success).toBe(true);
+  expect(imageAttachments.safeParse([{ ...file, data: "" }]).success).toBe(true);
+  expect(
+    imageAttachments.safeParse([{ ...file, mimeType: "text/html; charset=utf-8" }]).success,
+  ).toBe(false);
+  expect(attachmentInputError([file], { image: true })).toContain("文件输入能力");
+  expect(attachmentInputError([image, file], { image: true, embeddedContext: true })).toBe("");
+  expect(sameImages([image], [{ ...image, kind: "file" }])).toBe(false);
+  const html = renderToStaticMarkup(<ImagePreviews images={[file]} remove={() => {}} />);
+  expect(html).toContain("需求.pdf");
+  expect(html).toContain("移除文件 需求.pdf");
+  expect(html).not.toContain("<img");
+  expect(html).not.toContain("<iframe");
+  expect(html).not.toContain(file.data);
+});
 
 test("image input validates count, size, format and image-only messages", () => {
   const input = { requestId: crypto.randomUUID(), harnessId: "mock", message: "" };
@@ -58,20 +96,20 @@ test("images persist across editors and unknown send outcomes retain the same at
   const store = backend();
   const editor = new DesktopDraft(store.api, "test");
   await editor.load();
-  editor.updateImages([image]);
+  editor.updateImages([image, file]);
   await editor.flush();
   const reopened = new DesktopDraft(store.api, "test");
   await reopened.load();
-  expect(reopened.images).toEqual([image]);
+  expect(reopened.images).toEqual([image, file]);
   expect(reopened.hasContent).toBe(true);
   await reopened.submit("mock");
   const pending = reopened.value.pendingSubmission;
-  expect(pending?.images).toEqual([image]);
+  expect(pending?.images).toEqual([image, file]);
   await reopened.submit("mock");
   expect(store.submissions).toHaveLength(1);
   expect(reopened.value.pendingSubmission?.requestId).toBe(pending?.requestId);
   reopened.updateImages([]);
-  expect(reopened.images).toEqual([image]);
+  expect(reopened.images).toEqual([image, file]);
 });
 
 test("close-time flush waits for image reading, removal persists, CAS retains local images", async () => {

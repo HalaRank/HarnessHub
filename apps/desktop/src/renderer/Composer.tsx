@@ -1,5 +1,6 @@
 import {
   activeStates,
+  attachmentInputError,
   type Conversation,
   type NativeCommand,
   sessionCommands,
@@ -124,7 +125,19 @@ export function Composer({
   const imageSupported = session
     ? object(object(object(session.capabilities).initialize).agentCapabilities).promptCapabilities
     : null;
-  const imageUnsupported = !!session && object(imageSupported).image !== true;
+  const attachmentError = session ? attachmentInputError(draft.images, object(imageSupported)) : "";
+  const imageUnsupported = !!attachmentError;
+  useEffect(() => {
+    if (
+      draft.busy ||
+      !draft.result ||
+      draft.result.includes("不确定") ||
+      draft.result.includes("requestId")
+    )
+      return;
+    const timeout = setTimeout(() => draft.clearResult(), 4000);
+    return () => clearTimeout(timeout);
+  }, [draft, draft.result, draft.busy]);
   const act = useCallback(
     async (request: DesktopRequest) => {
       if (actionLock.current) return;
@@ -411,7 +424,7 @@ export function Composer({
                       ? "发送失败"
                       : "排队中"}
                 </span>
-                <p>{input.input.message || `${input.input.images?.length ?? 0} 张图片`}</p>
+                <p>{input.input.message || `${input.input.images?.length ?? 0} 个附件`}</p>
                 <button
                   type="button"
                   disabled={acting || !connected}
@@ -476,11 +489,6 @@ export function Composer({
           </button>
         </div>
       )}
-      {draft.result && (
-        <div className="subtle" role="status">
-          {draft.result}
-        </div>
-      )}
       <div className="composer">
         <ImagePreviews
           images={draft.images}
@@ -489,7 +497,7 @@ export function Composer({
         />
         {(imageInput.error || (draft.images.length > 0 && imageUnsupported)) && (
           <p className="composer-note error" role="alert">
-            {imageInput.error || "当前 Agent 未声明图片输入能力，请选择支持图片的 Harness。"}
+            {imageInput.error || attachmentError}
           </p>
         )}
         {menu && (
@@ -586,169 +594,227 @@ export function Composer({
           }}
         />
         <div className="composer-footer">
-          {imageInput.picker}
-          <Select
-            aria-label="Harness"
-            value={harness}
-            disabled={
-              busy || !connected || !!draft.value.pendingSubmission || uncertain || !!handoff
-            }
-            onChange={(e) => {
-              setMenuDismissed(true);
-              void act({
-                type: "harness.select",
-                conversationId: conversation.id,
-                harnessId: e.target.value,
-              });
-            }}
-          >
-            <option value="" disabled>
-              选择 Harness
-            </option>
-            {state.profiles?.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-          {!session && !switching && harness && acting && (
-            <span className="composer-connection" role="status">
-              正在连接…
-            </span>
-          )}
-          {!session && !switching && harness && !acting && (
-            <button
-              type="button"
-              className="composer-connect"
-              disabled={busy || !connected || !harness || uncertain}
-              onClick={() =>
-                void act({
-                  type: "session.prepare",
-                  conversationId: conversation.id,
-                  harnessId: harness,
-                })
+          <div className="composer-options">
+            {imageInput.picker}
+            <Select
+              aria-label="Harness"
+              value={harness}
+              disabled={
+                busy || !connected || !!draft.value.pendingSubmission || uncertain || !!handoff
               }
+              onChange={(e) => {
+                setMenuDismissed(true);
+                void act({
+                  type: "harness.select",
+                  conversationId: conversation.id,
+                  harnessId: e.target.value,
+                });
+              }}
             >
-              重试连接
-            </button>
-          )}
-          {!modelOption && currentModel != null && (
-            <span className="composer-model" title={String(currentModel)}>
-              模型 · {String(currentModel)}
-            </span>
-          )}
-          {settings.map((option) => (
-            <label key={String(option.id)} htmlFor={`config-${String(option.id)}`}>
-              <span>{option === modelOption ? "模型" : "审批模式"}</span>
-              <Select
-                id={`config-${String(option.id)}`}
-                title={typeof option.description === "string" ? option.description : undefined}
-                value={String(option.currentValue)}
-                disabled={busy || !connected || switching}
-                onChange={(e) =>
+              <option value="" disabled>
+                选择 Harness
+              </option>
+              {state.profiles?.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
+            {!session && !switching && harness && acting && (
+              <span className="composer-connection" role="status">
+                正在连接…
+              </span>
+            )}
+            {!session && !switching && harness && !acting && (
+              <button
+                type="button"
+                className="composer-connect"
+                disabled={busy || !connected || !harness || uncertain}
+                onClick={() =>
                   void act({
-                    type: "session.settings",
+                    type: "session.prepare",
                     conversationId: conversation.id,
-                    setting: {
-                      kind: "config",
-                      configId: String(option.id),
-                      value: e.target.value,
-                    },
+                    harnessId: harness,
                   })
                 }
               >
-                {(Array.isArray(option.options) ? option.options : [])
-                  .flatMap((entry) => {
-                    const o = object(entry);
-                    return Array.isArray(o.options) ? o.options.map(object) : [o];
-                  })
-                  .map((o) => (
-                    <option key={String(o.value)} value={String(o.value)}>
-                      {String(o.name ?? o.value)}
-                    </option>
-                  ))}
-              </Select>
-            </label>
-          ))}
-          {!modeOption &&
-            Array.isArray(modes.availableModes) &&
-            modes.availableModes.length > 0 && (
-              <label htmlFor="native-mode">
-                <span>审批模式</span>
+                重试连接
+              </button>
+            )}
+            {!modelOption && currentModel != null && (
+              <span className="composer-model" title={String(currentModel)}>
+                模型 · {String(currentModel)}
+              </span>
+            )}
+            {settings.map((option) => (
+              <label key={String(option.id)} htmlFor={`config-${String(option.id)}`}>
+                <span>{option === modelOption ? "模型" : "审批模式"}</span>
                 <Select
-                  id="native-mode"
-                  value={String(modes.currentModeId)}
+                  id={`config-${String(option.id)}`}
+                  title={typeof option.description === "string" ? option.description : undefined}
+                  value={String(option.currentValue)}
                   disabled={busy || !connected || switching}
                   onChange={(e) =>
                     void act({
                       type: "session.settings",
                       conversationId: conversation.id,
-                      setting: { kind: "mode", modeId: e.target.value },
+                      setting: {
+                        kind: "config",
+                        configId: String(option.id),
+                        value: e.target.value,
+                      },
                     })
                   }
                 >
-                  {modes.availableModes.map((m) => {
-                    const mode = object(m);
-                    return (
-                      <option key={String(mode.id)} value={String(mode.id)}>
-                        {String(mode.name)}
+                  {(Array.isArray(option.options) ? option.options : [])
+                    .flatMap((entry) => {
+                      const o = object(entry);
+                      return Array.isArray(o.options) ? o.options.map(object) : [o];
+                    })
+                    .map((o) => (
+                      <option key={String(o.value)} value={String(o.value)}>
+                        {String(o.name ?? o.value)}
                       </option>
-                    );
-                  })}
+                    ))}
                 </Select>
               </label>
+            ))}
+            {!modeOption &&
+              Array.isArray(modes.availableModes) &&
+              modes.availableModes.length > 0 && (
+                <label htmlFor="native-mode">
+                  <span>审批模式</span>
+                  <Select
+                    id="native-mode"
+                    value={String(modes.currentModeId)}
+                    disabled={busy || !connected || switching}
+                    onChange={(e) =>
+                      void act({
+                        type: "session.settings",
+                        conversationId: conversation.id,
+                        setting: { kind: "mode", modeId: e.target.value },
+                      })
+                    }
+                  >
+                    {modes.availableModes.map((m) => {
+                      const mode = object(m);
+                      return (
+                        <option key={String(mode.id)} value={String(mode.id)}>
+                          {String(mode.name)}
+                        </option>
+                      );
+                    })}
+                  </Select>
+                </label>
+              )}
+          </div>
+          <div className="composer-actions">
+            {activeTurn && (
+              <button
+                type="button"
+                className="composer-cancel"
+                aria-label="取消任务"
+                title="取消当前任务"
+                disabled={
+                  !connected || acting || uncertain || conversation.runtimeStatus === "CANCELLING"
+                }
+                onClick={() =>
+                  void act({
+                    type: "turn.cancel",
+                    conversationId: conversation.id,
+                    turnId: activeTurn,
+                  })
+                }
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <rect x="5" y="5" width="10" height="10" rx="2" />
+                </svg>
+              </button>
             )}
-          {activeTurn && (
+            {running && canSteer && (
+              <button
+                type="button"
+                className="composer-queue"
+                aria-label="加入队列"
+                disabled={
+                  disabled ||
+                  !draft.hasContent ||
+                  imageInput.reading ||
+                  (draft.images.length > 0 && imageUnsupported)
+                }
+                title="当前任务结束后发送 · Tab"
+                onClick={() => send("queue")}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 5h14M3 10h8M3 15h8m5-3v6m-3-3h6" />
+                </svg>
+                排队 <kbd>Tab</kbd>
+              </button>
+            )}
             <button
               type="button"
-              disabled={
-                !connected || acting || uncertain || conversation.runtimeStatus === "CANCELLING"
-              }
-              onClick={() =>
-                void act({
-                  type: "turn.cancel",
-                  conversationId: conversation.id,
-                  turnId: activeTurn,
-                })
-              }
-            >
-              取消任务
-            </button>
-          )}
-          <button
-            type="button"
-            className="send"
-            aria-label={running ? (canSteer ? "追加指令" : "加入队列") : "发送"}
-            title={`${running ? (canSteer ? "追加指令" : "加入队列") : "发送"} · Enter`}
-            disabled={
-              disabled ||
-              imageInput.reading ||
-              (draft.images.length > 0 && imageUnsupported) ||
-              !draft.hasContent ||
-              !harness
-            }
-            onClick={() => send()}
-          >
-            {draft.busy ? "提交中…" : running ? (canSteer ? "追加指令" : "加入队列") : "↑ 发送"}
-          </button>
-          {running && canSteer && (
-            <button
-              type="button"
+              className="send"
+              aria-label={running ? (canSteer ? "追加指令" : "加入队列") : "发送"}
+              title={`${running ? (canSteer ? "追加指令" : "加入队列") : "发送"} · Enter`}
               disabled={
                 disabled ||
-                !draft.hasContent ||
                 imageInput.reading ||
-                (draft.images.length > 0 && imageUnsupported)
+                (draft.images.length > 0 && imageUnsupported) ||
+                !draft.hasContent ||
+                !harness
               }
-              title="排队 · Tab"
-              onClick={() => send("queue")}
+              onClick={() => send()}
             >
-              排队
+              {draft.busy ? "提交中…" : running ? (canSteer ? "追加指令" : "加入队列") : "发送"}
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M10 16V4m-5 5 5-5 5 5" />
+              </svg>
             </button>
-          )}
+          </div>
         </div>
       </div>
-      <p className="composer-note">{conversation.workspacePath} · 关闭窗口不会停止后台任务</p>
+      <div className="composer-meta">
+        <p className="composer-note" title={conversation.workspacePath}>
+          {conversation.workspacePath} · 关闭窗口不会停止后台任务
+        </p>
+        {draft.result && (
+          <div
+            className={`composer-feedback${draft.result.includes("不确定") ? " uncertain" : ""}`}
+            role="status"
+          >
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d={draft.result.includes("不确定") ? "M10 4v7m0 4h.01" : "m4 10 4 4 8-8"} />
+            </svg>
+            <span>{draft.result}</span>
+            <button type="button" aria-label="关闭发送提示" onClick={() => draft.clearResult()}>
+              ×
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

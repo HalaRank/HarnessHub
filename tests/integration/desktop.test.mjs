@@ -1101,7 +1101,7 @@ test("Desktop new conversations auto-name and shared/worktree workspaces use the
   }
 });
 
-test("Desktop image drafts, ACP bytes, request deduplication and Handoff retain attachments", async () => {
+test("Desktop mixed attachment drafts, ACP bytes, request deduplication and Handoff retain attachments", async () => {
   const imageDesktop = new DesktopConnection({ connect: bridge }, 100);
   cleanups.push(() => imageDesktop.dispose());
   await imageDesktop.connect("test");
@@ -1114,29 +1114,57 @@ test("Desktop image drafts, ACP bytes, request deduplication and Handoff retain 
     mimeType: "image/png",
     data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0L8AAAAASUVORK5CYII=",
   };
+  const file = {
+    kind: "file",
+    name: "需求 #1.pdf",
+    mimeType: "application/pdf",
+    data: Buffer.from("%PDF-1.7\nmock document").toString("base64"),
+  };
+  const resource = {
+    type: "resource",
+    resource: {
+      uri: `attachment:///${encodeURIComponent(file.name)}`,
+      mimeType: file.mimeType,
+      blob: file.data,
+    },
+  };
+  const textFile = {
+    kind: "file",
+    name: "任务.ts",
+    mimeType: "video/mp2t",
+    data: Buffer.from("export const name = '文件';").toString("base64"),
+  };
+  const textResource = {
+    type: "resource",
+    resource: {
+      uri: `attachment:///${encodeURIComponent(textFile.name)}`,
+      mimeType: textFile.mimeType,
+      text: "export const name = '文件';",
+    },
+  };
   for (const id of ["image-a", "image-b"])
     await client.request("/v1/harness-profiles", "POST", {
       id,
       name: id,
       command: process.execPath,
       args: [resolve("tests/fixtures/mock-acp/server.mjs")],
-      envOverrides: { HHU_MOCK_IMAGES: "1" },
+      envOverrides: { HHU_MOCK_IMAGES: "1", HHU_MOCK_FILES: "1" },
     });
   let draft = await client.request(`${base}/draft`);
   draft = await client.request(`${base}/draft`, "PUT", {
     ...draft,
     conversationId: undefined,
     text: "",
-    images: [image],
+    images: [image, file, textFile],
   });
-  assert.deepEqual((await client.request(`${base}/draft`)).images, [image]);
+  assert.deepEqual((await client.request(`${base}/draft`)).images, [image, file, textFile]);
   // Older text-only clients retain attachments while editing and cannot reserve an incomplete submission.
   draft = await client.request(`${base}/draft`, "PUT", {
     revision: draft.revision,
     text: "text edit",
     pendingSubmission: null,
   });
-  assert.deepEqual(draft.images, [image]);
+  assert.deepEqual(draft.images, [image, file, textFile]);
   await assert.rejects(
     client.request(`${base}/draft`, "PUT", {
       revision: draft.revision,
@@ -1149,7 +1177,12 @@ test("Desktop image drafts, ACP bytes, request deduplication and Handoff retain 
     imageDesktop.getState().snapshot?.conversations.some((item) => item.id === c.id),
   );
   await imageDesktop.select(c.id);
-  const request = { requestId: randomUUID(), harnessId: "image-a", message: "", images: [image] };
+  const request = {
+    requestId: randomUUID(),
+    harnessId: "image-a",
+    message: "",
+    images: [image, file, textFile],
+  };
   const turn = await imageDesktop.action({
     type: "turn.submit",
     conversationId: c.id,
@@ -1170,8 +1203,16 @@ test("Desktop image drafts, ACP bytes, request deduplication and Handoff retain 
   let events = (await client.request(`${base}/events?limit=1000`)).events;
   assert.equal(events.filter((e) => e.kind === "session/prompt").length, 1);
   const blocks = events.find((e) => e.kind === "session/prompt").raw.params.prompt;
-  assert.deepEqual(blocks, [{ type: "image", mimeType: image.mimeType, data: image.data }]);
-  assert.deepEqual(events.find((e) => e.kind === "user.message").payload.images, [image]);
+  assert.deepEqual(blocks, [
+    { type: "image", mimeType: image.mimeType, data: image.data },
+    resource,
+    textResource,
+  ]);
+  assert.deepEqual(events.find((e) => e.kind === "user.message").payload.images, [
+    image,
+    file,
+    textFile,
+  ]);
   await client.request(`${base}/harness`, "PUT", { harnessId: "image-b" });
   const handoffTurn = await client.request(`${base}/turns`, "POST", {
     ...request,
@@ -1183,7 +1224,9 @@ test("Desktop image drafts, ACP bytes, request deduplication and Handoff retain 
   assert.equal((await client.request(`${base}/handoffs`)).at(-1).status, "COMMITTED");
   events = (await client.request(`${base}/events?limit=1000`)).events;
   const targetPrompt = events.filter((e) => e.kind === "session/prompt").at(-1).raw.params.prompt;
-  assert.deepEqual(targetPrompt.at(-1), {
+  assert.deepEqual(targetPrompt.at(-1), textResource);
+  assert.deepEqual(targetPrompt.at(-2), resource);
+  assert.deepEqual(targetPrompt.at(-3), {
     type: "image",
     mimeType: image.mimeType,
     data: image.data,
@@ -1218,6 +1261,33 @@ test("Agent without image capability receives no image Prompt", async () => {
   assert.ok(
     events.some(
       (e) => e.kind === "runtime.input_error" && e.payload.message.includes("图片输入能力"),
+    ),
+  );
+  assert.ok(!events.some((e) => e.kind === "session/prompt"));
+  await client.request(base, "DELETE", { confirmed: true });
+});
+
+test("Agent without embedded context capability receives no file Prompt", async () => {
+  const c = await client.request(`/v1/projects/${project.id}/conversations`, "POST", {});
+  const base = `/v1/conversations/${c.id}`;
+  const file = {
+    kind: "file",
+    name: "notes.txt",
+    mimeType: "text/plain",
+    data: Buffer.from("notes").toString("base64"),
+  };
+  const turn = await client.request(`${base}/turns`, "POST", {
+    requestId: randomUUID(),
+    harnessId: "desktop-mock",
+    message: "",
+    images: [file],
+  });
+  await waitFor(async () => (await client.request(`/v1/turns/${turn.id}`)).endedAt);
+  assert.equal((await client.request(`/v1/turns/${turn.id}`)).state, "ERROR");
+  const events = (await client.request(`${base}/events?limit=1000`)).events;
+  assert.ok(
+    events.some(
+      (e) => e.kind === "runtime.input_error" && e.payload.message.includes("文件输入能力"),
     ),
   );
   assert.ok(!events.some((e) => e.kind === "session/prompt"));
