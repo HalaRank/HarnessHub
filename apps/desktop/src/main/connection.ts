@@ -137,7 +137,7 @@ export class DesktopConnection {
       const socket = new WebSocket(`${client.base.replace("http:", "ws:")}/v1/ws`, {
         headers: { Authorization: `Bearer ${instance.token}` },
         handshakeTimeout: 4000,
-        maxPayload: 16 * 1024 * 1024,
+        maxPayload: 0,
       });
       this.socket = socket;
       this.timer = setTimeout(() => this.failed(new Error("WS hello timeout"), epoch), 5000);

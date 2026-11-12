@@ -171,6 +171,7 @@ export function watchSnapshot(
     const ws = new WebSocket(`${client.base.replace("http:", "ws:")}/v1/ws`, {
       headers: { Authorization: `Bearer ${client.instance.token}` },
       handshakeTimeout: 4000,
+      maxPayload: 0,
     });
     socket = ws;
     ws.onmessage = (packet) => {
@@ -272,6 +273,7 @@ export function watchConversation(
     const ws = new WebSocket(`${client.base.replace("http:", "ws:")}/v1/ws`, {
       headers: { Authorization: `Bearer ${client.instance.token}` },
       handshakeTimeout: 4000,
+      maxPayload: 0,
     });
     socket = ws;
     ws.onmessage = (packet) => {

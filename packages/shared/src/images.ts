@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-export const MAX_IMAGES_BYTES = 10 * 1024 * 1024;
-export const MAX_IMAGES = 4;
 export const IMAGE_ACCEPT = "image/png,image/jpeg,image/gif,image/webp";
 export const imageAttachment = z
   .object({
@@ -11,12 +8,10 @@ export const imageAttachment = z
     data: z
       .string()
       .min(4)
-      .max(4 * Math.ceil(MAX_IMAGE_BYTES / 3))
       .regex(/^[A-Za-z0-9+/]*={0,2}$/)
       .refine((data) => data.length % 4 === 0),
   })
-  .strict()
-  .refine((image) => imageBytes(image) <= MAX_IMAGE_BYTES, "单张图片不能超过 5 MiB");
+  .strict();
 export const fileAttachment = z
   .object({
     kind: z.literal("file"),
@@ -27,12 +22,10 @@ export const fileAttachment = z
       .regex(/^[\w!#$&^.+-]+\/[\w!#$&^.+-]+$/),
     data: z
       .string()
-      .max(4 * Math.ceil(MAX_IMAGE_BYTES / 3))
       .regex(/^[A-Za-z0-9+/]*={0,2}$/)
       .refine((data) => data.length % 4 === 0),
   })
-  .strict()
-  .refine((file) => imageBytes(file) <= MAX_IMAGE_BYTES, "单个文件不能超过 5 MiB");
+  .strict();
 export type Attachment = z.infer<typeof imageAttachment> | z.infer<typeof fileAttachment>;
 // Keep the persisted images field and its public type compatible with existing drafts/events.
 export type ImageAttachment = Attachment;
@@ -55,13 +48,7 @@ export function imageBytes(image: { data: string }) {
     (image.data.length * 3) / 4 - (image.data.endsWith("==") ? 2 : image.data.endsWith("=") ? 1 : 0)
   );
 }
-export const imageAttachments = z
-  .array(attachment)
-  .max(MAX_IMAGES, "每条消息最多添加 4 个附件")
-  .refine(
-    (images) => images.reduce((sum, image) => sum + imageBytes(image), 0) <= MAX_IMAGES_BYTES,
-    "附件合计不能超过 10 MiB",
-  );
+export const imageAttachments = z.array(attachment);
 export function imageSource(image: ImageAttachment) {
   return `data:${image.mimeType};base64,${image.data}`;
 }

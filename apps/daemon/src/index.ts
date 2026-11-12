@@ -75,12 +75,13 @@ async function main() {
   let stopping = false;
   let instance: Instance;
   const app = new Hono();
-  // Draft reservations include a second copy of the same base64 attachments.
   app.use("*", async (c, next) => {
-    const images = /^\/v1\/(?:new-conversation-draft|conversations\/[^/]+\/(?:draft|turns))$/.test(
-      c.req.path,
-    );
-    return bodyLimit({ maxSize: images ? 30 * 1024 * 1024 : 1024 * 1024 })(c, next);
+    const attachments =
+      /^\/v1\/(?:new-conversation-draft|conversations\/[^/]+\/(?:draft|turns|inputs))$/.test(
+        c.req.path,
+      );
+    if (attachments) return next();
+    return bodyLimit({ maxSize: 1024 * 1024 })(c, next);
   });
   app.use("*", async (c, next) => {
     // CLI clients have no browser Origin. Reject browser access, including WS upgrades.

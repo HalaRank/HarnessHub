@@ -182,9 +182,9 @@ test("mixed attachment follow-ups retain their bytes and wait for a new Turn", a
     kind: "file",
     name: "queued.pdf",
     mimeType: "application/pdf",
-    data: Buffer.from("%PDF-1.7").toString("base64"),
+    data: Buffer.alloc(6 * 1024 * 1024, 1).toString("base64"),
   };
-  const value = { ...input(context, "steer", ""), images: [image, file] };
+  const value = { ...input(context, "steer", ""), images: [...Array(6).fill(image), file] };
   await send(context, value);
   await done(context.turn);
   const sent = await state(context, value.requestId, "SENT");
@@ -194,7 +194,7 @@ test("mixed attachment follow-ups retain their bytes and wait for a new Turn", a
   const prompt = events.filter((e) => e.raw?.method === "session/prompt").at(-1);
   assert.deepEqual(
     prompt.raw.params.prompt.filter((block) => block.type === "image"),
-    [{ type: "image", mimeType: image.mimeType, data: image.data }],
+    Array(6).fill({ type: "image", mimeType: image.mimeType, data: image.data }),
   );
   assert.deepEqual(prompt.raw.params.prompt.at(-1), {
     type: "resource",

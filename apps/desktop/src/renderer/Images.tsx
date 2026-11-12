@@ -5,8 +5,6 @@ import {
   imageBytes,
   imageSource,
   isImageAttachment,
-  MAX_IMAGE_BYTES,
-  MAX_IMAGES,
 } from "@harnesshub/shared";
 import { type ClipboardEvent, useEffect, useRef, useState } from "react";
 import type { DesktopDraft } from "./drafts";
@@ -68,7 +66,6 @@ export function ImagePreviews({
 }
 
 export async function readAttachment(file: File): Promise<ImageAttachment> {
-  if (file.size > MAX_IMAGE_BYTES) throw new Error(`文件 ${file.name} 超过 5 MiB。`);
   const image = IMAGE_ACCEPT.split(",").includes(file.type);
   if (image && !file.size) throw new Error("图片内容为空。");
   const data = await new Promise<string>((resolve, reject) => {
@@ -104,8 +101,6 @@ export function useImageInput(draft: DesktopDraft, disabled: boolean) {
     setReading(true);
     setError("");
     try {
-      if (draft.images.length + files.length > MAX_IMAGES)
-        throw new Error("每条消息最多添加 4 个附件。");
       await draft.readImages(Promise.all(files.map(readAttachment)));
     } catch (e) {
       if (active.current) setError(e instanceof Error ? e.message : String(e));
@@ -144,7 +139,7 @@ export function useImageInput(draft: DesktopDraft, disabled: boolean) {
           className="attach-file"
           aria-label={reading ? "正在读取附件" : "添加附件"}
           aria-busy={reading}
-          title="添加附件 · 所有文件类型，单个最大 5 MiB，最多 4 个"
+          title="添加附件 · 支持多选各类文件"
           disabled={disabled || reading}
           onClick={() => input.current?.click()}
         >

@@ -3,7 +3,6 @@ import {
   attachmentInputError,
   type Draft,
   imageAttachments,
-  MAX_IMAGE_BYTES,
   sameImages,
   turnInput,
 } from "@harnesshub/shared";
@@ -50,16 +49,23 @@ test("file attachments validate, negotiate separately and render inert document 
   expect(html).not.toContain(file.data);
 });
 
-test("image input validates count, size, format and image-only messages", () => {
+test("attachment input accepts large files and arbitrary counts while validating content", () => {
   const input = { requestId: crypto.randomUUID(), harnessId: "mock", message: "" };
   expect(turnInput.safeParse(input).success).toBe(false);
   expect(turnInput.safeParse({ ...input, message: " " }).success).toBe(true);
   expect(turnInput.safeParse({ ...input, images: [image] }).success).toBe(true);
-  expect(imageAttachments.safeParse(Array(5).fill(image)).success).toBe(false);
+  expect(imageAttachments.safeParse(Array(20).fill(image)).success).toBe(true);
+  const data = Buffer.alloc(6 * 1024 * 1024, 1).toString("base64");
+  expect(
+    imageAttachments.safeParse([
+      { ...image, data },
+      { ...file, data },
+    ]).success,
+  ).toBe(true);
   for (const patch of [
     { mimeType: "image/svg+xml" },
     { data: "file:///etc/passwd" },
-    { data: "abcd".repeat(Math.ceil(MAX_IMAGE_BYTES / 3) + 1) },
+    { data: "abcd=" },
   ])
     expect(imageAttachments.safeParse([{ ...image, ...patch }]).success).toBe(false);
 });

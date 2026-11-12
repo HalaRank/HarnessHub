@@ -1231,16 +1231,55 @@ test("Desktop mixed attachment drafts, ACP bytes, request deduplication and Hand
     mimeType: image.mimeType,
     data: image.data,
   });
-  // A payload above the old 1 MiB HTTP ceiling survives unchanged.
-  const largeImage = { ...image, data: Buffer.alloc(900000, 1).toString("base64") };
+  // The reservation exceeds 30 MiB and committed events exceed the old 16 MiB WS ceiling.
+  const largeFile = { ...file, data: Buffer.alloc(12 * 1024 * 1024, 1).toString("base64") };
+  const attachments = [
+    largeFile,
+    ...Array.from({ length: 6 }, (_, i) => ({ ...image, name: `image-${i}.png` })),
+  ];
+  const largeInput = {
+    requestId: randomUUID(),
+    harnessId: "image-b",
+    message: "large",
+    images: attachments,
+  };
   draft = await client.request(`${base}/draft`);
-  await client.request(`${base}/draft`, "PUT", {
-    revision: draft.revision,
-    text: "large",
-    images: [largeImage],
-    pendingSubmission: null,
+  draft = await imageDesktop.action({
+    type: "draft.save",
+    conversationId: c.id,
+    draft: {
+      revision: draft.revision,
+      text: "large",
+      images: attachments,
+      pendingSubmission: largeInput,
+    },
   });
-  assert.deepEqual((await client.request(`${base}/draft`)).images, [largeImage]);
+  assert.deepEqual(draft.images, attachments);
+  const connectionStates = [];
+  imageDesktop.onState((state) => connectionStates.push(state.status));
+  const largeTurn = await imageDesktop.action({
+    type: "turn.submit",
+    conversationId: c.id,
+    revision: draft.revision,
+    input: largeInput,
+  });
+  await waitFor(async () => (await client.request(`/v1/turns/${largeTurn.id}`)).endedAt);
+  assert.equal((await client.request(`/v1/turns/${largeTurn.id}`)).state, "COMPLETED");
+  await waitFor(() =>
+    imageDesktop
+      .getState()
+      .events.some((event) => event.turnId === largeTurn.id && event.kind === "session/prompt"),
+  );
+  const largePrompt = imageDesktop
+    .getState()
+    .events.find((event) => event.turnId === largeTurn.id && event.kind === "session/prompt").raw
+    .params.prompt;
+  assert.equal(largePrompt.filter((block) => block.type === "image").length, 6);
+  assert.equal(
+    largePrompt.find((block) => block.type === "resource").resource.blob,
+    largeFile.data,
+  );
+  assert.ok(connectionStates.every((status) => status === "connected"));
   await imageDesktop.action({ type: "conversation.delete", conversationId: c.id, confirmed: true });
   imageDesktop.dispose();
 });
