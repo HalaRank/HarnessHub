@@ -85,7 +85,8 @@ export class DesktopTranscript {
       event.kind,
     );
     const text =
-      event.kind === "user.message" ? p.text : chunk ? object(p.content).text : projection.text;
+      projection.text ??
+      (event.kind === "user.message" ? p.text : chunk ? object(p.content).text : undefined);
     if (
       typeof text === "string" &&
       (text.length || (event.kind === "user.message" && Array.isArray(p.images) && p.images.length))

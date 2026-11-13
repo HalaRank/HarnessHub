@@ -173,7 +173,8 @@ export class Transcript {
     );
     if (event.kind === "user.message" || (chunk && typeof object(p.content).text === "string")) {
       const text =
-        event.kind === "user.message" ? String(p.text ?? "") : String(object(p.content).text);
+        projection.text ??
+        (event.kind === "user.message" ? String(p.text ?? "") : String(object(p.content).text));
       const lane = `${event.nativeSessionId}:${event.turnId}:${event.kind}`;
       if (lane !== this.group || !this.tail) {
         this.tail?.update((v) => ({ ...v, streaming: false }));

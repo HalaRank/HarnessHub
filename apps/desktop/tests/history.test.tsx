@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { ConversationEvent } from "@harnesshub/shared";
 import { renderToStaticMarkup } from "react-dom/server";
 import { App } from "../src/renderer/App";
-import { messages } from "../src/renderer/history";
+import { DesktopTranscript, messages } from "../src/renderer/history";
 
 const event = (
   kind: string,
@@ -43,6 +43,33 @@ test("basic history preserves user/Agent text and concatenates chunks without di
     "Hello world",
     "Thinking text",
   ]);
+});
+test("model metadata warning is hidden from live and replayed Desktop chat without changing source", () => {
+  for (const modelId of ["baizhi-cloud/gpt-6.1-sol", "`gpt-6-astra`", "vendor/custom-model"]) {
+    const warning = `Warning: Model metadata for ${modelId} not found. Defaulting to fallback metadata; this can degrade performance and cause issues.\r\n\r\n`;
+    const events = [
+      event("agent_message_chunk", { content: { text: warning } }, 1),
+      event("agent_message_chunk", { content: { text: `${warning}Reply **unchanged**\n` } }, 2),
+      event("agent_message_chunk", { content: { text: "more" } }, 3),
+      event("runtime.warning", { message: "Another warning" }, 4),
+      event("runtime.session_error", { message: "Request failed" }, 5),
+      event("user.message", { text: warning }, 6),
+    ];
+    const original = JSON.stringify(events);
+    const live = new DesktopTranscript();
+    live.append(events.slice(0, 1));
+    expect(live.rows).toHaveLength(0);
+    live.append(events.slice(1));
+    expect(live.rows).toEqual(messages(events));
+    expect(live.rows.map((row) => row.text)).toEqual([
+      "Reply **unchanged**\nmore",
+      "Another warning",
+      "Request failed",
+      warning,
+    ]);
+    expect(live.cursor).toBe(6);
+    expect(JSON.stringify(events)).toBe(original);
+  }
 });
 test("native tool titles and status retained, protocol body stays out of chat", () => {
   const rows = messages([

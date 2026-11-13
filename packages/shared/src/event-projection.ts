@@ -23,6 +23,8 @@ export type EventProjection = {
 };
 
 const contentEvents = new Set(["user.message", "user_message_chunk", "agent_message_chunk"]);
+const modelMetadataWarning =
+  /^Warning: Model metadata for (?:`[^`\r\n]+`|[^`\r\n]+) not found\. Defaulting to fallback metadata; this can degrade performance and cause issues\.(?:(?:\r?\n)+|$)/;
 const activityEvents = new Set(["agent_thought_chunk", "tool_call", "tool_call_update", "plan"]);
 const metadataEvents = new Set([
   "available_commands_update",
@@ -77,6 +79,14 @@ export function projectEvent(event: ConversationEvent): EventProjection {
     (event.purpose === "handoff_delivery" && event.kind === "user_message_chunk")
   )
     return diagnostic;
+  if (event.origin === "agent" && event.kind === "agent_message_chunk") {
+    const text = object(p.content).text;
+    if (typeof text === "string") {
+      const displayText = text.replace(modelMetadataWarning, "");
+      if (displayText !== text)
+        return displayText.trim() ? { category: "CHAT_CONTENT", text: displayText } : diagnostic;
+    }
+  }
   if (contentEvents.has(event.kind)) return { category: "CHAT_CONTENT" };
   if (activityEvents.has(event.kind)) return { category: "AGENT_ACTIVITY" };
   if (event.kind === "approval.expired" && p.status === "EXPIRED")

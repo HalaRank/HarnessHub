@@ -1,5 +1,7 @@
 # Phase 6：稳定性、安全加固与最终 MVP 验收报告
 
+2026-11-12 按用户要求过滤模型 metadata fallback 固定警告的聊天展示，原始事件保留；实现、回归及待验步骤见[专项记录](phase-6-model-metadata-warning.md)。
+
 2026-11-09 输入框自动增高与大段粘贴折叠，原文草稿/发送及验证见[专项记录](phase-6-paste-folding.md)。
 
 2026-11-09 原生 Slash 命令与 HHU 管理入口分离，真实 Codex ACP `/new` 限制及验证见[专项记录](phase-6-native-slash-commands.md)。

@@ -3,7 +3,7 @@ import { RGBA, TextAttributes } from "@opentui/core";
 import { testRender } from "@opentui/solid";
 import { NativeEvents } from "../../apps/tui/src/native-events";
 import { sourceParts } from "../../apps/tui/src/rich-content";
-import { newViewState, Transcript } from "../../apps/tui/src/transcript";
+import { newViewState, projectEvent, Transcript } from "../../apps/tui/src/transcript";
 import { chat } from "../../apps/tui/src/ui";
 import type { ConversationEvent } from "../../packages/shared/src/index";
 import { clickControl } from "./ui-actions";
@@ -42,6 +42,78 @@ async function frame(screen: Awaited<ReturnType<typeof testRender>>, text: strin
     throw new Error(`${error.message}\n${screen.captureCharFrame()}`);
   });
 }
+
+test("model metadata fallback warning stays in raw events while replies render live and on replay", async () => {
+  for (const modelId of ["baizhi-cloud/gpt-6.1-sol", "`gpt-6-astra`", "vendor/custom-model"]) {
+    const warning = `Warning: Model metadata for ${modelId} not found. Defaulting to fallback metadata; this can degrade performance and cause issues.\n\n`;
+    const warningEvent = textEvent(1, warning);
+    const events = [
+      warningEvent,
+      textEvent(2, `${warning}REPLY_FIRST\n\n`),
+      textEvent(3, "REPLY_SECOND"),
+      event(4, "runtime.turn_finished", { state: "COMPLETED" }),
+    ];
+    const original = JSON.stringify(events);
+    const model = new Transcript();
+    model.append(events.slice(0, 1));
+    expect(model.rows).toHaveLength(0);
+    model.append(events.slice(1));
+    const replay = new Transcript();
+    replay.append(events);
+    for (const transcript of [model, replay]) {
+      expect(transcript.rows.map((row) => row.value().text)).toEqual([
+        "REPLY_FIRST\n\nREPLY_SECOND",
+      ]);
+      expect(transcript.rows[0]?.value().streaming).toBe(false);
+      expect(transcript.events).toEqual(events);
+      const first = transcript.rows[0];
+      if (!first) throw new Error("Missing reply row");
+      expect(transcript.source(first)).toBe("REPLY_FIRST\n\nREPLY_SECOND");
+    }
+    expect(JSON.stringify(events)).toBe(original);
+    expect(projectEvent(warningEvent).category).toBe("INTERNAL_DIAGNOSTIC");
+    expect(projectEvent(textEvent(1, warning.trimEnd())).category).toBe("INTERNAL_DIAGNOSTIC");
+    const screen = await testRender(() => <NativeEvents model={model} disabled={false} />, {
+      width: 100,
+      height: 16,
+    });
+    try {
+      await frame(screen, "REPLY_SECOND");
+      expect(screen.captureCharFrame()).not.toContain("Model metadata");
+    } finally {
+      await screen.dispose();
+    }
+  }
+});
+
+test("warning filter preserves user quotes, tool output, other warnings and errors", () => {
+  const warning =
+    "Warning: Model metadata for vendor/model not found. Defaulting to fallback metadata; this can degrade performance and cause issues.";
+  const quoted = ["```text", warning, "```"].join("\n");
+  const explanation = `The agent reported:\n${warning}`;
+  const otherWarning = "Warning: Model metadata unavailable because authentication failed.";
+  const events = [
+    event(1, "user.message", { text: warning }),
+    textEvent(2, warning, "user_message_chunk"),
+    textEvent(3, explanation),
+    textEvent(4, otherWarning),
+    textEvent(5, quoted),
+    event(6, "runtime.warning", { message: warning }),
+    event(7, "runtime.session_error", { message: "Model request failed" }),
+    event(8, "tool_call", { toolCallId: "tool", title: "Native tool", rawOutput: warning }),
+  ];
+  const model = new Transcript();
+  model.append(events);
+  expect(model.rows.map((row) => row.value().text)).toEqual([
+    warning,
+    warning,
+    explanation + otherWarning + quoted,
+    warning,
+    "Model request failed",
+    "",
+  ]);
+  expect(model.rows.at(-1)?.value().tool?.rawOutput).toBe(warning);
+});
 
 test("Agent replies and public thinking have distinct gutters and headings without changing native text", async () => {
   const thought = "原生思考 THOUGHT_TEXT",
