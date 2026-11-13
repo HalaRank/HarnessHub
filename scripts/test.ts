@@ -27,6 +27,7 @@ const ui = spawnSync(
   [
     "test",
     "tests/e2e/shortcuts.test.ts",
+    "tests/e2e/terminal-title.test.tsx",
     "tests/e2e/tui.test.tsx",
     "tests/e2e/phase4.test.tsx",
     "tests/e2e/agent-output.test.tsx",

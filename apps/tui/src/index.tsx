@@ -28,12 +28,14 @@ import {
   projectKey,
 } from "./project-tree";
 import { matches, navigationShortcuts, shortcuts } from "./shortcuts";
+import { createTerminalTitle } from "./terminal-title";
 import { newViewState, type ViewState } from "./transcript";
 import { inputStyle, KeyHints, listStyle, Panel, statusColor, ui } from "./ui";
 
 export function App(props: {
   initialProjectId?: string | undefined;
   launchCwd?: string | undefined;
+  onActivityChange?: (active: boolean) => void;
   onExit: () => void;
 }) {
   const launchCwd = props.launchCwd ?? process.cwd();
@@ -65,6 +67,12 @@ export function App(props: {
     | null
   >(null);
   const renderer = useRenderer();
+  const terminalActive = createMemo(
+    () =>
+      state() === "Connected" &&
+      snapshot().activity.items.some((item) => activeStates.has(item.status)),
+  );
+  createEffect(() => props.onActivityChange?.(terminalActive()));
   const copyText = useClipboard();
   const sidebarClick = mouseClick();
   const [renameTarget, setRenameTarget] = createSignal<Conversation | null>(null);
@@ -1219,21 +1227,30 @@ export async function openTui(initialProjectId?: string, launchCwd = process.cwd
     exitSignals: ["SIGTERM", "SIGHUP"],
     useKittyKeyboard: { disambiguate: true, alternateKeys: true },
   });
+  const terminalTitle = createTerminalTitle((title) => renderer.setTerminalTitle(title));
   let finish: () => void = () => {};
   const done = new Promise<void>((resolve) => {
     finish = resolve;
   });
-  renderer.once("destroy", finish);
-  await render(
-    () => (
-      <App
-        initialProjectId={initialProjectId}
-        launchCwd={launchCwd}
-        onExit={() => renderer.destroy()}
-      />
-    ),
-    renderer,
-  );
-  await done;
-  await renderer.closed;
+  renderer.once("destroy", () => {
+    terminalTitle.dispose();
+    finish();
+  });
+  try {
+    await render(
+      () => (
+        <App
+          initialProjectId={initialProjectId}
+          launchCwd={launchCwd}
+          onActivityChange={(active) => terminalTitle.update(active)}
+          onExit={() => renderer.destroy()}
+        />
+      ),
+      renderer,
+    );
+    await done;
+    await renderer.closed;
+  } finally {
+    terminalTitle.dispose();
+  }
 }

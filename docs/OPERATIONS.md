@@ -51,6 +51,18 @@ Chat / Changes 顶部常驻显示当前 Agent 与 ACP 报告的模型。`Ctrl+H`
 
 0.5.0 / 0.6.0 → 0.6.1 不改变 schema 6；schema 5 → 6 使用已有增量迁移。迁移前备份到同目录 `harnesshub.db.backup-*`（0600）。锁定的 Drizzle 在一个事务中执行全部待迁移 SQL；SQL 失败会回滚，旧库与备份均保留，不自动覆盖库文件。高于支持版本的 schema 拒绝打开。备份不会自动清除，请按自己的保留策略妥善管理。
 
+## 终端标题与运行状态
+
+TUI 打开后主动设置终端标题为 `hhu`；全局任一会话处于 `PREPARING`、`RUNNING`、`WAITING_APPROVAL` 或 `CANCELLING` 时，标题显示轮转的 `⠋ hhu`。它不只跟随当前选中的会话，也不受侧边栏、归档列表或活动栏显示开关影响。所有活动结束或 Daemon 连接断开后恢复 `hhu`；退出 TUI 清理动画定时器，不停止后台任务。此动画是标题字符轮转，不是 VS Code 自带的进度图标。
+
+VS Code 默认按进程名显示标签，所以 Bun 应用可能仍显示 `bun`。若要显示程序发出的标题，在 VS Code 用户设置 JSON 中加入：
+
+```json
+"terminal.integrated.tabs.title": "${sequence}"
+```
+
+如果曾手动重命名该终端，先新建终端或清除手动名称，再启动更新后的 `hhu`。该设置作用于其他终端的标题来源；HarnessHub 不自动修改 VS Code 设置。参考 [VS Code 官方终端外观文档](https://code.visualstudio.com/docs/terminal/appearance#_tab-text)。源码构建不会修改已安装的全局入口，升级仍遵循上一节的安全停止与重新安装步骤。
+
 ## TUI 多行输入与大段粘贴
 
 输入框随手动换行和自动折行向上增高，最多显示 8 行正文；小终端按可用高度限制，超出后在输入框内滚动。删除或清空内容后自动收缩。
